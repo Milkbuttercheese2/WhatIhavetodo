@@ -1,0 +1,132 @@
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
+/// Alarm-fired state for a single key (e.g. "due" on an item, "mid" on a
+/// subtask). Mirrors the JS shape: `true` once acknowledged, or an epoch-ms
+/// number while snoozed. Untagged so it round-trips as a bare JSON bool or
+/// number, matching what checkAlarms() in the existing frontend expects.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AlarmState {
+    Fired(bool),
+    SnoozeUntil(i64),
+}
+
+pub type AlarmMap = HashMap<String, AlarmState>;
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Contact {
+    #[serde(default)]
+    pub who: String,
+    #[serde(default)]
+    pub org: String,
+    #[serde(default)]
+    pub phone: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct Identifier {
+    #[serde(default)]
+    pub kind: String,
+    #[serde(default)]
+    pub val: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubTask {
+    pub id: i64,
+    #[serde(default)]
+    pub title: String,
+    /// ISO datetime string, or "" when unset — kept as a plain string to
+    /// match the existing frontend's date handling verbatim.
+    #[serde(default)]
+    pub mid: String,
+    #[serde(default)]
+    pub done: bool,
+    #[serde(default)]
+    pub al: AlarmMap,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Item {
+    pub id: i64,
+    #[serde(default)]
+    pub memo: String,
+    /// Field-key -> value. Always the two builtin keys ("received","due")
+    /// plus whatever custom fields the user defined; values are always
+    /// plain strings on the wire (dates as ISO strings).
+    #[serde(default)]
+    pub f: HashMap<String, String>,
+    #[serde(default)]
+    pub contacts: Vec<Contact>,
+    #[serde(default)]
+    pub ids: Vec<Identifier>,
+    #[serde(default)]
+    pub subs: Vec<SubTask>,
+    #[serde(default)]
+    pub done: bool,
+    /// Epoch-ms when marked done (null when not done / re-opened). Used by
+    /// the completed-items view to sort most-recently-done first.
+    #[serde(rename = "doneAt", default)]
+    pub done_at: Option<i64>,
+    #[serde(default)]
+    pub staged: bool,
+    #[serde(default)]
+    pub al: AlarmMap,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldDef {
+    pub key: String,
+    pub label: String,
+    #[serde(rename = "type")]
+    pub type_: String,
+    #[serde(default)]
+    pub on: bool,
+    #[serde(default)]
+    pub builtin: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Preset {
+    pub id: String,
+    pub label: String,
+    #[serde(default)]
+    pub sum: String,
+    #[serde(default)]
+    pub subs: Vec<String>,
+}
+
+/// Free-form settings bag (currently just {alarmOn:bool}), kept generic so
+/// new settings don't require a schema/struct change.
+pub type Settings = serde_json::Map<String, serde_json::Value>;
+
+/// Full application state as handed to/from the frontend in one round trip.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AppState {
+    #[serde(default)]
+    pub items: Vec<Item>,
+    #[serde(default)]
+    pub fields: Vec<FieldDef>,
+    #[serde(default)]
+    pub presets: Vec<Preset>,
+    #[serde(rename = "idKinds", default)]
+    pub id_kinds: Vec<String>,
+    #[serde(default)]
+    pub settings: Settings,
+}
+
+/// Same shape as the legacy HTML app's `backupPayload()` JSON, so backups
+/// exported from the old app import unchanged, and vice versa.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupPayload {
+    pub v: i32,
+    pub exported: String,
+    pub fields: Vec<FieldDef>,
+    pub presets: Vec<Preset>,
+    #[serde(rename = "idKinds")]
+    pub id_kinds: Vec<String>,
+    pub settings: Settings,
+    pub items: Vec<Item>,
+}
