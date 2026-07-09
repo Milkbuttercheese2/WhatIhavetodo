@@ -35,14 +35,20 @@ pub fn load_presets(conn: &Connection) -> DbResult<Vec<Preset>> {
 pub fn save_presets_tx(tx: &Transaction, presets: &[Preset]) -> DbResult<()> {
     tx.execute("DELETE FROM presets", [])?; // cascades to preset_subs
     {
+        // OR IGNORE — see fields.rs: dup rows must not abort the whole save.
         let mut ins_preset = tx.prepare(
-            "INSERT INTO presets (id, label, sum, sort_order) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT OR IGNORE INTO presets (id, label, sum, sort_order) VALUES (?1, ?2, ?3, ?4)",
         )?;
         let mut ins_sub = tx.prepare(
             "INSERT INTO preset_subs (preset_id, title, sort_order) VALUES (?1, ?2, ?3)",
         )?;
         for (i, p) in presets.iter().enumerate() {
-            ins_preset.execute(params![p.id, p.label, p.sum, i as i64])?;
+            // 0 rows affected = this id was a dup and got ignored; its subs
+            // must be skipped too, or they'd attach to the *first* preset
+            // that owns this id and silently mix the two presets' subs.
+            if ins_preset.execute(params![p.id, p.label, p.sum, i as i64])? == 0 {
+                continue;
+            }
             for (j, title) in p.subs.iter().enumerate() {
                 ins_sub.execute(params![p.id, title, j as i64])?;
             }

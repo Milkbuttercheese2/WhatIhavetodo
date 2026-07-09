@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Versioning convention (user-defined)
+
+User-facing version: current release = **v2.2**. Big updates bump +0.1 (v2.3), small updates +0.01 (v2.21). Manifest mapping: `vX.Y` ↔ `"X.Y.0"`, `vX.YZ` ↔ `"X.YZ.0"` in all THREE manifests together (`src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `package.json`). The UI header shows the version via `getVersion()` with a trailing `.0` stripped. A structural analysis lives in `구조 분석 보고서.md`; the built exe ships in `최종 프로그램 산출물/` and IS committed to git per user request.
+
 ## Migration in progress
 
 This repo is being converted from the legacy single-file HTML app (still in `legacy/`) into a **Tauri (Rust) + SQLite** desktop app for offline/air-gapped 공무원 내부망 deployment as a small portable `.exe`. The full rationale and architecture (DB schema, data-safety measures, migration/versioning approach, why Tauri, why EAV over a JSON column, etc.) live in the plan doc at `C:\Users\rhama\.claude\plans\rustling-seeking-flurry.md` — read it before making architectural changes to `src-tauri/`.

@@ -11,7 +11,8 @@ pub fn load_id_kinds(conn: &Connection) -> DbResult<Vec<String>> {
 pub fn save_id_kinds_tx(tx: &Transaction, kinds: &[String]) -> DbResult<()> {
     tx.execute("DELETE FROM id_kinds", [])?;
     {
-        let mut ins = tx.prepare("INSERT INTO id_kinds (kind, sort_order) VALUES (?1, ?2)")?;
+        // OR IGNORE — see fields.rs: dup rows must not abort the whole save.
+        let mut ins = tx.prepare("INSERT OR IGNORE INTO id_kinds (kind, sort_order) VALUES (?1, ?2)")?;
         for (i, k) in kinds.iter().enumerate() {
             ins.execute(params![k, i as i64])?;
         }

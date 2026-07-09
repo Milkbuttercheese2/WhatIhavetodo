@@ -27,6 +27,11 @@ pub fn load_all(state: State<AppDb>) -> Result<AppState, String> {
     db::backup::load_app_state(&conn).map_err(to_err)
 }
 
+/// Minimum age of the newest backup before an after-save rotation writes
+/// another one. Saves fire on every user action, so without this the whole
+/// rotation window collapses into a few minutes of one editing session.
+const BACKUP_MIN_INTERVAL: std::time::Duration = std::time::Duration::from_secs(30 * 60);
+
 #[tauri::command]
 pub fn save_all(state: State<AppDb>, items: Vec<Item>) -> Result<(), String> {
     let mut conn = state.conn.lock().map_err(to_err)?;
@@ -35,7 +40,13 @@ pub fn save_all(state: State<AppDb>, items: Vec<Item>) -> Result<(), String> {
     drop(conn);
     // Best-effort: a failed backup rotation must not fail the save itself
     // (the save already committed by this point).
-    if let Err(e) = db::rotate_backup(&state.db_path, &state.backups_dir, &stamp, BACKUP_KEEP) {
+    if let Err(e) = db::rotate_backup_throttled(
+        &state.db_path,
+        &state.backups_dir,
+        &stamp,
+        BACKUP_KEEP,
+        BACKUP_MIN_INTERVAL,
+    ) {
         eprintln!("backup rotation failed: {e}");
     }
     Ok(())
@@ -88,7 +99,13 @@ pub fn backup_import(state: State<AppDb>, payload: BackupPayload) -> Result<(), 
         .map_err(to_err)?;
     }
     let mut conn = state.conn.lock().map_err(to_err)?;
-    db::backup::import_payload(&mut conn, payload).map_err(to_err)
+    db::backup::import_payload(&mut conn, payload).map_err(to_err)?;
+    // A successful full restore supersedes whatever the startup integrity
+    // check concluded — without this, an app whose DB was flagged bad at
+    // launch would keep rejecting load_all even after the user restored a
+    // good backup, forcing a pointless extra restart.
+    state.integrity_ok.store(true, Ordering::Relaxed);
+    Ok(())
 }
 
 #[tauri::command]
@@ -96,51 +113,38 @@ pub fn get_data_dir(state: State<AppDb>) -> String {
     state.base_dir.to_string_lossy().into_owned()
 }
 
-/// Name of the dedicated subfolder created under whatever *location* the
-/// user picks in `choose_data_dir` — e.g. picking "D:\" results in
-/// "D:\뭐해야했더라_데이터\". This means the user only ever has to point at
-/// a location (Desktop, a drive, a project folder — anything, even one
-/// full of unrelated files), never at a specific empty folder, and our own
-/// subfolder is always created fresh so it can never collide with
-/// pre-existing files at the picked path.
-const DATA_FOLDER_NAME: &str = "뭐해야했더라_데이터";
+use crate::config::DATA_FOLDER_NAME;
 
 /// Opens a native folder picker for a *location*; if the user chooses one,
-/// creates `<location>/뭐해야했더라_데이터/`, copies the current DB file +
-/// backups into it, and points config.json at the new location. Does NOT
-/// switch the live connection — the caller must restart the app (see
-/// `restart_app`) for the new location to take effect, which keeps this
-/// simple and avoids juggling an in-flight SQLite connection.
+/// creates `<location>/뭐해야했더라_데이터/` and points config.json at it,
+/// with `pending_move_from` recording where the data still physically is.
+///
+/// Deliberately does NOT copy any data here. An earlier version copied at
+/// choose time, which opened a silent data-loss window: if the user
+/// declined the immediate restart and kept working, every subsequent save
+/// still went to the OLD location, and the stale snapshot at the new
+/// location won at next launch. The copy now happens at the start of the
+/// next launch (`db::apply_pending_move`, wired in lib.rs), which by
+/// construction includes everything saved up to shutdown.
 #[tauri::command]
 pub async fn choose_data_dir(app: AppHandle, state: State<'_, AppDb>) -> Result<Option<String>, String> {
     let picked = app.dialog().file().blocking_pick_folder();
     let Some(picked) = picked else { return Ok(None) };
     let new_base = picked.into_path().map_err(to_err)?.join(DATA_FOLDER_NAME);
-
-    let new_data_dir = new_base.join("data");
-    let new_backups_dir = new_base.join("backups");
-    std::fs::create_dir_all(&new_data_dir).map_err(to_err)?;
-    std::fs::create_dir_all(&new_backups_dir).map_err(to_err)?;
-
-    {
-        // Block writes momentarily so the file we copy is consistent.
-        let _conn = state.conn.lock().map_err(to_err)?;
-        std::fs::copy(&state.db_path, new_data_dir.join("wmhh.sqlite")).map_err(to_err)?;
+    if new_base == state.base_dir {
+        return Ok(Some(new_base.to_string_lossy().into_owned())); // already there — nothing to do
     }
-    if state.backups_dir.is_dir() {
-        for entry in std::fs::read_dir(&state.backups_dir).map_err(to_err)? {
-            let entry = entry.map_err(to_err)?;
-            if entry.path().is_file() {
-                std::fs::copy(entry.path(), new_backups_dir.join(entry.file_name()))
-                    .map_err(to_err)?;
-            }
-        }
-    }
+
+    // Create the folder now so the user sees it appear where they pointed,
+    // and so an unwritable location fails HERE (with a clear error) rather
+    // than at next launch.
+    std::fs::create_dir_all(new_base.join("data")).map_err(to_err)?;
 
     config::save(
         &state.app_config_dir,
         &AppConfig {
             data_dir: Some(new_base.to_string_lossy().into_owned()),
+            pending_move_from: Some(state.base_dir.to_string_lossy().into_owned()),
         },
     )?;
 
@@ -205,9 +209,11 @@ pub enum ImportResult {
     /// (unchanged from before; no restart needed, it goes through the
     /// normal save_all path).
     Json { content: String },
-    /// A .sqlite/.db file was picked and has already replaced the live
-    /// database on disk. Needs a restart to take effect.
-    Db,
+    /// A .sqlite/.db file was picked, validated, and staged (NOT yet
+    /// applied — that happens at next launch). `items` lets the frontend
+    /// show the same "N건을 불러옵니다" confirmation as the JSON path;
+    /// cancelling calls `cancel_pending_import` to discard the staging.
+    Db { items: i64 },
 }
 
 /// One unified "불러오기" entry point for both backup formats: opens a
@@ -237,13 +243,20 @@ pub async fn import_backup_file(app: AppHandle, state: State<'_, AppDb>) -> Resu
 
     // .sqlite / .db path — validate before touching anything live: must
     // actually open, pass its own integrity check, and look like one of
-    // our databases.
-    let check_conn = rusqlite::Connection::open(&picked_path).map_err(to_err)?;
+    // our databases. The error text matters here: a rejected pick is the
+    // user's FIRST contact with a corrupt old file, and a raw English
+    // "file is not a database" reads like the app itself broke again.
+    // Say clearly that (a) the picked file is the problem and (b) nothing
+    // was changed.
+    const PICK_BAD: &str =
+        "선택한 파일이 손상되어 있어 가져올 수 없습니다.\n(현재 데이터는 변경되지 않았습니다 — 다른 백업 파일을 선택해주세요.)";
+    let check_conn = rusqlite::Connection::open(&picked_path)
+        .map_err(|e| format!("{PICK_BAD}\n\n상세: {e}"))?;
     let integrity: String = check_conn
         .query_row("PRAGMA integrity_check", [], |r| r.get(0))
-        .map_err(to_err)?;
+        .map_err(|e| format!("{PICK_BAD}\n\n상세: {e}"))?;
     if integrity != "ok" {
-        return Err(format!("선택한 파일이 손상되어 있습니다: {integrity}"));
+        return Err(format!("{PICK_BAD}\n\n무결성 검사 결과: {integrity}"));
     }
     let has_items: i64 = check_conn
         .query_row(
@@ -255,6 +268,9 @@ pub async fn import_backup_file(app: AppHandle, state: State<'_, AppDb>) -> Resu
     if has_items == 0 {
         return Err("선택한 파일이 이 프로그램의 데이터베이스 형식이 아닙니다.".into());
     }
+    let item_count: i64 = check_conn
+        .query_row("SELECT COUNT(*) FROM items", [], |r| r.get(0))
+        .map_err(to_err)?;
     drop(check_conn);
 
     // Do NOT copy over state.db_path here — this process's own AppDb.conn
@@ -269,5 +285,16 @@ pub async fn import_backup_file(app: AppHandle, state: State<'_, AppDb>) -> Resu
     // it into place at the start of the *next* process's startup, before
     // any connection has been opened at all.
     std::fs::copy(&picked_path, db::pending_import_path(&state.db_path)).map_err(to_err)?;
-    Ok(ImportResult::Db)
+    Ok(ImportResult::Db { items: item_count })
+}
+
+/// Discards a staged DB import (the user declined the final confirmation).
+/// Idempotent: fine to call when nothing is staged.
+#[tauri::command]
+pub fn cancel_pending_import(state: State<AppDb>) -> Result<(), String> {
+    let pending = db::pending_import_path(&state.db_path);
+    if pending.exists() {
+        std::fs::remove_file(&pending).map_err(to_err)?;
+    }
+    Ok(())
 }

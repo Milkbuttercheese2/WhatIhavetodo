@@ -3,6 +3,13 @@ use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
+/// Name of the dedicated subfolder created under whatever *location* the
+/// user picks (first-run dialog or the 저장 위치 button) — e.g. picking
+/// "D:\" results in "D:\뭐해야했더라_데이터\". The user only ever points at
+/// a location, never at a specific empty folder; our own subfolder is
+/// always created fresh so it can't collide with pre-existing files.
+pub const DATA_FOLDER_NAME: &str = "뭐해야했더라_데이터";
+
 /// Tiny app-level config, kept deliberately separate from the SQLite
 /// database it points at (a chicken-and-egg problem otherwise: we need to
 /// know where the DB is *before* we can open it). Lives at a fixed,
@@ -13,6 +20,14 @@ pub struct AppConfig {
     /// User-chosen folder to hold `data/wmhh.sqlite` + `backups/`.
     /// None means "use the default app-local-data folder".
     pub data_dir: Option<String>,
+    /// Set together with a new `data_dir` by `choose_data_dir`: the folder
+    /// the data still physically lives in until the move is applied. The
+    /// actual file copy happens at the START of the next launch (see
+    /// lib.rs), not at choose time — copying at choose time snapshotted the
+    /// DB and then silently dropped every edit the user made between
+    /// choosing and restarting.
+    #[serde(default)]
+    pub pending_move_from: Option<String>,
 }
 
 fn config_path(app_config_dir: &Path) -> PathBuf {

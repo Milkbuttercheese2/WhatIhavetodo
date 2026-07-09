@@ -1,7 +1,41 @@
-# Tauri + Vanilla
+# 뭐해야 했더라
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Javascript.
+전화받고 잊어버리기 전에 던져두는 업무 메모 보드. 공무원 내부망(인터넷 차단, 관리자 권한 없는 PC) 환경을 위한 **오프라인 단독 실행형 Windows 데스크톱 앱**입니다.
 
-## Recommended IDE Setup
+- 바로 입력(자유 메모) 또는 양식 입력(관련인·식별번호·세부할일·마감시각)
+- 카드 위치는 저장된 시각 기준으로 **자동 배치**: 분류 대기 → 오늘 처리 / 진행 중 / 예정·대기 → 완료
+- 마감·중간점검 시각 도래 시 알람 (창이 뒤에 있어도 앞으로 튀어나옴)
+- 캘린더 보기 · 완료 목록 · 검색 · 프리셋(자주 쓰는 업무 양식)
+- XLSX 보고용 내보내기, JSON/DB 파일 백업·복원
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+## 실행
+
+`최종 프로그램 산출물/뭐해야 했더라.exe` 를 복사해서 더블클릭하면 됩니다. 설치 과정도, 관리자 권한도 필요 없습니다.
+
+- 유일한 요구사항: **WebView2 런타임** (Windows 11 및 최신 Windows 10에 기본 내장). 없는 구형 PC는 Microsoft의 WebView2 오프라인 설치 파일을 한 번 설치해야 합니다.
+- 인터넷 연결 불필요 — 외부 리소스(웹폰트 포함)를 일절 사용하지 않습니다.
+- 중복 실행 방지: 이미 켜져 있는 상태에서 다시 실행하면 기존 창이 앞으로 나옵니다.
+
+## 데이터 저장
+
+- **저장 위치는 사용자가 정합니다.** 첫 실행 때 폴더 선택창이 열리며, 선택한 위치 안에 `뭐해야했더라_데이터\` 폴더가 생성되어 그 안에 데이터베이스(`data\wmhh.sqlite`)와 자동 백업(`backups\`)이 보관됩니다. 선택을 건너뛰면 Windows 사용자 프로필의 앱 데이터 폴더가 임시로 쓰입니다.
+- 이후에도 헤더의 **[저장 위치]** 버튼으로 언제든 옮길 수 있습니다. 실제 이동은 다음 재시작 시 그 시점의 최신 데이터로 수행됩니다.
+- 저장은 항목을 수정하는 즉시 자동으로 이뤄집니다 (전체 트랜잭션, 부분 저장 없음).
+- 자동 백업은 30분 간격 로테이션에 더해 일자별 첫 백업을 14일간 보존합니다.
+- **[JSON파일 백업]**: 사람이 읽을 수 있는 개방 포맷 스냅샷 — 다른 PC로 옮기거나 장기 보관용. 구버전 HTML 앱의 백업과 상호 호환됩니다.
+- **[JSON·DB파일 불러오기]**: JSON 백업 또는 `.sqlite` 백업 파일 아무거나 선택해 복원. DB 파일은 검증(무결성 검사) 후 재시작 시 적용되며, 덮어쓰기 전 기존 데이터가 자동 백업됩니다.
+- 시작 시 DB가 손상돼 있으면 최근 자동 백업으로 자동 복구합니다. 복구 불가 시에도 손상 파일을 보존한 채 새로 시작하며, 어떤 경우에도 앱이 실행 불능이 되지 않습니다.
+
+## 개발
+
+| 작업 | 명령 |
+|---|---|
+| 개발 실행 (핫리로드) | `npm run tauri dev` |
+| 백엔드 테스트 | `cd src-tauri && cargo test --lib` |
+| 릴리즈 빌드 | `npm run tauri build` → `src-tauri/target/release/wmhh-desktop.exe` |
+
+- 요구 도구: Rust(MSVC), Node.js. 프론트는 번들러 없는 순수 HTML/CSS/JS (`src/`).
+- 구조: Rust(`src-tauri/`)는 **CRUD 영속성 전용**, 업무 규칙(자동 배치·알람·렌더링)은 전부 프론트(`src/app.js`)에 있습니다. 저장 계층 경계는 `app.js`의 `STORE` 객체 하나입니다.
+- 스키마 변경은 `src-tauri/src/db/migrations/`에 **추가만** 하세요 (배포본이 여러 버전을 건너뛰고 업그레이드될 수 있음).
+- 설계 배경·구조 분석은 [`구조 분석 보고서.md`](./구조%20분석%20보고서.md)와 `CLAUDE.md` 참고.
+- `legacy/`의 단일 HTML 파일은 이 앱의 전신(브라우저용)으로, 동작 참조용으로만 보존합니다.

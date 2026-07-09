@@ -22,8 +22,11 @@ pub fn load_fields(conn: &Connection) -> DbResult<Vec<FieldDef>> {
 pub fn save_fields_tx(tx: &Transaction, fields: &[FieldDef]) -> DbResult<()> {
     tx.execute("DELETE FROM fields", [])?;
     {
+        // OR IGNORE: a duplicate key in this small config table must not
+        // abort the whole save transaction (first occurrence wins). The
+        // legacy app tolerated duplicates here; items stays strict.
         let mut ins = tx.prepare(
-            "INSERT INTO fields (key, label, type, on_flag, builtin, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR IGNORE INTO fields (key, label, type, on_flag, builtin, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         )?;
         for (i, f) in fields.iter().enumerate() {
             ins.execute(params![f.key, f.label, f.type_, f.on as i64, f.builtin as i64, i as i64])?;

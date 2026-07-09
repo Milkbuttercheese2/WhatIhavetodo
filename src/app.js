@@ -779,7 +779,10 @@ $('done-search').addEventListener('input',e=>{dq=e.target.value.trim().toLowerCa
    ========================================================================= */
 let notifyAsked=false;
 function askNotify(){ if(notifyAsked||!('Notification'in window))return; notifyAsked=true; if(Notification.permission==='default'){try{Notification.requestPermission();}catch{}} }
-function beep(){ try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const g=ctx.createGain(); g.connect(ctx.destination); g.gain.value=.15;
+/* AudioContext는 재사용 — 알람마다 새로 만들면 브라우저 엔진의 동시 생성
+   상한(약 6개)에 걸려 몇 번 울린 뒤부터 소리가 조용히 죽는다 */
+let _audioCtx=null;
+function beep(){ try{ const ctx=_audioCtx=_audioCtx||new (window.AudioContext||window.webkitAudioContext)(); if(ctx.state==='suspended')ctx.resume(); const g=ctx.createGain(); g.connect(ctx.destination); g.gain.value=.15;
   [0,.28].forEach(t=>{const o=ctx.createOscillator();o.type='sine';o.frequency.value=880;o.connect(g);o.start(ctx.currentTime+t);o.stop(ctx.currentTime+t+.16);}); }catch{} }
 let firedNow=[];
 function checkAlarms(){
@@ -960,13 +963,11 @@ function reconcileImported(){
 $('dataDirBtn').addEventListener('click', async e=>{
   e.preventDefault();
   let cur; try{ cur=await invoke('get_data_dir'); }catch(err){ alert('저장 위치 확인 실패: '+err); return; }
-  if(!confirm(`현재 저장 위치:\n${cur}\n\n다른 위치로 변경할까요?\n(폴더가 아니라 "위치"를 고르시면, 그 안에 전용 폴더를 새로 만들어 기존 데이터를 그대로 옮겨 담습니다 — 아무 폴더나 선택하셔도 됩니다)`))return;
+  if(!confirm(`현재 저장 위치:\n${cur}\n\n다른 위치로 변경할까요?\n(아무 위치나 고르시면 그 안에 전용 폴더를 새로 만듭니다. 데이터는 다음 재시작 때 그 시점의 최신 상태 그대로 새 위치로 옮겨집니다)`))return;
   let picked; try{ picked=await invoke('choose_data_dir'); }catch(err){ alert('위치 선택 실패: '+err); return; }
   if(!picked)return; // 취소함
-  if(confirm(`저장 위치가 변경되었습니다:\n${picked}\n\n지금 앱을 다시 시작해야 적용됩니다. 지금 재시작할까요?`)){
+  if(confirm(`새 저장 위치가 예약되었습니다:\n${picked}\n\n다시 시작할 때 데이터가 새 위치로 옮겨집니다. 지금 재시작할까요?\n(나중에 재시작해도 그때까지의 수정 내용이 전부 함께 옮겨지니 안전합니다)`)){
     invoke('restart_app');
-  }else{
-    alert('다음에 앱을 다시 시작하면 새 위치가 적용됩니다.');
   }
 });
 
@@ -989,21 +990,45 @@ $('bkImp').addEventListener('click', async e=>{
     let d;
     try{ d=JSON.parse(result.content); if(!Array.isArray(d.items))throw 0; }
     catch{ alert('백업 파일 형식이 올바르지 않습니다.'); return; }
-    if(!confirm(`백업 ${d.items.length}건을 불러옵니다. 현재 데이터를 덮어씁니다. 계속할까요?`))return;
-    items=d.items.map(migrateItem);
-    if(Array.isArray(d.fields)){window.__importedFields=d.fields;}
-    if(Array.isArray(d.presets)){window.__importedPresets=d.presets;}
-    if(Array.isArray(d.idKinds)){window.__importedIdKinds=d.idKinds;}
-    if(d.settings&&typeof d.settings==='object'){window.__importedSettings=d.settings;}
+    if(!confirm(`백업 파일에 업무 ${d.items.length}건이 들어 있습니다.\n현재 데이터를 덮어쓰고 복원할까요?`))return;
+    // 구버전 백업 호환은 프론트 책임: 아이템 마이그레이션 + 빠진 섹션은
+    // 현재 값으로 채워서 완전한 payload를 만든 뒤, Rust의 backup_import로
+    // 5개 테이블을 "한 트랜잭션"에 복원한다. (예전 방식은 items는 save_all,
+    // 나머지는 각각 따로 fire-and-forget으로 흩어 저장해서, 중간에 앱이
+    // 종료되면 반쪽짜리 상태가 남을 수 있었다.)
+    const migrated=d.items.map(migrateItem);
+    const payload={
+      v:5, exported:d.exported||new Date().toISOString(),
+      fields:Array.isArray(d.fields)?d.fields:FIELDS,
+      presets:Array.isArray(d.presets)?d.presets:PRESETS,
+      idKinds:Array.isArray(d.idKinds)?d.idKinds:ID_KINDS,
+      settings:(d.settings&&typeof d.settings==='object')?d.settings:SETTINGS,
+      items:migrated
+    };
+    try{ await invoke('backup_import',{payload}); }
+    catch(err){ alert('백업 복원 실패 (데이터는 변경되지 않았습니다): '+err); return; }
+    // DB 복원이 성공한 뒤에만 메모리 상태를 갈아끼운다
+    items=migrated;
+    window.__importedFields=payload.fields;
+    window.__importedPresets=payload.presets;
+    window.__importedIdKinds=payload.idKinds;
+    window.__importedSettings=payload.settings;
     reconcileImported(); persist();
+    showToast(`백업 ${migrated.length}건을 복원했습니다`);
     return;
   }
 
-  // result.kind === 'Db' — 파일은 이미 교체됐고, 재시작해야 반영된다.
-  if(confirm('DB 파일을 불러왔습니다. 지금 앱을 다시 시작해야 반영됩니다. 지금 재시작할까요?')){
+  // result.kind === 'Db' — 검증·대기 등록까지만 된 상태. JSON 쪽과 같은
+  // 문구·같은 확인 절차를 거치고, 거절하면 대기 등록을 실제로 취소한다.
+  if(!confirm(`백업 파일에 업무 ${result.items}건이 들어 있습니다.\n현재 데이터를 덮어쓰고 복원할까요?\n(DB 파일 복원은 재시작할 때 적용됩니다)`)){
+    try{ await invoke('cancel_pending_import'); }catch{}
+    showToast('복원을 취소했습니다');
+    return;
+  }
+  if(confirm('지금 재시작할까요?')){
     invoke('restart_app');
   }else{
-    alert('다음에 앱을 다시 시작하면 반영됩니다.');
+    alert('다음에 앱을 다시 시작하면 복원이 적용됩니다.');
   }
 });
 
@@ -1048,13 +1073,25 @@ function migrateItem(o){
    초기 로드 — SQLite에서 자동 불러오기
    ========================================================================= */
 (async()=>{
-  const loaded  = (await STORE.load()).map(migrateItem);
-  const pending = items.slice();                       // 로드 대기 중 사용자가 입력한 항목
-  items = loaded.concat(pending.filter(p => !loaded.some(l => l.id === p.id)));
-  window.items = items;
-  LOADED = true;                                       // 이제부터 저장 허용
-  reconcileImported();
-  if(pending.length) await STORE.saveAll(items);       // 보류됐던 저장 플러시
-  setStatus('saved');
-  render();
+  try{
+    const loaded  = (await STORE.load()).map(migrateItem);
+    const pending = items.slice();                     // 로드 대기 중 사용자가 입력한 항목
+    items = loaded.concat(pending.filter(p => !loaded.some(l => l.id === p.id)));
+    window.items = items;
+    LOADED = true;                                     // 이제부터 저장 허용
+    reconcileImported();
+    if(pending.length) await STORE.saveAll(items);     // 보류됐던 저장 플러시
+    setStatus('saved');
+    render();
+  }catch(e){
+    // 로드 실패를 조용히 삼키면 "빈 화면 + 저장도 안 되는" 죽은 앱이 된다.
+    // LOADED는 false로 남겨 저장을 계속 차단하되(F1), 무슨 일이 났는지와
+    // 복구 경로(JSON·DB파일 불러오기)를 사용자에게 반드시 알린다.
+    console.error('initial load failed', e);
+    setStatus('error');
+    alert('저장된 데이터를 불러오지 못했습니다.\n\n'+e+'\n\n앱은 열려 있지만 데이터 유실 방지를 위해 저장이 차단된 상태입니다.\n[JSON·DB파일 불러오기]로 백업에서 복원하거나, 앱을 다시 시작해보세요.');
+  }
+  /* 버전 표기 규칙: 매니페스트 "2.2.0"→"v2.2", "2.21.0"→"v2.21"
+     (큰 업데이트 +0.1 = 가운데 자리, 사소한 업데이트 +0.01 = 가운데 자리 두번째 숫자) */
+  try{ const v=await window.__TAURI__.app.getVersion(); $('appVer').textContent='v'+v.replace(/\.0$/,''); }catch{}
 })();

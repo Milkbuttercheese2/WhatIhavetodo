@@ -119,14 +119,23 @@ pub struct AppState {
 
 /// Same shape as the legacy HTML app's `backupPayload()` JSON, so backups
 /// exported from the old app import unchanged, and vice versa.
+/// Every field defaults: older exports (pre-v5) lack idKinds/settings, and
+/// a restore must not be rejected wholesale over an absent optional
+/// section — the frontend fills sensible values for whatever's missing.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BackupPayload {
+    #[serde(default)]
     pub v: i32,
+    #[serde(default)]
     pub exported: String,
+    #[serde(default)]
     pub fields: Vec<FieldDef>,
+    #[serde(default)]
     pub presets: Vec<Preset>,
-    #[serde(rename = "idKinds")]
+    #[serde(rename = "idKinds", default)]
     pub id_kinds: Vec<String>,
+    #[serde(default)]
     pub settings: Settings,
+    #[serde(default)]
     pub items: Vec<Item>,
 }

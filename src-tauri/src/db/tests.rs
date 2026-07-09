@@ -361,6 +361,100 @@ fn open_persists_across_simulated_restart() {
 }
 
 #[test]
+fn throttled_rotation_skips_when_recent_backup_exists() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_throttle_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+    let _conn = super::open(&db_path).unwrap();
+
+    let interval = std::time::Duration::from_secs(60);
+    // First rotation: no backups exist yet, must write.
+    assert!(super::rotate_backup_throttled(&db_path, &backups_dir, "0001", 20, interval).unwrap());
+    // Immediately after: newest backup is seconds old, must skip.
+    assert!(!super::rotate_backup_throttled(&db_path, &backups_dir, "0002", 20, interval).unwrap());
+    let count = std::fs::read_dir(&backups_dir).unwrap().count();
+    assert_eq!(count, 1, "second rotation within the interval must not add a file");
+    // Zero interval: must write again.
+    assert!(super::rotate_backup_throttled(&db_path, &backups_dir, "0003", 20, std::time::Duration::ZERO).unwrap());
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn pruning_protects_first_backup_of_each_day() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_daily_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+    let _conn = super::open(&db_path).unwrap();
+    std::fs::create_dir_all(&backups_dir).unwrap();
+
+    // Simulate an old day's backups plus a burst of 5 today, keep=3.
+    // Without daily protection, the old day would be pruned away entirely.
+    for stamp in ["20260701_090000", "20260701_180000",
+                  "20260710_100000", "20260710_100100", "20260710_100200",
+                  "20260710_100300", "20260710_100400"] {
+        std::fs::copy(&db_path, backups_dir.join(format!("wmhh_{stamp}.sqlite"))).unwrap();
+    }
+    super::rotate_backup(&db_path, &backups_dir, "20260710_100500", 3).unwrap();
+
+    let names: Vec<String> = std::fs::read_dir(&backups_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .map(|e| e.file_name().to_string_lossy().into_owned())
+        .collect();
+    assert!(
+        names.contains(&"wmhh_20260701_090000.sqlite".to_string()),
+        "the first backup of the older day must survive pruning; got {names:?}"
+    );
+    assert!(
+        names.contains(&"wmhh_20260710_100000.sqlite".to_string()),
+        "the first backup of today must survive pruning; got {names:?}"
+    );
+    assert!(
+        names.contains(&"wmhh_20260710_100500.sqlite".to_string()),
+        "the newest backup must survive; got {names:?}"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn apply_pending_move_carries_db_backups_and_staged_import() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_move_{}", std::process::id()));
+    let old_base = dir.join("old");
+    let new_base = dir.join("new");
+    let _ = std::fs::remove_dir_all(&dir);
+
+    let old_db = old_base.join("data").join("wmhh.sqlite");
+    {
+        let mut conn = super::open(&old_db).unwrap();
+        items::save_items(&mut conn, &sample_items()).unwrap();
+        let stamp = super::now_stamp(&conn).unwrap();
+        drop(conn);
+        super::rotate_backup(&old_db, &old_base.join("backups"), &stamp, 20).unwrap();
+    }
+    // A staged import waiting at the old location must travel too.
+    std::fs::write(super::pending_import_path(&old_db), b"staged").unwrap();
+
+    super::apply_pending_move(&old_base, &new_base).unwrap();
+
+    let new_db = new_base.join("data").join("wmhh.sqlite");
+    let conn = super::open(&new_db).unwrap();
+    assert_eq!(items::load_items(&conn).unwrap().len(), 2, "data must arrive at the new location");
+    assert_eq!(
+        std::fs::read_dir(new_base.join("backups")).unwrap().count(),
+        1,
+        "backups must be carried over"
+    );
+    assert!(super::pending_import_path(&new_db).exists(), "staged import must be carried over");
+    assert!(old_db.exists(), "the old copy stays behind as a safety net (never deleted)");
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn backup_rotation_keeps_only_newest_n() {
     let dir = std::env::temp_dir().join(format!("wmhh_test_rot_{}", std::process::id()));
     let db_path = dir.join("data").join("test.sqlite");
