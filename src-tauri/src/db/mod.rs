@@ -48,6 +48,75 @@ pub fn integrity_check(conn: &Connection) -> DbResult<Result<(), String>> {
     }
 }
 
+/// Opens `db_path`, recovering automatically instead of ever failing
+/// outright:
+///   1. Try `db_path` directly.
+///   2. If that fails for any reason (corruption, an unreadable file,
+///      whatever), try restoring the newest file in `backups_dir` over it
+///      and opening that.
+///   3. If that also fails (or there are no backups), quarantine whatever
+///      is at `db_path` — renamed aside, never deleted — and start fresh.
+/// Returns the connection plus a user-facing note describing what happened,
+/// if anything did (None on the ordinary happy path). The caller is
+/// expected to surface that note prominently (see lib.rs's startup dialog)
+/// rather than let a silent recovery hide potential data loss.
+pub fn open_with_recovery(
+    db_path: &Path,
+    backups_dir: &Path,
+) -> DbResult<(Connection, Option<String>)> {
+    let primary_err = match open(db_path) {
+        Ok(conn) => return Ok((conn, None)),
+        Err(e) => e,
+    };
+    eprintln!(
+        "primary DB open failed at {}: {primary_err} — attempting recovery",
+        db_path.display()
+    );
+
+    if let Some(backup) = newest_backup(backups_dir) {
+        match fs::copy(&backup, db_path).and_then(|_| open(db_path).map_err(std::io::Error::other))
+        {
+            Ok(conn) => {
+                let note = format!(
+                    "원본 데이터베이스 파일을 열 수 없어({primary_err}) 가장 최근 자동 백업({})으로 복구했습니다.",
+                    backup.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default()
+                );
+                return Ok((conn, Some(note)));
+            }
+            Err(e) => eprintln!("backup {} also failed to restore/open: {e}", backup.display()),
+        }
+    }
+
+    // Quarantine whatever's there (if anything) and start fresh — this must
+    // succeed for the app to be usable at all, so it's the one case still
+    // allowed to propagate an error up to the caller.
+    if db_path.exists() {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let quarantined = db_path.with_file_name(format!("wmhh.broken-{stamp}.sqlite"));
+        let _ = fs::rename(db_path, &quarantined);
+    }
+    let conn = open(db_path)?;
+    let note = format!(
+        "데이터베이스를 열 수 없었고 사용 가능한 자동 백업도 없어 새로 시작합니다.\n\
+         (문제가 있던 파일은 삭제하지 않고 옆에 보관해두었습니다.)\n원래 오류: {primary_err}"
+    );
+    Ok((conn, Some(note)))
+}
+
+fn newest_backup(backups_dir: &Path) -> Option<PathBuf> {
+    let mut entries: Vec<PathBuf> = fs::read_dir(backups_dir)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .map(|e| e.path())
+        .filter(|p| p.extension().map(|ext| ext == "sqlite").unwrap_or(false))
+        .collect();
+    entries.sort(); // filenames are zero-padded timestamps, so lexical order == chronological
+    entries.pop()
+}
+
 /// Filesystem-safe timestamp for naming backup files.
 pub fn now_stamp(conn: &Connection) -> DbResult<String> {
     Ok(conn.query_row("SELECT strftime('%Y%m%d_%H%M%S','now')", [], |r| r.get(0))?)

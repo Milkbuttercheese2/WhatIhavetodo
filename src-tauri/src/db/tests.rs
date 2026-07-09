@@ -220,6 +220,73 @@ fn integrity_check_reports_ok_on_fresh_db() {
 }
 
 #[test]
+fn open_with_recovery_happy_path_has_no_note() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_recovery_ok_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+
+    let (_conn, note) = super::open_with_recovery(&db_path, &backups_dir).unwrap();
+    assert!(note.is_none());
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn open_with_recovery_restores_from_newest_backup_when_primary_is_corrupt() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_recovery_backup_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+
+    // Seed a real, valid backup with known data.
+    {
+        let mut good = super::open(&db_path).unwrap();
+        items::save_items(&mut good, &sample_items()).unwrap();
+        let stamp = super::now_stamp(&good).unwrap();
+        drop(good);
+        super::rotate_backup(&db_path, &backups_dir, &stamp, 20).unwrap();
+    }
+
+    // Corrupt the primary file (valid header, garbage body — the same
+    // "opens but isn't usable" shape as a real-world corruption).
+    std::fs::write(&db_path, b"not actually a sqlite file, just garbage bytes").unwrap();
+
+    let (conn, note) = super::open_with_recovery(&db_path, &backups_dir).unwrap();
+    assert!(note.is_some(), "recovery should report what happened");
+    let restored = items::load_items(&conn).unwrap();
+    assert_eq!(restored.len(), 2, "should recover the backed-up data, not start empty");
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn open_with_recovery_quarantines_and_starts_fresh_when_no_backup_exists() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_recovery_fresh_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups"); // deliberately never created — no backups
+    let _ = std::fs::remove_dir_all(&dir);
+
+    std::fs::create_dir_all(db_path.parent().unwrap()).unwrap();
+    std::fs::write(&db_path, b"garbage, not a database, and no backup to fall back to").unwrap();
+
+    let (conn, note) = super::open_with_recovery(&db_path, &backups_dir).unwrap();
+    assert!(note.is_some());
+    let items = items::load_items(&conn).unwrap();
+    assert_eq!(items.len(), 0, "should start fresh, not crash");
+
+    // The broken original must be preserved, not deleted.
+    let quarantined: Vec<_> = std::fs::read_dir(db_path.parent().unwrap())
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().starts_with("wmhh.broken-"))
+        .collect();
+    assert_eq!(quarantined.len(), 1, "the broken file should be renamed aside, not lost");
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn open_persists_across_simulated_restart() {
     let dir = std::env::temp_dir().join(format!("wmhh_test_open_{}", std::process::id()));
     let db_path = dir.join("test.sqlite");

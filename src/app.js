@@ -51,11 +51,12 @@ const STORE = {
 function setStatus(kind){
   const el=document.getElementById('saveStatus'); if(!el)return;
   if(kind==='error'){
+    el.style.display='';
     el.className='save-local'; el.textContent='⚠ 저장 실패';
     el.title='자동 저장에 실패했습니다. [JSON파일 백업]으로 파일을 남겨두세요.';
   }else{
-    el.className='save-file'; el.textContent='✓ 자동 저장됨';
-    el.title='이 PC의 데이터베이스 파일에 안전하게 저장됩니다(자동 백업 포함). 그래도 가끔 [JSON파일 백업]으로 파일을 받아두면 더 안전합니다.';
+    // 평소엔 표시 안 함 — 저장은 항상 자동으로 되고, 실패했을 때만 알리면 된다.
+    el.style.display='none';
   }
 }
 
@@ -161,8 +162,9 @@ function parseTimeStr(s){
   else { hh=+t.slice(0,2); mm=+t.slice(2,4); }
   if(isNaN(hh)||isNaN(mm)) return null;
   if(hh>24||hh<0||mm>59||mm<0) return null;
-  if(hh===24){ hh=0; }               // 24시는 0시로
-  return {hh,mm};
+  const dayOverflow = hh===24;       // 24시(끝자정) 입력 = 다음날 그 분(分). 날짜 이월은 combineDT가 처리
+  if(dayOverflow){ hh=0; }
+  return {hh,mm,dayOverflow};
 }
 /* 시각 미입력 시 기본값 */
 const DEFAULT_TIME_DUE  = {hh:18, mm:0};   // 마감·중간점검
@@ -178,6 +180,7 @@ function combineDT(dateStr,timeStr,def){
   if(ts==='') tp = def || DEFAULT_TIME_ZERO;    // 시각 미입력 → 기본값
   else { tp=parseTimeStr(ts); if(!tp) return null; }   // 시각 오입력 → 삼키지 않음
   const d=new Date(dp.y, dp.m-1, dp.d, tp.hh, tp.mm, 0, 0);
+  if(tp.dayOverflow) d.setDate(d.getDate()+1);   // F13: "24:00" 입력 시 다음날로 이월 (안 하면 시각이 24시간 어긋남)
   if(isNaN(d)) return null;
   return d.toISOString();
 }
@@ -563,13 +566,15 @@ function loadPresetIntoForm(idx){
 }
 function addPresetSubRow(val){
   const row=document.createElement('div'); row.className='fsub-row';
-  row.innerHTML=`<input type="text" placeholder="세부 할 일" value="${escAttr(val||'')}"><button class="rm" title="삭제">×</button>`;
+  row.innerHTML=`<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
+    <input type="text" placeholder="세부 할 일" value="${escAttr(val||'')}"><button class="rm" title="삭제">×</button>`;
   row.querySelector('.rm').addEventListener('click',()=>row.remove());
   $('np-subs').appendChild(row);
 }
 function clearPresetForm(){ $('np-label').value=''; $('np-sum').value=''; $('np-subs').innerHTML=''; editingPresetId=null;
   $('np-save').textContent='프리셋 저장'; if($('np-new-head'))$('np-new-head').textContent='＋ 새 프리셋 만들기'; if($('np-cancel-edit'))$('np-cancel-edit').style.display='none'; }
 $('np-subadd').addEventListener('click',()=>addPresetSubRow(''));
+enableDragReorder($('np-subs'), '.fsub-row', '.drag-handle'); // np-save가 DOM 순서 그대로 읽으므로 onDrop 콜백 불필요 (fm-subs와 동일 패턴)
 $('np-cancel-edit').addEventListener('click',()=>clearPresetForm());
 $('np-save').addEventListener('click',()=>{
   const label=$('np-label').value.trim(); if(!label){alert('버튼 이름을 입력하세요.');$('np-label').focus();return;}
@@ -643,7 +648,9 @@ function nextSubTime(it){
 function dueTagHtml(it){
   const v=(it.f||{}).due; if(!v) return '';
   const m=fmtDue(v); if(!m) return '';        // F7: 손상 ISO면 렌더 생략
-  return `<span class="tag time ${m.cls}">${alarmDot(it,'due')}<span class="k">#마감:</span>${esc(m.label)}</span>`;
+  // adot는 태그(pill) 밖에 둔다 — 세부(mid) 쪽과 동일하게. pill 안에 넣으면
+  // '대기'(ad-wait) 상태의 투명 배경이 pill 색과 겹쳐 항상 칠해진 것처럼 보인다.
+  return `${alarmDot(it,'due')}<span class="tag time ${m.cls}"><span class="k">#마감:</span>${esc(m.label)}</span>`;
 }
 function cardHtml(it,place){
   const due=fmtDue((it.f||{}).due);
@@ -788,6 +795,7 @@ function checkAlarms(){
   if(!fire.length)return; firedNow=fire;
   $('alarmList').innerHTML=fire.map(a=>`<div class="a-item"><b>#${a.label}</b>${esc(a.title||'(메모 없음)')}<span class="mono">${fmtT(a.iso)}</span></div>`).join('');
   $('alarmBg').classList.add('on'); beep(); try{window.focus();}catch{} startTitleFlash(fire.length);
+  invoke('focus_main_window').catch(()=>{}); // window.focus() can't steal OS focus from another app; this can
   if('Notification'in window&&Notification.permission==='granted'){ fire.forEach(a=>{try{
     const nt=new Notification('뭐해야 했더라 — '+a.label,{body:a.title||'',tag:'wmhh-'+a.key+'-'+a.iso});
     nt.onclick=()=>{ try{window.focus();}catch{} try{nt.close();}catch{} };
@@ -883,11 +891,14 @@ $('cal-grid').addEventListener('click',e=>{
 });
 
 /* XLSX */
-$('xlsx').addEventListener('click',()=>{
-  if(!items.length){alert('내보낼 항목이 없습니다.');return;}
+$('xlsx').addEventListener('click', async ()=>{
+  // 분류 대기·예정 항목은 아직 손 안 댄 메모라 보고용 목록에는 의미가 적어
+  // 제외 — 오늘 처리·진행 중·완료(=실제로 다루고 있거나 다룬 업무)만 담는다.
+  const exportable=items.filter(it=>it.done||['today','doing'].includes(placeOf(it)));
+  if(!exportable.length){alert('내보낼 항목이 없습니다 (오늘 처리·진행 중·완료된 업무만 내보냅니다).');return;}
   const fx=iso=>{ if(!iso)return''; const d=new Date(iso); if(isNaN(d))return'';
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
-  const rows=items.map(it=>{
+  const rows=exportable.map(it=>{
     const subs=it.subs||[];
     return {
       '구역':PLACE_NAME[placeOf(it)],
@@ -899,14 +910,26 @@ $('xlsx').addEventListener('click',()=>{
       '마감시각':fx((it.f||{}).due),
       '식별번호':(it.ids||[]).map(x=>`${x.kind}: ${x.val}`).join(' · '),
       '세부진행':subs.length?`${subs.filter(s=>s.done).length}/${subs.length}`:'',
-      '세부내역':subs.map(s=>(s.done?'[완료] ':'')+s.title+(s.mid?` (점검 ${fx(s.mid)})`:'')).join(' · '),
-      '상태':it.done?'완료':'진행중'
+      '세부내역':subs.map(s=>(s.done?'[완료] ':'')+s.title+(s.mid?` (점검 ${fx(s.mid)})`:'')).join(' · ')
     };
   });
   const ws=XLSX.utils.json_to_sheet(rows); const cols=Object.keys(rows[0]);
   ws['!cols']=cols.map(c=>({wch:Math.max(10,Math.min(46,rows.reduce((m,r)=>Math.max(m,String(r[c]||'').length*1.7),c.length*2)))}));
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'업무목록');
-  const n=new Date(); XLSX.writeFile(wb,`뭐해야했더라_업무목록_${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.xlsx`);
+  const n=new Date();
+  const name=`뭐해야했더라_업무목록_${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.xlsx`;
+  // XLSX.writeFile()은 브라우저의 blob+<a download> 다운로드에 의존하는데,
+  // Tauri 창은 그걸 받아줄 다운로드 관리자가 없어 조용히 아무 일도 안 일어난다
+  // (JSON 백업도 같은 이유로 안 됐던 것과 동일한 원인) — 바이트를 직접 뽑아
+  // 네이티브 저장 대화상자로 넘긴다.
+  // F14: {type:'array'}는 이 SheetJS 빌드에서 length가 없는 순수 ArrayBuffer를
+  // 반환해 Array.from()이 조용히 빈 배열을 만들어버린다(= 0바이트 파일, "파일 형식
+  // 문제"로 안 열림) — Uint8Array로 감싸야 실제 바이트가 나온다.
+  const bytes=Array.from(new Uint8Array(XLSX.write(wb,{type:'array',bookType:'xlsx'})));
+  try{
+    const saved=await invoke('save_binary_file', {suggestedName:name, data:bytes});
+    if(saved) showToast('XLSX 파일을 저장했습니다');
+  }catch(e){ alert('XLSX 저장 실패: '+e); }
 });
 
 /* 저장 파일 버튼 */
@@ -916,18 +939,12 @@ function backupPayload(){ return JSON.stringify({v:5,exported:new Date().toISOSt
 function backupName(){ const n=new Date(); return `뭐해야했더라_백업_${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.json`; }
 async function doBackup(){
   const text=backupPayload();
-  // 폴더·이름 지정이 가능한 브라우저면 저장창, 아니면 기본 다운로드
-  if('showSaveFilePicker' in window){
-    try{
-      const h=await window.showSaveFilePicker({ suggestedName:backupName(),
-        types:[{description:'JSON', accept:{'application/json':['.json']}}] });
-      const w=await h.createWritable(); await w.write(text); await w.close();
-      showToast(`백업 저장됨: ${h.name}`); return;
-    }catch(e){ if(e.name==='AbortError')return; /* 실패 시 아래 다운로드로 폴백 */ }
-  }
-  const blob=new Blob([text],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=backupName(); a.click(); URL.revokeObjectURL(a.href);
-  showToast('백업 파일을 다운로드했습니다');
+  // Tauri 창은 브라우저가 아니라 blob+<a download> 클릭을 받아줄 다운로드
+  // 관리자가 없다 — 네이티브 "저장" 대화상자를 직접 띄워야 실제로 저장된다.
+  try{
+    const saved=await invoke('save_text_file', {suggestedName:backupName(), content:text});
+    if(saved) showToast('백업 파일을 저장했습니다');
+  }catch(e){ alert('백업 저장 실패: '+e); }
 }
 function reconcileImported(){
   if(window.__importedPresets){ PRESETS=window.__importedPresets; window.__importedPresets=null; window.PRESETS=PRESETS; STORE.savePresets(PRESETS); renderPresets(); }
@@ -939,11 +956,39 @@ function reconcileImported(){
     window.FIELDS=FIELDS; STORE.saveFields(FIELDS); }
 }
 
+/* 저장 위치 변경 */
+$('dataDirBtn').addEventListener('click', async e=>{
+  e.preventDefault();
+  let cur; try{ cur=await invoke('get_data_dir'); }catch(err){ alert('저장 위치 확인 실패: '+err); return; }
+  if(!confirm(`현재 저장 위치:\n${cur}\n\n다른 위치로 변경할까요?\n(폴더가 아니라 "위치"를 고르시면, 그 안에 전용 폴더를 새로 만들어 기존 데이터를 그대로 옮겨 담습니다 — 아무 폴더나 선택하셔도 됩니다)`))return;
+  let picked; try{ picked=await invoke('choose_data_dir'); }catch(err){ alert('위치 선택 실패: '+err); return; }
+  if(!picked)return; // 취소함
+  if(confirm(`저장 위치가 변경되었습니다:\n${picked}\n\n지금 앱을 다시 시작해야 적용됩니다. 지금 재시작할까요?`)){
+    invoke('restart_app');
+  }else{
+    alert('다음에 앱을 다시 시작하면 새 위치가 적용됩니다.');
+  }
+});
+
 /* 백업/복원 */
 $('bkExp').addEventListener('click',e=>{ e.preventDefault(); doBackup(); });
-$('bkImp').addEventListener('click',e=>{e.preventDefault();$('bkFile').click();});
-$('bkFile').addEventListener('change',e=>{ const file=e.target.files[0]; if(!file)return; const r=new FileReader();
-  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!Array.isArray(d.items))throw 0;
+
+/* 불러오기 — JSON 백업과 DB(.sqlite) 파일 중 아무거나 하나의 파일 선택창으로
+   고를 수 있다. JSON은 즉시 반영(재시작 불필요), DB 파일은 통째로 교체 후
+   재시작이 필요하다(저장 위치 변경과 동일한 이유 — 열려있는 SQLite 연결을
+   그대로 두고 파일만 바꾸는 게 아니라, 안전하게 다시 여는 쪽이 단순하고
+   확실하다). */
+$('bkImp').addEventListener('click', async e=>{
+  e.preventDefault();
+  let result;
+  try{ result=await invoke('import_backup_file'); }
+  catch(err){ alert('불러오기 실패: '+err); return; }
+  if(result.kind==='Cancelled')return;
+
+  if(result.kind==='Json'){
+    let d;
+    try{ d=JSON.parse(result.content); if(!Array.isArray(d.items))throw 0; }
+    catch{ alert('백업 파일 형식이 올바르지 않습니다.'); return; }
     if(!confirm(`백업 ${d.items.length}건을 불러옵니다. 현재 데이터를 덮어씁니다. 계속할까요?`))return;
     items=d.items.map(migrateItem);
     if(Array.isArray(d.fields)){window.__importedFields=d.fields;}
@@ -951,7 +996,15 @@ $('bkFile').addEventListener('change',e=>{ const file=e.target.files[0]; if(!fil
     if(Array.isArray(d.idKinds)){window.__importedIdKinds=d.idKinds;}
     if(d.settings&&typeof d.settings==='object'){window.__importedSettings=d.settings;}
     reconcileImported(); persist();
-  }catch{alert('백업 파일 형식이 올바르지 않습니다.');} }; r.readAsText(file); e.target.value='';
+    return;
+  }
+
+  // result.kind === 'Db' — 파일은 이미 교체됐고, 재시작해야 반영된다.
+  if(confirm('DB 파일을 불러왔습니다. 지금 앱을 다시 시작해야 반영됩니다. 지금 재시작할까요?')){
+    invoke('restart_app');
+  }else{
+    alert('다음에 앱을 다시 시작하면 반영됩니다.');
+  }
 });
 
 /* =========================================================================

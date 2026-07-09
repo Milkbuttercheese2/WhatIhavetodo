@@ -20,12 +20,12 @@
     <button class="tab" data-view="done">완료</button>
   </nav>
   <div class="head-right">
-    <span id="saveStatus" class="save-local" title="">⚠ JSON파일 수동저장 필요</span>
+    <span id="saveStatus" class="save-local" title="" style="display:none"></span>
     <button class="btn btn-tool" id="alarmToggle" title="알람 켜기/끄기">🔔 알람</button>
+    <button class="btn btn-tool" id="dataDirBtn" title="데이터 저장 위치 확인·변경">💾 저장 위치</button>
     <button class="btn btn-tool" id="bkExp">JSON파일 백업</button>
-    <button class="btn btn-tool" id="bkImp">JSON파일 불러오기</button>
+    <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
     <button class="btn btn-tool" id="xlsx">XLSX 다운로드</button>
-    <input type="file" id="bkFile" hidden accept=".json">
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div></div>
   </div>
  </div>
