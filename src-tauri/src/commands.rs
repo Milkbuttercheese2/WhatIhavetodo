@@ -257,25 +257,17 @@ pub async fn import_backup_file(app: AppHandle, state: State<'_, AppDb>) -> Resu
     }
     drop(check_conn);
 
-    // Safety snapshot of the current live DB before overwriting it.
-    {
-        let conn = state.conn.lock().map_err(to_err)?;
-        let stamp = db::now_stamp(&conn).map_err(to_err)?;
-        drop(conn);
-        db::rotate_backup(
-            &state.db_path,
-            &state.backups_dir,
-            &format!("preimport_{stamp}"),
-            BACKUP_KEEP,
-        )
-        .map_err(to_err)?;
-    }
-
-    {
-        // Hold the lock while swapping the file on disk so a concurrent
-        // save can't interleave with the copy.
-        let _conn = state.conn.lock().map_err(to_err)?;
-        std::fs::copy(&picked_path, &state.db_path).map_err(to_err)?;
-    }
+    // Do NOT copy over state.db_path here — this process's own AppDb.conn
+    // is a live, open connection to that exact file. Overwriting a
+    // SQLite file's bytes out from under a connection that still has it
+    // open (even just idle, even on Windows where the raw byte-copy
+    // itself "succeeds") reliably left the file unreadable on next
+    // launch — every import ended up "recovered from backup" instead of
+    // actually applying, because the stale open connection's own
+    // teardown corrupted what we'd just written. Instead, stage the
+    // picked file next to the real one; `db::apply_pending_import` moves
+    // it into place at the start of the *next* process's startup, before
+    // any connection has been opened at all.
+    std::fs::copy(&picked_path, db::pending_import_path(&state.db_path)).map_err(to_err)?;
     Ok(ImportResult::Db)
 }

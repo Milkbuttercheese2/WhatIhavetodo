@@ -220,6 +220,57 @@ fn integrity_check_reports_ok_on_fresh_db() {
 }
 
 #[test]
+fn apply_pending_import_replaces_db_and_backs_up_the_old_one() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_pending_import_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+
+    // Existing live DB with 2 items.
+    {
+        let mut conn = super::open(&db_path).unwrap();
+        items::save_items(&mut conn, &sample_items()).unwrap();
+    }
+
+    // Stage a different, single-item DB as a pending import (mirrors what
+    // commands::import_backup_file does: copy the picked file to
+    // pending_import_path, never touching db_path directly).
+    {
+        let staging_dir = dir.join("staging");
+        let staged_path = staging_dir.join("picked.sqlite");
+        let mut staged = super::open(&staged_path).unwrap();
+        items::save_items(&mut staged, &[sample_items().remove(1)]).unwrap();
+        drop(staged);
+        std::fs::copy(&staged_path, super::pending_import_path(&db_path)).unwrap();
+    }
+
+    assert!(super::pending_import_path(&db_path).exists());
+
+    let applied = super::apply_pending_import(&db_path, &backups_dir).unwrap();
+    assert!(applied);
+    assert!(!super::pending_import_path(&db_path).exists(), "staging file must be consumed");
+
+    // db_path now holds the imported (single-item) data...
+    let conn = super::open(&db_path).unwrap();
+    let loaded = items::load_items(&conn).unwrap();
+    assert_eq!(loaded.len(), 1);
+
+    // ...and the pre-import state was preserved as a backup, not lost.
+    let preimport_backups: Vec<_> = std::fs::read_dir(&backups_dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().starts_with("wmhh_preimport_"))
+        .collect();
+    assert_eq!(preimport_backups.len(), 1);
+
+    // Calling again with nothing staged must be a harmless no-op.
+    let applied_again = super::apply_pending_import(&db_path, &backups_dir).unwrap();
+    assert!(!applied_again);
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn open_with_recovery_happy_path_has_no_note() {
     let dir = std::env::temp_dir().join(format!("wmhh_test_recovery_ok_{}", std::process::id()));
     let db_path = dir.join("data").join("test.sqlite");

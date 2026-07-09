@@ -106,6 +106,48 @@ pub fn open_with_recovery(
     Ok((conn, Some(note)))
 }
 
+/// Path used to stage a picked `.sqlite`/`.db` file for
+/// `commands::import_backup_file` until it's safe to apply — see
+/// `apply_pending_import`.
+pub fn pending_import_path(db_path: &Path) -> PathBuf {
+    db_path.with_file_name("wmhh.sqlite.pending-import")
+}
+
+/// If a staged import exists next to `db_path` (see `pending_import_path`),
+/// apply it now: snapshot the current file into `backups_dir`, replace
+/// `db_path` with the staged one, and remove the staging file.
+///
+/// MUST be called before any connection to `db_path` is opened in this
+/// process. Importing used to `fs::copy` the picked file directly over
+/// `db_path` from inside a running command — but that overwrote the exact
+/// file this process's own live connection had open. The raw byte-copy
+/// itself "succeeded" every time, but the stale open connection's later
+/// teardown then corrupted what had just been written, so every import
+/// came back as "couldn't open the original, recovered from backup" on the
+/// very next launch. Staging the file and only ever applying it at the
+/// start of a *fresh* process — before that process has opened anything —
+/// avoids the conflict entirely.
+pub fn apply_pending_import(db_path: &Path, backups_dir: &Path) -> DbResult<bool> {
+    let pending = pending_import_path(db_path);
+    if !pending.exists() {
+        return Ok(false);
+    }
+    if db_path.exists() {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        fs::create_dir_all(backups_dir)?;
+        let _ = fs::copy(db_path, backups_dir.join(format!("wmhh_preimport_{stamp}.sqlite")));
+    }
+    if fs::rename(&pending, db_path).is_err() {
+        // rename can fail across filesystem boundaries; fall back to copy+remove.
+        fs::copy(&pending, db_path)?;
+        fs::remove_file(&pending)?;
+    }
+    Ok(true)
+}
+
 fn newest_backup(backups_dir: &Path) -> Option<PathBuf> {
     let mut entries: Vec<PathBuf> = fs::read_dir(backups_dir)
         .ok()?

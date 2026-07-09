@@ -58,8 +58,24 @@ pub fn run() {
             let attempt = |base: &PathBuf| {
                 let db_path = base.join("data").join("wmhh.sqlite");
                 let backups_dir = base.join("backups");
-                db::open_with_recovery(&db_path, &backups_dir)
-                    .map(|(conn, note)| (conn, db_path, backups_dir, note))
+                // Must run before anything in this process opens db_path —
+                // see the comment on db::apply_pending_import for why.
+                let applied_import = db::apply_pending_import(&db_path, &backups_dir)
+                    .unwrap_or_else(|e| {
+                        eprintln!("failed to apply pending import at {}: {e}", db_path.display());
+                        false
+                    });
+                db::open_with_recovery(&db_path, &backups_dir).map(|(conn, note)| {
+                    let note = if applied_import {
+                        Some(match note {
+                            Some(n) => format!("가져온 데이터베이스를 적용했습니다.\n\n{n}"),
+                            None => "가져온 데이터베이스를 적용했습니다.".to_string(),
+                        })
+                    } else {
+                        note
+                    };
+                    (conn, db_path, backups_dir, note)
+                })
             };
 
             let (conn, db_path, backups_dir, note) = match attempt(&base_dir) {
