@@ -4,13 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Versioning convention (user-defined)
 
-User-facing version: current release = **v2.2**. Big updates bump +0.1 (v2.3), small updates +0.01 (v2.21). Manifest mapping: `vX.Y` ↔ `"X.Y.0"`, `vX.YZ` ↔ `"X.YZ.0"` in all THREE manifests together (`src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `package.json`). The UI header shows the version via `getVersion()` with a trailing `.0` stripped. A structural analysis lives in `구조 분석 보고서.md`; the built exe ships in `최종 프로그램 산출물/` and IS committed to git per user request.
+User-facing version: current release = **v2.21**. Big updates bump +0.1 (v2.3), small updates +0.01 (v2.22). Manifest mapping: `vX.Y` ↔ `"X.Y.0"`, `vX.YZ` ↔ `"X.YZ.0"` in all THREE manifests together (`src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `package.json`). The UI header shows the version via `getVersion()` with a trailing `.0` stripped. A structural analysis lives in `구조 분석 보고서.md`; the built exe ships in `최종 프로그램 산출물/` and IS committed to git per user request.
 
 ## Migration in progress
 
 This repo is being converted from the legacy single-file HTML app (still in `legacy/`) into a **Tauri (Rust) + SQLite** desktop app for offline/air-gapped 공무원 내부망 deployment as a small portable `.exe`. The full rationale and architecture (DB schema, data-safety measures, migration/versioning approach, why Tauri, why EAV over a JSON column, etc.) live in the plan doc at `C:\Users\rhama\.claude\plans\rustling-seeking-flurry.md` — read it before making architectural changes to `src-tauri/`.
 
-Status: **Phase 1 done** (Tauri+SQLite scaffold, DB schema/migrations, Rust CRUD commands, round-trip verified via `cargo test` in `src-tauri/`). **Phase 2 (porting the frontend into `src/`, swapping `STORE`'s internals to call `invoke()`) has not started yet** — the legacy HTML file in `legacy/` is still the authoritative reference for all business logic (`placeOf`, `render`, alarms, calendar, forms, `migrateItem`) until that port happens. Don't reimplement that logic from scratch; port it.
+Status: **Phase 1 and Phase 2 both done.** The frontend now lives in `src/` as browser-native ES modules (see "Frontend layout" below) with `STORE` delegating to Rust via `invoke()`; SQLite is the single source of truth (IndexedDB/localStorage are no longer used). The legacy HTML file in `legacy/` remains the behavioral reference if a business-logic question arises, but `src/` is the live implementation.
 
 ## Legacy app (`legacy/뭐해야 했더라v1.41.html`)
 
@@ -18,7 +18,9 @@ Single-file, offline-first Korean personal task-tracking web app (a phone-call t
 
 ## Running / testing changes
 
-**Rust backend (`src-tauri/`)**: `cd src-tauri && cargo test --lib` runs the DB round-trip test suite (`src-tauri/src/db/tests.rs`) — in-memory + real-file-path tests covering save/load, replace-not-merge semantics, backup export/import, a simulated-restart reopen, and backup rotation pruning. `cargo check`/`cargo build` from `src-tauri/` compile the app. `npm run tauri dev` (repo root) runs the full desktop app once the frontend port (Phase 2) exists. Rust isn't on PATH by default in a fresh shell on this machine — prefix commands with `export PATH="/c/Users/rhama/.cargo/bin:$PATH"` (bash) if `cargo`/`rustc` aren't found.
+**Rust backend (`src-tauri/`)**: `cd src-tauri && cargo test --lib` runs the DB round-trip test suite (`src-tauri/src/db/tests.rs`) — in-memory + real-file-path tests covering save/load, replace-not-merge semantics, backup export/import, a simulated-restart reopen, and backup rotation pruning. `cargo check`/`cargo build` from `src-tauri/` compile the app. `npm run tauri dev` (repo root) runs the full desktop app. Rust isn't on PATH by default in a fresh shell on this machine — prefix commands with `export PATH="/c/Users/rfast/.cargo/bin:$PATH"` (bash) if `cargo`/`rustc` aren't found.
+
+**Frontend (`src/`)**: no build step, no bundler, no JS tests — `src/` is served raw by the Tauri webview (`frontendDist: "../src"`). Verify changes manually via `npm run tauri dev`: add an item, check board placement, calendar/completed tabs, presets, alarms, backup export/import. `node --check src/<file>.js` catches syntax errors (package.json `"type":"module"` makes node parse them as ESM).
 
 **Legacy HTML app (`legacy/뭐해야 했더라v1.41.html`)**: no build or test command. Verify by opening the file directly in a browser and exercising the UI manually — add an item, check board placement, check the calendar/completed tabs, check backup export/import.
 
@@ -35,6 +37,26 @@ Historically (pre-migration) this project bumped the HTML filename itself per ve
 - `db/mod.rs` — `open()` (pragmas + migrate), `integrity_check()`, `rotate_backup()` (timestamped `.sqlite` copies under a `backups/` dir, pruned to the newest N), `now_stamp()`.
 
 Ids are never reassigned by the DB layer — `items.id`/`subtasks.id` are caller-supplied (from the frontend's `newId()`) and inserted as-is, not autoincremented, so alarm state embedded on a subtask stays attached to the right row across saves. Custom (non-`received`/`due`) item fields live in an EAV table (`item_fields`) rather than a JSON column, chosen specifically so the hand-rolled migration system can use plain `INSERT/UPDATE/DELETE` rather than JSON-path surgery.
+
+## Frontend layout (`src/` — browser-native ES modules, no bundler)
+
+Split from the former single-file `app.js` in v2.21 along single-responsibility lines. Two rules keep the module graph safe (import specifiers are relative `./name.js` with explicit extensions; there is no bundler to fix mistakes):
+
+1. **Feature modules contain only hoisted `function` declarations plus module-local `let` state — no top-level statements besides `import`.** All listener registration, `setInterval`s, and initial render calls live in an exported `init*()` that `main.js` calls in explicit order. This is what makes the two deliberate function-only import cycles (render↔form via `openForm`/`persist`, render↔calendar via `cardHtml`/`renderCal`) safe; don't add top-level `const x = importedValue` inside a cycle member.
+2. **All cross-module mutable state lives in the single `S` object** (`state.js`) — mutate properties (`S.items = ...`), never rebind imports. `window.items/FIELDS/PRESETS/ID_KINDS/SETTINGS` are write-only devtools mirrors of `S.*` (kept for console debugging); code always reads `S`.
+
+- `state.js` — `S` (items/fields/presets/idKinds/settings/loaded/lastId/imported), `CORE_FIELDS` + `DEFAULT_*`, `newId()` (F12), `migrateItem()`, `reconcileCore()`. `S.imported` is the async handoff channel filled by `STORE.load()`/backup import and consumed by `reconcileImported()`.
+- `dom-utils.js` — `$`, `esc`/`escAttr` (F8/F11), `enableDragReorder`, toast, `askNotify`.
+- `placement.js` — `placeOf()` / `dayBounds` / `PLACE_NAME` (the core scheduling logic).
+- `datetime.js` — date/time parsers (F3/F4/F13), dt input widget helpers, `DOW`/`fmtT`/`fmtDue`, `initDtDelegation()` (document-level delegated listeners for the widget).
+- `store.js` — `invoke` (from `window.__TAURI__.core`; `withGlobalTauri: true`), `STORE` persistence facade (single-flight `saveAll` queue, F1 gate on `S.loaded`), `setStatus`.
+- `form.js` — quick input (`toInbox`) + form panel; `editingId` is module-local, reset only via `closeForm()`.
+- `presets.js` — preset buttons + management modal + id-kind name management.
+- `render.js` — `render()`/`renderDone()`/`cardHtml()`/`persist()`; search state `q`/`dq` module-local.
+- `calendar.js` — month grid + day detail; `calY/calM/calSel` module-local.
+- `alarms.js` — `checkAlarms()` 20s poll (F5), beep, title flash, alarm toggle.
+- `backup.js` — JSON backup/restore, `reconcileImported()`, XLSX export (uses global `XLSX` from the classic `vendor/xlsx.full.min.js` script tag, which must stay a non-module script loaded before `main.js`), data-dir change.
+- `main.js` — entry (`<script type="module">` in index.html): wiring order, tabs, Ctrl+S/ESC (F14), clock, the initial-load IIFE (`STORE.load` → `migrateItem` → `S.loaded=true` → `reconcileImported` → pending-merge → `render`).
 
 ## File layout (line ranges are for `legacy/뭐해야 했더라v1.41.html`)
 
@@ -62,9 +84,9 @@ Board placement is **always derived**, never stored: `placeOf(it)` recomputes th
 
 ## Persistence & data safety
 
-- Primary store is IndexedDB (`STORE`); `localStorage` is only a mirror/fallback, not authoritative.
-- `LOADED` is a load-gate flag (see `F1` comment) — saves are blocked until the initial IndexedDB load completes, specifically to prevent an empty in-memory `items` array from clobbering existing stored data on startup. Preserve this gate if you touch the save path.
-- `newId()` (see `F12` comment) generates monotonically increasing IDs from `Date.now()`, bumping by 1 on collision within the same millisecond — do not switch this to `Math.random()` or a non-monotonic scheme, since some migration logic seeds `_lastId` from existing max IDs.
+- Primary store is SQLite via `STORE` → `invoke()` (in the legacy app it was IndexedDB with a localStorage mirror).
+- `S.loaded` is the load-gate flag (see `F1` comment; formerly `LOADED`) — saves are blocked until the initial load completes, specifically to prevent an empty in-memory `S.items` array from clobbering existing stored data on startup. Preserve this gate if you touch the save path.
+- `newId()` (see `F12` comment) generates monotonically increasing IDs from `Date.now()`, bumping by 1 on collision within the same millisecond — do not switch this to `Math.random()` or a non-monotonic scheme, since `migrateItem()` seeds `S.lastId` from existing max IDs (both live in `state.js` for exactly this reason).
 - Manual backup/restore is JSON via `doBackup()`/the `bkImp`/`bkFile` handlers (uses `showSaveFilePicker` when available, falling back to a download link), and there's a separate one-way XLSX export (`xlsx` button, via the vendored SheetJS). JSON backup is the only *round-trippable* format — XLSX is export-only.
 
 ## Conventions in this codebase
