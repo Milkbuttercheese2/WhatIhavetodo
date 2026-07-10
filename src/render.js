@@ -137,7 +137,9 @@ export function initRender(){
     const del=e.target.closest('.del');
     if(del&&del.dataset.del){ e.stopPropagation(); const id=+del.dataset.del; const idx=S.items.findIndex(x=>x.id==id);
       if(idx>=0){
-        S.items.splice(idx,1); persist(); showToast('업무를 영구 삭제했습니다');
+        const removed=S.items[idx];
+        S.items.splice(idx,1); persist();
+        showToast('업무를 삭제했습니다',()=>{ S.items.splice(Math.min(idx,S.items.length),0,removed); persist(); });
       } return; }
     const open=e.target.closest('[data-open]');
     if(open){ const it=S.items.find(x=>x.id==open.dataset.open); if(it)openForm(it); return; }

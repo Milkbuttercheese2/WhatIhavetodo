@@ -8,8 +8,10 @@ const env = setupEnv();
 const {S, newId} = await import('../../src/state.js');
 const {render, renderDone, initRender} = await import('../../src/render.js');
 const {initForm} = await import('../../src/form.js');
+const {initToast} = await import('../../src/dom-utils.js');
 initForm();          // 카드 클릭 → openForm 경로에 필요
 initRender();
+initToast();         // 삭제 실행취소(#toast-undo) 경로에 필요
 
 const $ = id => env.document.getElementById(id);
 const iso = min => new Date(Date.now() + min*60e3).toISOString();
@@ -64,14 +66,32 @@ test('체크박스 클릭 → done 토글 + doneAt + save_all', async () => {
   assert.ok(env.invokeCalls.some(c=>c.cmd==='save_all'));
 });
 
-test('삭제 클릭 → splice + 토스트', async () => {
+test('삭제 클릭 → splice + 실행취소 토스트 + save_all', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({memo:'삭제 대상', staged:true}));
   render();
   $('col-inbox').querySelector('.del[data-del]').click();
   await env.flush();
   assert.equal(S.items.length, 0);
-  assert.equal($('toast-msg').textContent, '업무를 영구 삭제했습니다');
+  assert.equal($('toast-msg').textContent, '업무를 삭제했습니다');
+  assert.equal($('toast-undo').style.display, 'inline-block');
+  assert.ok(env.invokeCalls.some(c=>c.cmd==='save_all'));
+});
+
+test('삭제 실행취소 → 원래 인덱스로 복원 + 재저장', async () => {
+  await env.resetS(); S.loaded = true;
+  S.items.push(mk({memo:'앞건', staged:true}), mk({memo:'가운데건', staged:true}), mk({memo:'뒷건', staged:true}));
+  const midId = S.items[1].id;
+  render();
+  $('col-inbox').querySelector(`.del[data-del="${midId}"]`).click();
+  await env.flush();
+  assert.deepEqual(S.items.map(x=>x.memo), ['앞건','뒷건']);
+  env.invokeCalls.length = 0;
+  $('toast-undo').click();
+  await env.flush();
+  assert.deepEqual(S.items.map(x=>x.memo), ['앞건','가운데건','뒷건']);
+  assert.ok(env.invokeCalls.some(c=>c.cmd==='save_all'));
+  assert.ok($('col-inbox').textContent.includes('가운데건'));
 });
 
 test('검색: 보드 필터 + 결과 없음 문구', async () => {

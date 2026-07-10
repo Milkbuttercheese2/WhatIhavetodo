@@ -23,6 +23,7 @@ export function parseDateStr(s){
 export function parseTimeStr(s){
   if(s===''||s==null) return null;
   const t=s.replace(/[^0-9]/g,'');
+  if(t==='') return null;   // F3: 숫자 없는 오입력("abc" 등)을 00:00으로 삼키지 않는다
   let hh,mm;
   if(t.length<=2){ hh=+t; mm=0; }
   else if(t.length===3){ hh=+t.slice(0,1); mm=+t.slice(1); }

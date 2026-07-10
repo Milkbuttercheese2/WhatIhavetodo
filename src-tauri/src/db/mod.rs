@@ -175,9 +175,13 @@ fn fs_stamp() -> String {
         })
 }
 
-/// Filesystem-safe timestamp for naming backup files.
+/// Filesystem-safe timestamp for naming backup files. Must use 'localtime'
+/// like `fs_stamp` does — `newest_backup`/`prune_backups` rely on lexical
+/// order == chronological order across ALL backup filenames, and mixing a
+/// UTC stamp with localtime ones breaks that (an older localtime file can
+/// sort after a newer UTC one, so recovery would restore stale data).
 pub fn now_stamp(conn: &Connection) -> DbResult<String> {
-    Ok(conn.query_row("SELECT strftime('%Y%m%d_%H%M%S','now')", [], |r| r.get(0))?)
+    Ok(conn.query_row("SELECT strftime('%Y%m%d_%H%M%S','now','localtime')", [], |r| r.get(0))?)
 }
 
 /// Copies the live database file into `backups_dir` with a timestamped

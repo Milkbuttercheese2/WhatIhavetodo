@@ -15,6 +15,21 @@ fn to_err<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
 }
 
+/// Write-command gate: a DB that failed the startup integrity check must
+/// never be overwritten by the delete+reinsert save path — that would turn
+/// recoverable corruption into a permanent one. `backup_import` is exempt
+/// (restoring is the recovery path and re-arms the flag); `backup_export`
+/// is exempt too (read-only — let the user salvage what still reads).
+fn ensure_integrity(state: &State<AppDb>) -> Result<(), String> {
+    if !state.integrity_ok.load(Ordering::Relaxed) {
+        return Err(
+            "데이터베이스 무결성 검사에 실패한 상태라 저장할 수 없습니다. 백업에서 복원 후 다시 시도해주세요."
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub fn load_all(state: State<AppDb>) -> Result<AppState, String> {
     if !state.integrity_ok.load(Ordering::Relaxed) {
@@ -34,12 +49,15 @@ const BACKUP_MIN_INTERVAL: std::time::Duration = std::time::Duration::from_secs(
 
 #[tauri::command]
 pub fn save_all(state: State<AppDb>, items: Vec<Item>) -> Result<(), String> {
+    ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::items::save_items(&mut conn, &items).map_err(to_err)?;
     let stamp = db::now_stamp(&conn).map_err(to_err)?;
-    drop(conn);
     // Best-effort: a failed backup rotation must not fail the save itself
-    // (the save already committed by this point).
+    // (the save already committed by this point). The copy must run while
+    // the connection lock is still held — every write command serializes
+    // on this Mutex, so holding it guarantees no other command is
+    // mid-transaction and the snapshot can't be torn.
     if let Err(e) = db::rotate_backup_throttled(
         &state.db_path,
         &state.backups_dir,
@@ -49,29 +67,34 @@ pub fn save_all(state: State<AppDb>, items: Vec<Item>) -> Result<(), String> {
     ) {
         eprintln!("backup rotation failed: {e}");
     }
+    drop(conn);
     Ok(())
 }
 
 #[tauri::command]
 pub fn save_fields(state: State<AppDb>, fields: Vec<FieldDef>) -> Result<(), String> {
+    ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::fields::save_fields(&mut conn, &fields).map_err(to_err)
 }
 
 #[tauri::command]
 pub fn save_presets(state: State<AppDb>, presets: Vec<Preset>) -> Result<(), String> {
+    ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::presets::save_presets(&mut conn, &presets).map_err(to_err)
 }
 
 #[tauri::command]
 pub fn save_id_kinds(state: State<AppDb>, id_kinds: Vec<String>) -> Result<(), String> {
+    ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::id_kinds::save_id_kinds(&mut conn, &id_kinds).map_err(to_err)
 }
 
 #[tauri::command]
 pub fn save_settings(state: State<AppDb>, settings: Settings) -> Result<(), String> {
+    ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::settings::save_settings(&mut conn, &settings).map_err(to_err)
 }
@@ -86,19 +109,17 @@ pub fn backup_export(state: State<AppDb>) -> Result<BackupPayload, String> {
 pub fn backup_import(state: State<AppDb>, payload: BackupPayload) -> Result<(), String> {
     // Safety net before a destructive whole-dataset overwrite: snapshot the
     // live file under a distinguishable name before touching anything.
-    {
-        let conn = state.conn.lock().map_err(to_err)?;
-        let stamp = db::now_stamp(&conn).map_err(to_err)?;
-        drop(conn);
-        db::rotate_backup(
-            &state.db_path,
-            &state.backups_dir,
-            &format!("prerestore_{stamp}"),
-            BACKUP_KEEP,
-        )
-        .map_err(to_err)?;
-    }
+    // The copy runs while the connection lock is held (same lock we then
+    // import under) so no concurrent write can tear the snapshot.
     let mut conn = state.conn.lock().map_err(to_err)?;
+    let stamp = db::now_stamp(&conn).map_err(to_err)?;
+    db::rotate_backup(
+        &state.db_path,
+        &state.backups_dir,
+        &format!("prerestore_{stamp}"),
+        BACKUP_KEEP,
+    )
+    .map_err(to_err)?;
     db::backup::import_payload(&mut conn, payload).map_err(to_err)?;
     // A successful full restore supersedes whatever the startup integrity
     // check concluded — without this, an app whose DB was flagged bad at

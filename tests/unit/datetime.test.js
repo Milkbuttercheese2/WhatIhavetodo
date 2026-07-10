@@ -40,11 +40,20 @@ test('parseTimeStr: 24:00은 dayOverflow, 범위 밖은 null', () => {
   assert.equal(parseTimeStr(''), null);
 });
 
+test('parseTimeStr: F3 — 숫자 없는 오입력은 00:00으로 삼키지 않고 null', () => {
+  assert.equal(parseTimeStr('abc'), null);
+  assert.equal(parseTimeStr('저녁'), null);
+  assert.equal(parseTimeStr('.'), null);
+  assert.equal(parseTimeStr(':'), null);
+});
+
 test('combineDT: F3 3상태 — 빈입력 "" / 오입력 null / 정상 ISO', () => {
   assert.equal(combineDT('', ''), '');                       // 미입력 = 정상
   assert.equal(combineDT('', '18:00'), null);                // 시각만 = 오입력
   assert.equal(combineDT('2026/02/31', '18:00'), null);      // 날짜 오입력
   assert.equal(combineDT('2026/07/10', '25:00'), null);      // 시각 오입력 삼키지 않음
+  assert.equal(combineDT('2026/07/10', '저녁', DEFAULT_TIME_DUE), null);  // 숫자 없는 시각도 저장 차단
+  assert.equal(combineDT('2026/07/10', 'abc'), null);
   const r = combineDT('2026/07/10', '18:30');
   assert.ok(r && !isNaN(new Date(r)));
 });
