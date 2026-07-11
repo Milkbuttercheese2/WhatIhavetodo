@@ -33,12 +33,12 @@
 | 작업 | 명령 |
 |---|---|
 | 개발 실행 (핫리로드) | `npm run tauri dev` |
-| 프론트 테스트 (node:test + jsdom, 90개) | `npm test` |
+| 프론트 테스트 (node:test + jsdom, 96개) | `npm test` |
 | 백엔드 테스트 | `cd src-tauri && cargo test --lib` |
 | 릴리즈 빌드 | `npm run tauri build` → `src-tauri/target/release/wmhh-desktop.exe` |
 
 - 요구 도구: Rust(MSVC), Node.js. 프론트는 번들러 없는 순수 HTML/CSS/JS (`src/`).
-- 구조: Rust(`src-tauri/`)는 **CRUD 영속성 전용**, 업무 규칙(자동 배치·알람·렌더링)은 전부 프론트(`src/`)에 있습니다. v2.21부터 관심사별 ES 모듈 12개(`state/store/render/form/placement/datetime/calendar/alarms/backup/presets/dom-utils/main`)로 분리됐고, 저장 계층 경계는 `src/store.js`의 `STORE` 객체 하나입니다.
+- 구조: Rust(`src-tauri/`)는 **CRUD 영속성 전용**, 업무 규칙(자동 배치·알람·렌더링)은 전부 프론트(`src/`)에 있습니다. v2.21부터 관심사별 ES 모듈(`state/store/render/form/placement/datetime/calendar/alarms/backup/presets/filters/dom-utils/main` + 미니 캡처 창용 `capture-win/boot/bridge`)로 분리됐고, 저장 계층 경계는 `src/store.js`의 `STORE` 객체 하나입니다.
 - 스키마 변경은 `src-tauri/src/db/migrations/`에 **추가만** 하세요 (배포본이 여러 버전을 건너뛰고 업그레이드될 수 있음).
 - `legacy/`의 단일 HTML 파일은 이 앱의 전신(브라우저용)으로, 동작 참조용으로만 보존합니다.
 
