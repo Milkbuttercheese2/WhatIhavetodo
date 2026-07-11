@@ -226,12 +226,46 @@
         <section class="set-panel" data-panel="advanced">
           <h3>고급</h3>
           <div class="m-sub">평소엔 쓰지 않는 고급 기능을 모아두는 곳입니다. 기본은 모두 꺼져 있으며, 켠 기능만 동작합니다.</div>
-          <div class="set-adv-slots" id="setAdvSlots"></div>
+          <div class="set-adv-slots" id="setAdvSlots">
+            <div class="adv-feature">
+              <label class="ck-row"><input type="checkbox" id="set-recur-enabled"> 정기함 사용 (반복 일정을 보드에 자동 생성)</label>
+              <div class="adv-body" id="recurBody">
+                <div class="m-sub">등록한 반복 일정이 도래한 날 보드에 일반 카드로 올라옵니다. 완료하면 다음 회차가 예정일에 다시 올라옵니다. (규칙 자체는 보드에 보이지 않습니다.)</div>
+                <div class="rc-list" id="recurList"></div>
+                <button class="btn btn-tool" id="rc-add">＋ 새 정기 등록</button>
+              </div>
+            </div>
+          </div>
         </section>
       </div>
     </div><!-- /modal-body -->
     <div class="m-actions modal-foot">
       <button class="btn btn-ok" id="setClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 정기함 추가/수정 (고급 탭에서 열림) -->
+<div class="modal-bg" id="recurModal">
+  <div class="modal modal-split">
+    <div class="modal-body">
+      <h3 id="rc-new-head">＋ 새 정기 등록</h3>
+      <div class="ps-new-grid">
+        <div class="fm-field"><label>메모 (보드에 올라올 내용)</label><input type="text" id="rc-memo" placeholder="예: 주간 정례보고"></div>
+        <div class="fm-field"><label>반복 주기</label>
+          <select id="rc-freq">
+            <option value="daily">매일</option>
+            <option value="weekly" selected>매주</option>
+            <option value="monthly">매월</option>
+          </select>
+        </div>
+      </div>
+      <div class="rc-dow-wrap" id="rc-dow-wrap"><label class="fm-label">요일 (여러 개 선택 가능 · 안 고르면 시작일 요일)</label><div id="rc-dow" class="fm-recur-dow"></div></div>
+      <div class="fm-field"><label>처음 시작 (이 날짜·시각을 기준으로 반복됩니다)</label><span id="rc-dt"></span></div>
+    </div>
+    <div class="m-actions modal-foot">
+      <button class="btn btn-cancel" id="rc-cancel">취소</button>
+      <button class="btn btn-ok" id="rc-save">저장</button>
     </div>
   </div>
 </div>

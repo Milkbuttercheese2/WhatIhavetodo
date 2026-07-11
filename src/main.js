@@ -4,7 +4,7 @@
    render↔form, render↔calendar 순환 import는 함수 선언만 오가므로 이 규칙이
    지켜지는 동안 안전하다.
    ========================================================================= */
-import {S, reconcileCore, migrateItem} from './state.js';
+import {S, reconcileCore, migrateItem, reconcileRecur} from './state.js';
 import {STORE} from './store.js';
 import {$, initToast} from './dom-utils.js';
 import {initDtDelegation} from './datetime.js';
@@ -16,6 +16,7 @@ import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
 import {initSettings, closeSettings} from './settings.js';
+import {initRecurBox, closeRecurModal} from './recur-box.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -23,7 +24,7 @@ window.items=S.items; window.FIELDS=S.fields; window.PRESETS=S.presets;
 window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
-initRender(); initCalendar(); initAlarms(); initBackup(); initCapture(); initSettings();
+initRender(); initCalendar(); initAlarms(); initBackup(); initCapture(); initSettings(); initRecurBox();
 renderPresets();
 
 /* 탭 */
@@ -54,6 +55,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape') return;
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
+  if($('recurModal').classList.contains('on')){ closeRecurModal(); return; }   // 정기함 모달이 설정 위에 뜨므로 먼저 닫는다
   if($('settingsBg').classList.contains('on')){ closeSettings(); return; }
 });
 
@@ -73,7 +75,10 @@ setInterval(tickClock,1000); tickClock();
     window.items = S.items;
     S.loaded = true;                                   // F1: 이제부터 저장 허용
     reconcileImported();
-    if(pending.length) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
+    /* 정기함(옵트인)이 켜져 있으면 도래한 회차를 스폰 — 꺼져 있으면 즉시 반환 */
+    const spawned = reconcileRecur();
+    if(pending.length || spawned) await STORE.saveAll(S.items);   // 보류됐던 저장 + 스폰 반영
+    if(spawned) STORE.saveRecurDefs(S.recurDefs);      // next 전진 저장
     render();
   }catch(e){
     // 로드 실패를 조용히 삼키면 "빈 화면 + 저장도 안 되는" 죽은 앱이 된다.

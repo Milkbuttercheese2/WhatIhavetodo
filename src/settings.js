@@ -11,6 +11,7 @@ import {S, DEFAULT_SETTINGS} from './state.js';
 import {STORE, invoke} from './store.js';
 import {$, showToast} from './dom-utils.js';
 import {renderAlarmToggle} from './alarms.js';
+import {renderRecurPanel} from './recur-box.js';
 
 function saveSettings(){ window.SETTINGS=S.settings; STORE.saveSettings(S.settings); }
 
@@ -65,6 +66,7 @@ function openSettings(){
   document.querySelectorAll('#settingsBg input[name="theme"]').forEach(r=>r.checked=(r.value===theme));
   recorded=null; $('sk-rec').value='';
   $('sk-cur').textContent=prettyShortcut(st.captureShortcut||DEFAULT_SETTINGS.captureShortcut);
+  renderRecurPanel();   // 고급 탭 정기함 토글·목록 동기화
   showTab('general');
   $('settingsBg').classList.add('on');
 }
