@@ -23,9 +23,10 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      # Node 22 필수: npm test의 `node --test "glob"` 패턴이 Node 21+에서만 동작
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Rust 빌드 캐시
         uses: actions/cache@v4
