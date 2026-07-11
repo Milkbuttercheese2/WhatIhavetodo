@@ -48,7 +48,9 @@ v2.2 이후의 작은 중간 업데이트(v2.21, v2.22, v2.23)를 묶어 정식 
   push/PR에는 반응하지 않는 수동 전용 (상시 CI 아님).
 
 ### 산출물
-- `최종 프로그램 산출물/뭐해야 했더라.exe` 갱신 방법 두 가지:
+- `최종 프로그램 산출물/뭐해야 했더라.exe`를 **v2.3 빌드로 갱신 완료** (GitHub Actions
+  windows-latest, MSVC 정적 링크 단일 exe 12.6MB, 테스트 JS 110·Rust 17 통과 후 빌드).
+- 이후 갱신 방법 두 가지:
   ① GitHub **Actions 탭 → build-windows-exe → Run workflow** (Windows 러너가 MSVC 빌드 후 exe를 브랜치에 자동 커밋),
   ② Windows PC에서 `npm run tauri build` 후 `src-tauri/target/release/wmhh-desktop.exe`를 `뭐해야 했더라.exe`로 개명해 교체.
   (리눅스 MinGW 크로스빌드는 WebView2Loader.dll 동적 의존이 생겨 단일 exe 원칙에 맞지 않아 불채택.
