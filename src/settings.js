@@ -30,7 +30,10 @@ function systemPrefersDark(){
 /* 해석된 테마를 <html data-theme>에 반영 — reconcileImported(backup.js)가
    초기 로드·JSON 복원 후 호출하므로 저장된 테마가 양쪽 경로에서 살아난다 */
 export function applyTheme(){
-  document.documentElement.dataset.theme = resolveTheme((S.settings||{}).theme);
+  const t = resolveTheme((S.settings||{}).theme);
+  document.documentElement.dataset.theme = t;
+  /* 미니 캡처 창(독립 웹뷰)에도 밀어준다 — 저장·라이브 변경·시스템 변경·복원 모두 이 경로 */
+  try{ window.__TAURI__.event.emitTo('capture','wmhh://theme',{theme:t}).catch(()=>{}); }catch{}
 }
 
 /* ---- 단축키 레코더 (f9e3f67에서 복원) ---- */

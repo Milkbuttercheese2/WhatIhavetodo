@@ -7,9 +7,18 @@
    ========================================================================= */
 let submitting=false;                       // 등록 플래시 중 blur로 조기 숨김 방지
 const hideWin=()=>window.__TAURI__.window.getCurrentWindow().hide();   // 지연 접근 (테스트 하네스 제약)
+/* 메인 창에 "현재 테마 알려줘" 요청 — 응답(wmhh://theme)이 오면 data-theme 갱신.
+   메인이 아직 안 떴어도 CSS의 prefers-color-scheme 가 기본값을 잡아준다. */
+const askTheme=()=>{ try{ window.__TAURI__.event.emitTo('main','wmhh://capture-hello',{}).catch(()=>{}); }catch{} };
 
 export function initCaptureWin(){
   const inp=document.getElementById('cap-inp');
+  /* 메인 앱의 라이트/다크 설정을 그대로 따라간다 (독립 웹뷰라 이벤트로만 받는다) */
+  window.__TAURI__.event.listen('wmhh://theme',ev=>{
+    const t=(ev.payload||{}).theme;
+    if(t==='light'||t==='dark') document.documentElement.dataset.theme=t;
+  });
+  askTheme();
   inp.addEventListener('keydown',e=>{
     if(e.isComposing||e.keyCode===229) return;   // 한글 IME 조합 중 오등록 방지
     if(e.key==='Escape'){ e.preventDefault(); inp.value=''; hideWin(); return; }
@@ -24,6 +33,6 @@ export function initCaptureWin(){
   });
   /* 포커스를 잃으면 숨김 — 드래프트는 유지(전화 중 끊긴 메모 보호). Esc만 비운다 */
   window.addEventListener('blur',()=>{ if(!submitting) hideWin(); });
-  window.addEventListener('focus',()=>{ inp.focus(); const n=inp.value.length; inp.setSelectionRange(n,n); });
+  window.addEventListener('focus',()=>{ inp.focus(); const n=inp.value.length; inp.setSelectionRange(n,n); askTheme(); });
   inp.focus();
 }

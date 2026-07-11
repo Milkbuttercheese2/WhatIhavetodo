@@ -3,24 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <title>빠른 메모</title>
-<!-- 미니 캡처 창 전용 페이지. 메인 앱 모듈 그래프와 완전히 독립 —
+<!-- 미니 캡처 창 전용 페이지 (macOS Spotlight 풍). 메인 앱 모듈 그래프와 완전히 독립 —
      store.js 등을 끌어오면 이 웹뷰에서도 최상위 부작용이 실행된다.
-     외부(인터넷) 리소스 금지: 내부망(air-gapped) 배포 대상. -->
+     외부(인터넷) 리소스 금지: 내부망(air-gapped) 배포 대상.
+     테마: OS 선호(prefers-color-scheme)가 기본, 메인 앱이 밀어주는 data-theme가 우선. -->
 <style>
- html,body{margin:0;height:100%;overflow:hidden}
- body{display:flex;background:#252b38;border:1px solid #3a4356;box-sizing:border-box}
- #cap-inp{flex:1;resize:none;border:0;outline:0;background:transparent;color:#e8ecf4;
-   font:15px/1.45 system-ui,'Malgun Gothic',sans-serif;padding:10px 14px}
- #cap-inp::placeholder{color:#7d8798}
- #cap-flash{display:none;align-items:center;justify-content:center;flex:1;
-   color:#7ee08a;font:600 15px system-ui,'Malgun Gothic',sans-serif}
- body.flash #cap-inp{display:none}
+ /* ---- 라이트(기본) ---- */
+ :root{
+   color-scheme:light;
+   --bg:rgba(252,252,253,.92);
+   --border:rgba(0,0,0,.07);
+   --hl:rgba(255,255,255,.75);
+   --shadow:0 20px 52px rgba(17,22,30,.22), 0 3px 10px rgba(17,22,30,.10);
+   --text:#1b1f27;
+   --ph:#9aa0ac;
+   --icon:#8b90a0;
+   --kbd-bg:rgba(18,22,30,.05);
+   --kbd-fg:#8b90a0;
+   --kbd-border:rgba(18,22,30,.09);
+   --ok:#1f9d57;
+ }
+ /* ---- 다크(앱 다크 팔레트와 맞춤) ---- */
+ :root[data-theme="dark"]{
+   color-scheme:dark;
+   --bg:rgba(30,36,45,.90);
+   --border:rgba(255,255,255,.10);
+   --hl:rgba(255,255,255,.06);
+   --shadow:0 20px 58px rgba(0,0,0,.60), 0 3px 12px rgba(0,0,0,.42);
+   --text:#e9edf3;
+   --ph:#7d8697;
+   --icon:#8891a1;
+   --kbd-bg:rgba(255,255,255,.07);
+   --kbd-fg:#9aa4b2;
+   --kbd-border:rgba(255,255,255,.11);
+   --ok:#5cb183;
+ }
+ /* OS가 다크인데 앱이 명시 테마를 밀어주기 전 — 라이트로 명시되지 않았다면 다크로 */
+ @media (prefers-color-scheme:dark){
+   :root:not([data-theme="light"]):not([data-theme="dark"]){
+     color-scheme:dark;
+     --bg:rgba(30,36,45,.90);
+     --border:rgba(255,255,255,.10);
+     --hl:rgba(255,255,255,.06);
+     --shadow:0 20px 58px rgba(0,0,0,.60), 0 3px 12px rgba(0,0,0,.42);
+     --text:#e9edf3;
+     --ph:#7d8697;
+     --icon:#8891a1;
+     --kbd-bg:rgba(255,255,255,.07);
+     --kbd-fg:#9aa4b2;
+     --kbd-border:rgba(255,255,255,.11);
+     --ok:#5cb183;
+   }
+ }
+
+ *{margin:0;box-sizing:border-box}
+ html,body{height:100%;overflow:hidden;background:transparent}
+ /* 폰트는 메인 앱(styles.css body)과 동일 스택 — 창 간 톤 일치 */
+ /* 투명 창 위에 떠 있는 카드 — 바깥 여백은 그림자가 잘리지 않게 확보 */
+ body{display:flex;align-items:center;justify-content:center;padding:24px 26px;
+   font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,-apple-system,sans-serif;
+   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+
+ .spot{position:relative;flex:1;display:flex;align-items:center;gap:12px;
+   min-height:60px;padding:0 16px 0 18px;border-radius:17px;
+   background:var(--bg);border:1px solid var(--border);box-shadow:var(--shadow);
+   -webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px)}
+ /* 유리질 상단 하이라이트 라인 */
+ .spot::before{content:"";position:absolute;inset:0;border-radius:17px;pointer-events:none;
+   border-top:1px solid var(--hl);-webkit-mask:linear-gradient(#000,transparent 60%)}
+
+ .ic{flex:none;width:21px;height:21px;color:var(--icon);opacity:.85}
+
+ #cap-inp{flex:1;min-width:0;resize:none;border:0;outline:0;background:transparent;
+   color:var(--text);font-family:inherit;font-size:16px;font-weight:400;line-height:24px;
+   letter-spacing:-.2px;height:24px;max-height:48px;overflow-y:auto;padding:0}
+ #cap-inp::placeholder{color:var(--ph)}
+ #cap-inp::-webkit-scrollbar{width:0}
+
+ /* 키 힌트 — 키캡은 inline-flex 중앙정렬이라 글리프 세로 어긋남이 없다 */
+ .hint{flex:none;display:flex;align-items:center;gap:4px;user-select:none}
+ .hint kbd{display:inline-flex;align-items:center;justify-content:center;
+   min-width:20px;height:20px;padding:0 6px;border-radius:6px;
+   font-family:inherit;font-size:11px;font-weight:500;line-height:1;
+   background:var(--kbd-bg);border:1px solid var(--kbd-border);color:var(--kbd-fg)}
+ .hint kbd.ret{font-size:13px}
+
+ /* 등록 완료 플래시 */
+ #cap-flash{display:none;flex:1;align-items:center;justify-content:center;gap:8px;
+   color:var(--ok);font-size:16px;font-weight:600;line-height:1}
+ body.flash #cap-inp,body.flash .ic,body.flash .hint{display:none}
  body.flash #cap-flash{display:flex}
 </style>
 </head>
 <body>
-<textarea id="cap-inp" placeholder="빠른 메모 — Ctrl+Enter 등록 · Esc 닫기"></textarea>
-<div id="cap-flash">✔ 등록됨</div>
+<div class="spot">
+  <!-- 펜/메모 아이콘 -->
+  <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M12 20h9"/>
+    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+  </svg>
+  <textarea id="cap-inp" rows="1" placeholder="빠른 메모…"></textarea>
+  <div class="hint"><kbd>Ctrl</kbd><kbd class="ret">↵</kbd></div>
+  <div id="cap-flash">✔ 등록됨</div>
+</div>
 <script type="module" src="capture-boot.js"></script>
 </body>
 </html>

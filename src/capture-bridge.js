@@ -12,6 +12,7 @@ import {S} from './state.js';
 import {STORE} from './store.js';
 import {showToast} from './dom-utils.js';
 import {captureMemo} from './form.js';
+import {applyTheme} from './settings.js';
 
 let trayNoticePending=false;
 
@@ -21,6 +22,10 @@ export function initCapture(){
     const t=(ev.payload||{}).text;
     if(t) captureMemo(t);
   });
+
+  /* 캡처 창이 "테마 알려줘"(창이 뜰 때마다) 하면 현재 테마를 되쏴준다 —
+     applyTheme 이 capture 로 emitTo. 캡처 웹뷰가 나중에 로드돼도 동기화된다. */
+  window.__TAURI__.event.listen('wmhh://capture-hello', ()=>applyTheme());
 
   /* X→트레이 전환 알림(Rust) — 첫 회에 한해, 창이 다시 보일 때 안내 토스트.
      숨은 창에서 바로 토스트를 띄워봐야 아무도 못 본다. */

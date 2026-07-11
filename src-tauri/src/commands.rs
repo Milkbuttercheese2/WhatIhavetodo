@@ -211,7 +211,7 @@ pub fn show_capture_window(app: &AppHandle) {
         .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten())
         .or_else(|| app.primary_monitor().ok().flatten());
     if let Some(m) = monitor {
-        let sz = win.outer_size().unwrap_or(tauri::PhysicalSize::new(560, 64));
+        let sz = win.outer_size().unwrap_or(tauri::PhysicalSize::new(640, 120));
         let x = m.position().x + (m.size().width as i32 - sz.width as i32) / 2;
         let y = m.position().y + (m.size().height as f64 * 0.2) as i32;
         let _ = win.set_position(tauri::PhysicalPosition::new(x, y));

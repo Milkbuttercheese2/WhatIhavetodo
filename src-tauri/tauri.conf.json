@@ -19,15 +19,17 @@
         "label": "capture",
         "url": "capture.html",
         "title": "빠른 메모",
-        "width": 560,
-        "height": 64,
+        "width": 640,
+        "height": 120,
         "visible": false,
         "decorations": false,
+        "transparent": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "resizable": false,
         "maximizable": false,
-        "minimizable": false
+        "minimizable": false,
+        "shadow": false
       }
     ],
     "security": {
