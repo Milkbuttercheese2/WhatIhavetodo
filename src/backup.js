@@ -11,7 +11,7 @@ import {persist} from './render.js';
 
 /* [JSON파일 백업] / Ctrl+S — 저장창을 띄워 폴더·이름 지정.
    한 번 지정하면 그 파일 핸들을 기억해 이후엔 같은 파일에 조용히 저장. */
-function backupPayload(){ return JSON.stringify({v:5,exported:new Date().toISOString(),fields:S.fields,presets:S.presets,idKinds:S.idKinds,settings:S.settings,items:S.items},null,1); }
+function backupPayload(){ return JSON.stringify({v:5,exported:new Date().toISOString(),fields:S.fields,presets:S.presets,idKinds:S.idKinds,settings:S.settings,recurDefs:S.recurDefs,items:S.items},null,1); }
 function backupName(){ const n=new Date(); return `뭐해야했더라_백업_${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.json`; }
 async function doBackup(){
   const text=backupPayload();
@@ -27,6 +27,7 @@ export function reconcileImported(){
   if(imp.presets){ S.presets=imp.presets; imp.presets=null; window.PRESETS=S.presets; STORE.savePresets(S.presets); renderPresets(); }
   if(imp.idKinds){ S.idKinds=imp.idKinds.filter(k=>k&&k!=='기타'); imp.idKinds=null; window.ID_KINDS=S.idKinds; STORE.saveIdKinds(S.idKinds); }
   if(imp.settings){ S.settings=Object.assign({},DEFAULT_SETTINGS,imp.settings); imp.settings=null; window.SETTINGS=S.settings; STORE.saveSettings(S.settings); renderAlarmToggle(); }
+  if(imp.recurDefs){ S.recurDefs=imp.recurDefs; imp.recurDefs=null; window.RECUR_DEFS=S.recurDefs; STORE.saveRecurDefs(S.recurDefs); }
   if(imp.fields){ let f=imp.fields; imp.fields=null;
     const custom=f.filter(x=>!CORE_FIELDS.some(cf=>cf.key===x.key)&&!['who','org','phone','mid','notice','sr'].includes(x.key));
     S.fields=CORE_FIELDS.map(cf=>{const ex=f.find(x=>x.key===cf.key);return ex?Object.assign({},cf,{on:true,builtin:true}):JSON.parse(JSON.stringify(cf));}).concat(custom);
@@ -120,6 +121,7 @@ export function initBackup(){
         presets:Array.isArray(d.presets)?d.presets:S.presets,
         idKinds:Array.isArray(d.idKinds)?d.idKinds:S.idKinds,
         settings:(d.settings&&typeof d.settings==='object')?d.settings:S.settings,
+        recurDefs:Array.isArray(d.recurDefs)?d.recurDefs:S.recurDefs,
         items:migrated
       };
       try{ await invoke('backup_import',{payload}); }
@@ -130,6 +132,7 @@ export function initBackup(){
       S.imported.presets=payload.presets;
       S.imported.idKinds=payload.idKinds;
       S.imported.settings=payload.settings;
+      S.imported.recurDefs=payload.recurDefs;
       reconcileImported(); persist();
       showToast(`백업 ${migrated.length}건을 복원했습니다`);
       return;

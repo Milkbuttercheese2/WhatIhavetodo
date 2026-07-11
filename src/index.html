@@ -22,6 +22,7 @@
     <span id="saveStatus" class="save-local" title="" style="display:none"></span>
     <button class="btn btn-tool" id="alarmToggle" title="알람 켜기/끄기">🔔 알람</button>
     <button class="btn btn-tool" id="capKeyBtn" title="어디서든 미니 입력창을 여는 전역 단축키·트레이 상주·자동 시작 설정">⚡ 빠른 메모</button>
+    <button class="btn btn-tool" id="recurBtn" title="정기적으로 반복되는 일정을 등록해두면 날짜가 되었을 때 보드에 자동으로 올라옵니다">🔁 정기함</button>
     <button class="btn btn-tool" id="dataDirBtn" title="데이터 저장 위치 확인·변경">💾 저장 위치</button>
     <button class="btn btn-tool" id="bkExp">JSON파일 백업</button>
     <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
@@ -172,6 +173,39 @@
     </div><!-- /modal-body -->
     <div class="m-actions modal-foot">
       <button class="btn btn-ok" id="presetClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 정기함 (반복 일정 정의) -->
+<div class="modal-bg" id="recurModal">
+  <div class="modal modal-split">
+    <div class="modal-body">
+      <h3>🔁 정기함</h3>
+      <div class="m-sub">정기적으로 반복되는 일정을 등록해두면, 날짜가 되었을 때 보드에 일반 메모로 자동으로 올라옵니다. 보드에서 <b>완료하면 다음 회차</b>가 예정된 날짜에 다시 올라옵니다. (규칙 자체는 보드에 보이지 않습니다.)</div>
+      <div class="rc-list" id="recurList"></div>
+      <div class="ps-new">
+        <div class="ps-new-head" id="rc-new-head">＋ 새 정기 일정</div>
+        <div class="ps-new-grid">
+          <div class="fm-field"><label>메모 (보드에 올라올 내용)</label><input type="text" id="rc-memo" placeholder="예: 주간 정례보고"></div>
+          <div class="fm-field"><label>반복 주기</label>
+            <select id="rc-freq">
+              <option value="daily">매일</option>
+              <option value="weekly" selected>매주</option>
+              <option value="monthly">매월</option>
+            </select>
+          </div>
+        </div>
+        <div class="rc-dow-wrap" id="rc-dow-wrap"><label class="fm-label">요일 (여러 개 선택 가능 · 안 고르면 시작일 요일)</label><div id="rc-dow" class="fm-recur-dow"></div></div>
+        <div class="fm-field"><label>처음 시작 (이 날짜·시각을 기준으로 반복됩니다)</label><span id="rc-dt"></span></div>
+        <div class="m-actions">
+          <button class="btn btn-cancel" id="rc-cancel-edit" style="display:none">수정 취소</button>
+          <button class="btn btn-ok" id="rc-save">정기 일정 추가</button>
+        </div>
+      </div>
+    </div>
+    <div class="m-actions modal-foot">
+      <button class="btn btn-ok" id="recurClose">닫기</button>
     </div>
   </div>
 </div>

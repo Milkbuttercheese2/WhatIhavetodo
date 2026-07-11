@@ -26,13 +26,15 @@ export const S = {
   presets: JSON.parse(JSON.stringify(DEFAULT_PRESETS)),
   idKinds: DEFAULT_ID_KINDS.slice(),
   settings: Object.assign({}, DEFAULT_SETTINGS),
+  /* 정기함 — 반복 일정 정의들(보드 밖 생성기). reconcileRecur가 도래 시 보드에 스폰 */
+  recurDefs: [],
   /* F1: 초기 로드 완료 게이트. 로드 전 저장을 막아 기존 데이터 소실을 방지 */
   loaded: false,
   /* F12: 단조 증가 ID — 같은 ms 내 충돌 방지 */
   lastId: 0,
   /* 비동기 핸드오프 채널 — STORE.load()·백업 복원이 채우고 reconcileImported()가 소비
      (구 window.__imported* 를 모듈 상태로 대체) */
-  imported: {fields:null, presets:null, idKinds:null, settings:null},
+  imported: {fields:null, presets:null, idKinds:null, settings:null, recurDefs:null},
 };
 
 /* F12: 단조 증가 ID — 같은 ms 내 충돌 방지 */
@@ -42,23 +44,76 @@ export function newId(){
   return S.lastId;
 }
 
-/* 아이템 모양의 단일 출처. 캡처·양식 저장·마이그레이션이 전부 이걸 거치므로
-   새 필드는 여기 기본값 한 줄만 추가하면 된다(예: 반복 일정 recur).
+/* 아이템 모양의 단일 출처. 캡처·양식 저장·마이그레이션·정기 스폰이 전부 이걸 거치므로
+   새 필드는 여기 기본값 한 줄만 추가하면 된다. recurId는 정기함이 스폰한 회차가
+   자기 정의를 가리키는 소프트 링크(직접 만든 항목은 null).
    partial에 id가 없으면 newId()를 부여. Rust Item 구조체(model.rs)와 형태가 짝이다. */
 export function makeItem(partial={}){
   const it = Object.assign(
-    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], al:{}},
+    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], al:{}, recurId:null},
     partial);
   if(it.id==null) it.id = newId();
   return it;
 }
 
 /* 완료 상태 토글 — 도메인 연산(순수 변경, persist/render는 호출부 책임).
-   반복 일정의 '완료 시 다음 인스턴스 생성' 훅이 향후 여기에 붙는다. */
+   정기 회차도 일반 항목과 똑같이 완료되어 done으로 떠난다('완료=떠남' 불변식). */
 export function toggleDone(it){
   it.done = !it.done;
   it.doneAt = it.done ? Date.now() : null;
   return it;
+}
+
+/* =========================================================================
+   정기함 (v2.3) — 반복은 보드 밖 '정의(recurDef)'로 두고, 도래 시점에 일반
+   메모를 보드에 스폰하는 생성기. recurDef = {id, memo, freq, dow?, time:{hh,mm},
+   next:ISO, paused}. freq: 'daily'|'weekly'|'monthly', dow: 매주 선택 요일(0=일..6=토).
+   ========================================================================= */
+/* 주어진 ISO 시각을 규칙에 따라 '다음 도래' ISO로. 시:분은 보존.
+   def(또는 {freq,dow})를 받는다. */
+export function nextRecurDate(iso, def){
+  const d = new Date(iso);
+  if(isNaN(d) || !def) return iso;
+  if(def.freq === 'daily'){ d.setDate(d.getDate()+1); return d.toISOString(); }
+  if(def.freq === 'weekly'){
+    const dow = (Array.isArray(def.dow) && def.dow.length) ? def.dow : [d.getDay()];
+    for(let i=1;i<=7;i++){ const c=new Date(d); c.setDate(d.getDate()+i); if(dow.includes(c.getDay())) return c.toISOString(); }
+    return iso;   // 이론상 도달 안 함
+  }
+  if(def.freq === 'monthly'){
+    const day=d.getDate(), t=new Date(d); t.setDate(1); t.setMonth(t.getMonth()+1);
+    const dim=new Date(t.getFullYear(), t.getMonth()+1, 0).getDate();   // 다음 달 총 일수
+    t.setDate(Math.min(day, dim));                                       // 짧은 달 클램프(1/31 → 2/28)
+    t.setHours(d.getHours(), d.getMinutes(), d.getSeconds(), d.getMilliseconds());
+    return t.toISOString();
+  }
+  return iso;
+}
+/* 로컬 자정 기준 그 날의 시작(ms). 손상 ISO는 NaN. */
+export function dayStart(iso){ const d=new Date(iso); if(isNaN(d)) return NaN; d.setHours(0,0,0,0); return d.getTime(); }
+
+/* 정기 정의들을 훑어 '도래한 회차'를 보드에 일반 메모로 스폰한다. 순수 변경(S만
+   건드림) — 무언가 바뀌면 true 반환, 호출부가 items+recurDefs를 저장한다.
+   규칙: 정의당 열린(미완료) 회차는 최대 1건. 회차의 '날'이 시작돼야 스폰(마감 시각이
+   아니라 그 날 자정 기준). 앱이 꺼져 있어 놓친 회차들은 가장 최근 것 하나로 접는다. */
+export function reconcileRecur(now=new Date()){
+  const ts=new Date(now); ts.setHours(0,0,0,0); const t0=ts.getTime();
+  let changed=false;
+  for(const def of (S.recurDefs||[])){
+    if(def.paused || !def.next) continue;
+    if(S.items.some(it=>it.recurId===def.id && !it.done)) continue;   // 이미 열린 회차 있음 → 대기
+    // 놓친 회차 접기: 다음 회차의 '날'이 오늘 이하인 동안 계속 전진(가장 최근 것만 남김)
+    let guard=0;
+    while(guard++<3660){ const nx=nextRecurDate(def.next, def); if(nx===def.next || dayStart(nx)>t0) break; def.next=nx; changed=true; }
+    // 그 회차의 날이 시작됐으면(오늘 이하) 스폰
+    if(dayStart(def.next) <= t0){
+      S.items.push(makeItem({memo:def.memo, staged:false, recurId:def.id,
+        f:{received:new Date(now).toISOString(), due:def.next}}));
+      def.next = nextRecurDate(def.next, def);
+      changed=true;
+    }
+  }
+  return changed;
 }
 
 /* 코어 필드 병합 — 사용자 정의 필드는 유지하되 접수·마감은 항상 내장으로 강제 */

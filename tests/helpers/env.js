@@ -32,7 +32,7 @@ export function setupEnv({html} = {}){
   const emitted = [];                          // [{target?, name, payload}] + [{hide:true}]
   window.__TAURI__ = {
     core: {invoke: fakeInvoke},
-    app: {getVersion: async () => '2.23.0'},
+    app: {getVersion: async () => '2.3.0'},
     event: {
       listen: async (name, fn) => {
         if(!eventListeners.has(name)) eventListeners.set(name, []);
@@ -79,12 +79,13 @@ export function setupEnv({html} = {}){
       S.items = []; S.fields = JSON.parse(JSON.stringify(CORE_FIELDS));
       S.presets = []; S.idKinds = DEFAULT_ID_KINDS.slice();
       S.settings = Object.assign({}, DEFAULT_SETTINGS);
+      S.recurDefs = [];
       S.loaded = false; S.lastId = 0;
-      S.imported = {fields:null, presets:null, idKinds:null, settings:null};
+      S.imported = {fields:null, presets:null, idKinds:null, settings:null, recurDefs:null};
       invokeCalls.length = 0; alerts.length = 0; confirmQueue.length = 0; emitted.length = 0;
       // 파일 내 이전 테스트가 남긴 UI 상태 정리
       const g = id => window.document.getElementById(id);
-      for(const id of ['formPanel','alarmBg','presetModal','capKeyModal']){ const el=g(id); if(el) el.classList.remove('on'); }
+      for(const id of ['formPanel','alarmBg','presetModal','capKeyModal','recurModal']){ const el=g(id); if(el) el.classList.remove('on'); }
     },
     /* async 클릭 핸들러(backup.js 등) 완료 대기 — setImmediate는 mock.timers
        모킹 목록에 없어 모의 타이머 아래에서도 실제로 동작한다 */

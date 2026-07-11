@@ -48,6 +48,33 @@ pub struct SubTask {
     pub al: AlarmMap,
 }
 
+/// Time-of-day for a recurrence's spawned occurrences (its due time).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecurTime {
+    pub hh: i64,
+    pub mm: i64,
+}
+
+/// A recurrence definition ("정기"), v2.3. Lives off the board and spawns a
+/// normal item when its next occurrence's day arrives (see 002_recurrence.sql
+/// and the JS `reconcileRecur`). `freq` is "daily"|"weekly"|"monthly"; `dow`
+/// (0=Sun..6=Sat) applies to weekly only; `next` is the ISO datetime of the
+/// next occurrence to spawn.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecurDef {
+    pub id: i64,
+    #[serde(default)]
+    pub memo: String,
+    pub freq: String,
+    #[serde(default)]
+    pub dow: Vec<i64>,
+    pub time: RecurTime,
+    #[serde(default)]
+    pub next: String,
+    #[serde(default)]
+    pub paused: bool,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Item {
     pub id: i64,
@@ -74,6 +101,11 @@ pub struct Item {
     pub staged: bool,
     #[serde(default)]
     pub al: AlarmMap,
+    /// Soft link to the recur_def that spawned this item, or None for a
+    /// hand-created item. Skipped from the wire when absent so ordinary items
+    /// round-trip unchanged.
+    #[serde(rename = "recurId", default, skip_serializing_if = "Option::is_none")]
+    pub recur_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -115,6 +147,8 @@ pub struct AppState {
     pub id_kinds: Vec<String>,
     #[serde(default)]
     pub settings: Settings,
+    #[serde(rename = "recurDefs", default)]
+    pub recur_defs: Vec<RecurDef>,
 }
 
 /// Same shape as the legacy HTML app's `backupPayload()` JSON, so backups
@@ -138,4 +172,6 @@ pub struct BackupPayload {
     pub settings: Settings,
     #[serde(default)]
     pub items: Vec<Item>,
+    #[serde(rename = "recurDefs", default)]
+    pub recur_defs: Vec<RecurDef>,
 }

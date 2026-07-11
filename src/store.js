@@ -21,6 +21,7 @@ export const STORE = {
     if(Array.isArray(state.presets)) S.imported.presets=state.presets;
     if(Array.isArray(state.idKinds)) S.imported.idKinds=state.idKinds;
     if(state.settings && typeof state.settings==='object') S.imported.settings=state.settings;
+    if(Array.isArray(state.recurDefs)) S.imported.recurDefs=state.recurDefs;
     return Array.isArray(state.items)?state.items:[];
   },
 
@@ -43,7 +44,8 @@ export const STORE = {
   saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>console.warn('필드 저장 실패',e)); },
   savePresets(p){ if(!S.loaded)return; invoke('save_presets', {presets:p}).catch(e=>console.warn('프리셋 저장 실패',e)); },
   saveIdKinds(k){ if(!S.loaded)return; invoke('save_id_kinds', {idKinds:k}).catch(e=>console.warn('식별번호 명칭 저장 실패',e)); },
-  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); }
+  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); },
+  saveRecurDefs(d){ if(!S.loaded)return; invoke('save_recur_defs', {recurDefs:d}).catch(e=>console.warn('정기 일정 저장 실패',e)); }
 };
 
 export function setStatus(kind){

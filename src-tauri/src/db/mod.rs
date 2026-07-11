@@ -6,6 +6,7 @@ pub mod id_kinds;
 pub mod items;
 pub mod model;
 pub mod presets;
+pub mod recur_defs;
 mod schema;
 pub mod settings;
 #[cfg(test)]

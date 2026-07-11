@@ -89,7 +89,7 @@ Split from the former single-file `app.js` in v2.21 along single-responsibility 
 
 ## Data model
 
-An item (`it`) has: `id`, `memo`, `f` (field values, keyed by `FIELDS[].key`, e.g. `f.received`, `f.due`), `contacts[]` (`{who, org, phone}`), `ids[]` (`{kind, val}` — identifier numbers like 입찰공고번호/SR번호), `subs[]` (sub-tasks: `{id, title, mid, done, al}`), `done`, `staged` (true = still in 분류 대기/inbox), and `al` (per-item alarm-fired state keyed by field name).
+An item (`it`) has: `id`, `memo`, `f` (field values, keyed by `FIELDS[].key`, e.g. `f.received`, `f.due`), `contacts[]` (`{who, org, phone}`), `ids[]` (`{kind, val}` — identifier numbers like 입찰공고번호/SR번호), `subs[]` (sub-tasks: `{id, title, mid, done, al}`), `done`, `staged` (true = still in 분류 대기/inbox), `al` (per-item alarm-fired state keyed by field name), and `recurId` (v2.3 정기함: soft link to the recur_def that spawned this occurrence, or null for a hand-made item). Recurrence itself is NOT an item property — it lives off the board as `S.recurDefs` (정기함): a generator (`reconcileRecur` in state.js) spawns a normal item when a definition's next occurrence-day arrives, so completing it means it leaves to done like any item and `placeOf()` is untouched. Definitions persist in the `recur_defs` table (see `src-tauri/src/db/recur_defs.rs`).
 
 Board placement is **always derived**, never stored: `placeOf(it)` recomputes the column every render from `done`/`staged`/`f.due`/sub-task `mid` timestamps relative to "now" and to today's day-boundaries (`dayBounds()`). If you change scheduling behavior, change `placeOf()`, not per-item state.
 
