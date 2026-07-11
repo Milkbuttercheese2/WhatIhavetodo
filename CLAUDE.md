@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Collaboration workflow (user-defined — two co-equal collaborators)
+
+`Milkbuttercheese2/WhatIhavetodo` (owner's GitHub account, formerly `wooseongkyun`) is the **single shared repo** — both collaborators have Write access directly on it. There is no fork-based workflow anymore: `origin` points straight at `Milkbuttercheese2/WhatIhavetodo`. (A personal fork at `rfastball/WhatIhavetodo` still exists as a backup/history artifact from before the collaborator invite, but is not part of the active workflow — don't push there.)
+
+**Never commit directly to `main`.** For any change:
+1. Branch off `main`: `git checkout -b <type>/<short-name>` — prefix matches this repo's commit-message convention (`feat/`, `fix/`, `docs/`, `refactor/`, `test/`), e.g. `feat/recurring-tasks`.
+2. Push the branch to `origin` and open a PR (branch → `main`) **within this one repo** — not cross-repo.
+3. Merge via the PR once reviewed; delete the branch after.
+
+Branch-protection rules on `main` (require PR, block direct push) have **not** been configured yet on GitHub as of 2026-07-11 — that requires the repo owner's admin access, which the assistant does not have. Until it's set, direct pushes to `main` are *technically* possible but against this project's convention; follow the branch+PR flow regardless. There is no CI configured on this repo yet (no GitHub Actions) — `npm test` / `cargo test --lib` are run locally before opening/merging a PR.
+
 ## Versioning convention (user-defined)
 
 User-facing version: current release = **v2.2**. Big updates bump +0.1 (v2.3), small updates +0.01 (v2.21). Manifest mapping: `vX.Y` ↔ `"X.Y.0"`, `vX.YZ` ↔ `"X.YZ.0"` in all THREE manifests together (`src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `package.json`). The UI header shows the version via `getVersion()` with a trailing `.0` stripped. A structural analysis lives in `구조 분석 보고서.md`; the built exe ships in `최종 프로그램 산출물/` and IS committed to git per user request.
