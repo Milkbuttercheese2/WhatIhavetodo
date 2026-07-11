@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "capture",
-  "description": "Capability for the mini capture window: emit to main + hide itself. core:window:default has getters only, so allow-hide must be granted explicitly.",
+  "description": "Capability for the mini capture window: emit to main + hide + auto-grow itself. core:window:default has getters only, so allow-hide/allow-set-size must be granted explicitly.",
   "windows": ["capture"],
-  "permissions": ["core:default", "core:window:allow-hide"]
+  "permissions": ["core:default", "core:window:allow-hide", "core:window:allow-set-size"]
 }
