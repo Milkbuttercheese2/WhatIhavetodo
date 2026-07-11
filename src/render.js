@@ -45,12 +45,6 @@ function earliestSub(it){
   const past=pend.filter(s=>new Date(s.mid).getTime()<=now).sort((a,b)=>new Date(b.mid)-new Date(a.mid));
   return past[0]||null;   // 가장 최근에 지난 것
 }
-/* 정렬 기준: 가장 가까운 미래 세부 시각 (없으면 null) */
-function nextSubTime(it){
-  const now=Date.now();
-  const t=(it.subs||[]).filter(s=>!s.done&&s.mid).map(s=>new Date(s.mid).getTime()).filter(x=>x>now).sort((a,b)=>a-b);
-  return t.length?t[0]:null;
-}
 /* 카드 겉면: 메모(2줄) · 가장 임박한 세부 할일 · 마감시각 만.
    관련인/식별번호는 카드에서 감추고 팝업에서만 표시. */
 function dueTagHtml(it){
@@ -61,8 +55,6 @@ function dueTagHtml(it){
   return `${alarmDot(it,'due')}<span class="tag time ${m.cls}"><span class="k">#마감:</span>${esc(m.label)}</span>`;
 }
 export function cardHtml(it,place){
-  const due=fmtDue((it.f||{}).due);
-  const urg=due&&!it.done&&(due.cls==='late'||due.cls==='soon')?' urgent':'';
   const subs=it.subs||[];
   const memo=(it.memo||'').trim();
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
@@ -73,7 +65,7 @@ export function cardHtml(it,place){
     const m=es.mid?fmtDue(es.mid):null;
     subLine=`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span>${m?`${alarmDot(es,'mid')}<span class="sub-when ${m.cls==='late'?'late':''}">${esc(m.label)}</span>`:''}</div>`;
   }
-  return `<div class="card p-${place}${it.done?' done':''}${urg}" data-open="${it.id}">
+  return `<div class="card p-${place}${it.done?' done':''}" data-open="${it.id}">
     <div class="card-top">
       <div class="chk ${it.done?'on':''}" data-id="${it.id}"></div>
       <div class="card-body">
@@ -92,26 +84,19 @@ function updateStrip(){
 export function render(){
   const cols={inbox:[],today:[],doing:[],planned:[]};
   S.items.filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
-  /* 정렬: 현재 시각에 가까운 것이 위로.
-     ① 지난 미완료 점검(최근에 지난 것이 위) → ② 다가올 점검(가까운 것이 위)
-     → ③ 마감시각(가까운 것이 위) → ④ 최신 등록 */
-  const overdueSub=(it)=>{ const now=Date.now();
-    const t=(it.subs||[]).filter(s=>!s.done&&s.mid).map(s=>new Date(s.mid).getTime()).filter(x=>x<=now).sort((a,b)=>a-b);
-    return t.length?t[0]:null; };
+  /* 정렬: 세부 점검·마감시각 레벨 구분 없이, 먼저 도래하는 시각이 위로.
+     (미완료 세부 mid + 마감 due 중 가장 이른 시각 기준 오름차순 → 시각 없으면 뒤, 최신 등록 순) */
+  const keyTime=(it)=>{
+    const ts=(it.subs||[]).filter(s=>!s.done&&s.mid).map(s=>new Date(s.mid).getTime()).filter(x=>!isNaN(x));
+    const d=(it.f||{}).due?new Date(it.f.due).getTime():NaN;
+    if(!isNaN(d)) ts.push(d);
+    return ts.length?Math.min(...ts):null;
+  };
   const sorter=(a,b)=>{
-    const ao=overdueSub(a), bo=overdueSub(b);
-    if(ao!=null&&bo!=null&&ao!==bo) return bo-ao;   // 최근에 지난 것(현재와 가까운 것)이 위
-    if(ao!=null&&bo==null) return -1;
-    if(ao==null&&bo!=null) return 1;
-    const as=nextSubTime(a), bs=nextSubTime(b);
-    if(as!=null&&bs!=null&&as!==bs) return as-bs;
-    if(as!=null&&bs==null) return -1;
-    if(as==null&&bs!=null) return 1;
-    const ad=(a.f||{}).due?new Date(a.f.due).getTime():null;
-    const bd=(b.f||{}).due?new Date(b.f.due).getTime():null;
-    if(ad!=null&&bd!=null&&ad!==bd) return ad-bd;
-    if(ad!=null&&bd==null) return -1;
-    if(ad==null&&bd!=null) return 1;
+    const at=keyTime(a), bt=keyTime(b);
+    if(at!=null&&bt!=null&&at!==bt) return at-bt;
+    if(at!=null&&bt==null) return -1;
+    if(at==null&&bt!=null) return 1;
     return b.id-a.id;
   };
   const EMPTY={inbox:'자유 입력이 여기 쌓입니다.',today:'오늘 마감·점검 건이 없습니다.<br><b>여유 있는 날</b>',doing:'진행 중인 업무가 없습니다.',planned:'예정 건이 없습니다.'};
