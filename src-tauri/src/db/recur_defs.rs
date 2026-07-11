@@ -63,6 +63,9 @@ pub fn save_recur_defs_tx(tx: &Transaction, defs: &[RecurDef]) -> DbResult<()> {
     Ok(())
 }
 
+// v2.31: save_recur_defs 커맨드(정기함 UI)가 제거돼 프로덕션 호출자는 없지만,
+// 다른 테이블 모듈과의 _tx/래퍼 대칭 유지 + 라운드트립 테스트용으로 남긴다.
+#[cfg_attr(not(test), allow(dead_code))]
 pub fn save_recur_defs(conn: &mut Connection, defs: &[RecurDef]) -> DbResult<()> {
     let tx = conn.transaction()?;
     save_recur_defs_tx(&tx, defs)?;

@@ -58,7 +58,6 @@ export function cardHtml(it,place){
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
   const es=earliestSub(it);
   const progress = subs.length?`<span class="mini-prog">세부 ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
-  const recurTag = it.recurId ? `<span class="recur-badge" title="정기함에서 올라온 일정">🔁</span>` : '';
   let subLine='';
   if(es){
     const m=es.mid?fmtDue(es.mid):null;
@@ -70,7 +69,7 @@ export function cardHtml(it,place){
       <div class="card-body">
         <div class="card-memo">${memoHtml}</div>
         ${subLine}
-        <div class="card-meta">${recurTag}${dueTagHtml(it)}${progress}</div>
+        <div class="card-meta">${dueTagHtml(it)}${progress}</div>
       </div>
       <button class="del" data-del="${it.id}" title="삭제">×</button>
     </div></div>`;

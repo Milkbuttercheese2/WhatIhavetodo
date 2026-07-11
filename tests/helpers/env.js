@@ -85,7 +85,7 @@ export function setupEnv({html} = {}){
       invokeCalls.length = 0; alerts.length = 0; confirmQueue.length = 0; emitted.length = 0;
       // 파일 내 이전 테스트가 남긴 UI 상태 정리
       const g = id => window.document.getElementById(id);
-      for(const id of ['formPanel','alarmBg','presetModal','capKeyModal','recurModal']){ const el=g(id); if(el) el.classList.remove('on'); }
+      for(const id of ['formPanel','alarmBg','presetModal']){ const el=g(id); if(el) el.classList.remove('on'); }
     },
     /* async 클릭 핸들러(backup.js 등) 완료 대기 — setImmediate는 mock.timers
        모킹 목록에 없어 모의 타이머 아래에서도 실제로 동작한다 */

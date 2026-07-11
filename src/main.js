@@ -4,18 +4,17 @@
    render↔form, render↔calendar 순환 import는 함수 선언만 오가므로 이 규칙이
    지켜지는 동안 안전하다.
    ========================================================================= */
-import {S, reconcileCore, migrateItem, reconcileRecur} from './state.js';
-import {STORE, setStatus} from './store.js';
+import {S, reconcileCore, migrateItem} from './state.js';
+import {STORE} from './store.js';
 import {$, initToast} from './dom-utils.js';
 import {initDtDelegation} from './datetime.js';
 import {initForm, closeForm} from './form.js';
 import {initPresets, renderPresets} from './presets.js';
-import {initRender, render, renderDone, persist} from './render.js';
+import {initRender, render, renderDone} from './render.js';
 import {initCalendar, renderCal} from './calendar.js';
 import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
-import {initRecurBox} from './recur-box.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -23,16 +22,8 @@ window.items=S.items; window.FIELDS=S.fields; window.PRESETS=S.presets;
 window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
-initRender(); initCalendar(); initAlarms(); initBackup(); initCapture(); initRecurBox();
+initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
 renderPresets();
-
-/* 정기함 생성기 — 도래한 회차를 보드에 스폰. 순수 reconcile는 state.js에 있고,
-   여기서 저장(items+recurDefs)과 재렌더를 묶는다. 로드 직후 + 60초마다 실행. */
-export async function runRecur(){
-  if(!S.loaded) return;
-  if(reconcileRecur()){ STORE.saveRecurDefs(S.recurDefs); await persist(); }
-}
-setInterval(runRecur, 60000);
 
 /* 탭 */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -62,8 +53,6 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape') return;
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
-  if($('recurModal').classList.contains('on')){ $('recurModal').classList.remove('on'); return; }
-  if($('capKeyModal').classList.contains('on')){ $('capKeyModal').classList.remove('on'); return; }
 });
 
 function tickClock(){ const n=new Date();
@@ -83,16 +72,12 @@ setInterval(tickClock,1000); tickClock();
     S.loaded = true;                                   // F1: 이제부터 저장 허용
     reconcileImported();
     if(pending.length) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
-    /* 정기함: 앱이 꺼져 있던 동안 도래한 회차를 스폰(놓친 건 최근 하나로 접음) */
-    if(reconcileRecur()){ STORE.saveRecurDefs(S.recurDefs); await STORE.saveAll(S.items); }
-    setStatus('saved');
     render();
   }catch(e){
     // 로드 실패를 조용히 삼키면 "빈 화면 + 저장도 안 되는" 죽은 앱이 된다.
     // S.loaded는 false로 남겨 저장을 계속 차단하되(F1), 무슨 일이 났는지와
     // 복구 경로(JSON·DB파일 불러오기)를 사용자에게 반드시 알린다.
     console.error('initial load failed', e);
-    setStatus('error');
     alert('저장된 데이터를 불러오지 못했습니다.\n\n'+e+'\n\n앱은 열려 있지만 데이터 유실 방지를 위해 저장이 차단된 상태입니다.\n[JSON·DB파일 불러오기]로 백업에서 복원하거나, 앱을 다시 시작해보세요.');
   }
   /* 버전 표기 규칙: 매니페스트 "2.2.0"→"v2.2", "2.21.0"→"v2.21"

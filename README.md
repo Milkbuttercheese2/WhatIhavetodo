@@ -5,13 +5,12 @@
 > 📖 **처음 사용하시나요?** 사용자용 안내는 [`사용 설명서.md`](./사용%20설명서.md)에 친절하게 정리돼 있습니다. 아래는 요약과 개발자용 정보입니다.
 
 - 바로 입력(자유 메모) 또는 양식 입력(관련인·식별번호·세부할일·마감시각)
-- **전역 단축키 미니 캡처 창**: 다른 프로그램을 쓰는 중에도 단축키 한 번으로 빠른 메모 입력 (v2.23)
+- **전역 단축키 미니 캡처 창**: 다른 프로그램을 쓰는 중에도 **Ctrl+Alt+Space**(고정)로 메모창을 띄워 Ctrl+Enter로 등록 (v2.23, v2.31부터 단축키 고정·설정 UI 없음)
 - 카드 위치는 저장된 시각 기준으로 **자동 배치**: 분류 대기 → 오늘 처리 / 진행 중 / 예정·대기 → 완료. 각 칸 안에서는 세부할일·마감 구분 없이 **먼저 도래하는 시각 순**으로 정렬 (v2.3)
 - 마감·중간점검 시각 도래 시 알람 (창이 뒤에 있어도 앞으로 튀어나옴)
-- **정기함(반복 일정)**: 매일/매주(요일)/매월 반복 업무를 등록해 두면 도래한 날에 일반 카드로 보드에 자동 등장 — 보드에는 "처리할 것"만 보임 (v2.3)
 - 캘린더 보기 · 완료 목록 · 검색 · 프리셋(자주 쓰는 업무 양식)
 - XLSX 보고용 내보내기, JSON/DB 파일 백업·복원
-- 창을 닫아도 **트레이에 상주**, 윈도우 시작 시 자동 실행 옵션 (v2.23)
+- 창을 닫아도 **트레이에 상주** (v2.23)
 
 ## 실행
 
@@ -36,12 +35,12 @@
 | 작업 | 명령 |
 |---|---|
 | 개발 실행 (핫리로드) | `npm run tauri dev` |
-| 프론트 테스트 (node:test + jsdom, 110개) | `npm test` |
+| 프론트 테스트 (node:test + jsdom, 88개) | `npm test` |
 | 백엔드 테스트 | `cd src-tauri && cargo test --lib` |
 | 릴리즈 빌드 | `npm run tauri build` → `src-tauri/target/release/wmhh-desktop.exe` |
 
 - 요구 도구: Rust(MSVC), Node.js. 프론트는 번들러 없는 순수 HTML/CSS/JS (`src/`).
-- 구조: Rust(`src-tauri/`)는 **CRUD 영속성 전용**, 업무 규칙(자동 배치·알람·렌더링)은 전부 프론트(`src/`)에 있습니다. v2.21부터 관심사별 ES 모듈(`state/store/render/form/placement/datetime/calendar/alarms/backup/presets/filters/recur-box/dom-utils/main` + 미니 캡처 창용 `capture-win/boot/bridge`)로 분리됐고, 저장 계층 경계는 `src/store.js`의 `STORE` 객체 하나입니다.
+- 구조: Rust(`src-tauri/`)는 **CRUD 영속성 전용**, 업무 규칙(자동 배치·알람·렌더링)은 전부 프론트(`src/`)에 있습니다. v2.21부터 관심사별 ES 모듈(`state/store/render/form/placement/datetime/calendar/alarms/backup/presets/filters/dom-utils/main` + 미니 캡처 창용 `capture-win/boot/bridge`)로 분리됐고, 저장 계층 경계는 `src/store.js`의 `STORE` 객체 하나입니다.
 - 스키마 변경은 `src-tauri/src/db/migrations/`에 **추가만** 하세요 (배포본이 여러 버전을 건너뛰고 업그레이드될 수 있음).
 - `legacy/`의 단일 HTML 파일은 이 앱의 전신(브라우저용)으로, 동작 참조용으로만 보존합니다.
 

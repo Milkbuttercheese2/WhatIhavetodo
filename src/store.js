@@ -4,7 +4,6 @@
    IndexedDB)는 더 이상 쓰지 않는다.
    ========================================================================= */
 import {S} from './state.js';
-import {$} from './dom-utils.js';
 
 export const { invoke } = window.__TAURI__.core;
 
@@ -34,9 +33,8 @@ export const STORE = {
         while(this._pending){
           const data=this._pending; this._pending=null;
           await invoke('save_all', {items:data});
-          setStatus('saved');
         }
-      }catch(e){ console.warn('저장 실패',e); setStatus('error'); }
+      }catch(e){ console.warn('저장 실패',e); }
       finally{ this._saving=null; }
     })();
   },
@@ -44,18 +42,5 @@ export const STORE = {
   saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>console.warn('필드 저장 실패',e)); },
   savePresets(p){ if(!S.loaded)return; invoke('save_presets', {presets:p}).catch(e=>console.warn('프리셋 저장 실패',e)); },
   saveIdKinds(k){ if(!S.loaded)return; invoke('save_id_kinds', {idKinds:k}).catch(e=>console.warn('식별번호 명칭 저장 실패',e)); },
-  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); },
-  saveRecurDefs(d){ if(!S.loaded)return; invoke('save_recur_defs', {recurDefs:d}).catch(e=>console.warn('정기 일정 저장 실패',e)); }
+  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); }
 };
-
-export function setStatus(kind){
-  const el=$('saveStatus'); if(!el)return;
-  if(kind==='error'){
-    el.style.display='';
-    el.className='save-local'; el.textContent='⚠ 저장 실패';
-    el.title='자동 저장에 실패했습니다. [JSON파일 백업]으로 파일을 남겨두세요.';
-  }else{
-    // 평소엔 표시 안 함 — 저장은 항상 자동으로 되고, 실패했을 때만 알리면 된다.
-    el.style.display='none';
-  }
-}

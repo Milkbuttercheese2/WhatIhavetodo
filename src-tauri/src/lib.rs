@@ -30,12 +30,6 @@ pub struct AppDb {
     pub integrity_ok: AtomicBool,
 }
 
-/// 현재 OS에 실제로 등록돼 있는 캡처 단축키 문자열.
-/// set_capture_shortcut 이 "이전 키 해제 → 새 키 등록 → 실패 시 롤백"을
-/// 하려면 지금 등록된 값을 알아야 하는데, settings 테이블은 프론트가
-/// 언제든 통째로 갈아끼우므로(save_settings) 별도 상태로 들고 있는다.
-pub struct CaptureShortcut(pub Mutex<String>);
-
 /// 트레이 '열기'·아이콘 클릭 공용 — focus_main_window 커맨드와 같은 동작.
 fn open_main_window(app: &tauri::AppHandle) {
     if let Some(win) = app.get_webview_window("main") {
@@ -301,41 +295,29 @@ pub fn run() {
                 startup_settings.get(k).and_then(|v| v.as_bool()).unwrap_or(d)
             };
 
-            // 캡처 단축키 등록 — 어떤 실패도 기동을 막지 않는다(다른 앱이
-            // 조합을 선점했을 수 있음). 실패 시 기본값으로 재시도하고,
-            // 그래도 안 되면 미등록 상태로 뜬다(설정 UI에서 재지정 가능).
-            let want = startup_settings
-                .get("captureShortcut")
-                .and_then(|v| v.as_str())
-                .unwrap_or(commands::DEFAULT_CAPTURE_SHORTCUT)
-                .to_string();
-            let registered = match commands::register_capture_shortcut(app.handle(), &want) {
-                Ok(()) => want,
-                Err(e) => {
-                    eprintln!("capture shortcut '{want}' 등록 실패: {e} — 기본값으로 재시도");
-                    let d = commands::DEFAULT_CAPTURE_SHORTCUT.to_string();
-                    if want != d && commands::register_capture_shortcut(app.handle(), &d).is_ok() {
-                        d
-                    } else {
-                        want
-                    }
-                }
-            };
-            app.manage(CaptureShortcut(Mutex::new(registered)));
+            // 캡처 단축키 등록 — v2.31부터 Ctrl+Alt+Space 고정(변경 UI 없음).
+            // 어떤 실패도 기동을 막지 않는다(다른 앱이 조합을 선점했을 수
+            // 있음) — 그 경우 단축키 없이 뜬다.
+            if let Err(e) =
+                commands::register_capture_shortcut(app.handle(), commands::CAPTURE_SHORTCUT)
+            {
+                eprintln!(
+                    "capture shortcut '{}' 등록 실패: {e} — 단축키 없이 시작",
+                    commands::CAPTURE_SHORTCUT
+                );
+            }
 
             // 트레이 — 창을 닫아도(X) 여기 남아서 단축키가 계속 산다.
             // 명시적 종료는 이 메뉴의 '종료'가 유일한 정상 경로.
             let open_i = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
-            let quick_i = MenuItem::with_id(app, "quick", "빠른 메모", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
-            let tray_menu = Menu::with_items(app, &[&open_i, &quick_i, &quit_i])?;
+            let tray_menu = Menu::with_items(app, &[&open_i, &quit_i])?;
             let mut tray = TrayIconBuilder::with_id("wmhh-tray")
                 .menu(&tray_menu)
                 .show_menu_on_left_click(false)
                 .tooltip("뭐해야 했더라")
                 .on_menu_event(|app, ev| match ev.id().as_ref() {
                     "open" => open_main_window(app),
-                    "quick" => commands::show_capture_window(app),
                     "quit" => app.exit(0),
                     _ => {}
                 })
@@ -387,7 +369,6 @@ pub fn run() {
             commands::save_presets,
             commands::save_id_kinds,
             commands::save_settings,
-            commands::save_recur_defs,
             commands::backup_export,
             commands::backup_import,
             commands::get_data_dir,
@@ -398,8 +379,6 @@ pub fn run() {
             commands::save_binary_file,
             commands::import_backup_file,
             commands::cancel_pending_import,
-            commands::set_capture_shortcut,
-            commands::set_autostart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
