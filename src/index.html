@@ -20,10 +20,7 @@
   </nav>
   <div class="head-right">
     <button class="btn btn-tool" id="alarmToggle" title="알람 켜기/끄기">🔔 알람</button>
-    <button class="btn btn-tool" id="dataDirBtn" title="데이터 저장 위치 확인·변경">💾 저장 위치</button>
-    <button class="btn btn-tool" id="bkExp">JSON파일 백업</button>
-    <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
-    <button class="btn btn-tool" id="xlsx">XLSX 다운로드</button>
+    <button class="btn btn-tool" id="settingsBtn" title="설정" aria-label="설정">⚙ 설정</button>
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div><div class="ver mono" id="appVer"></div></div>
   </div>
  </div>
@@ -170,6 +167,65 @@
     </div><!-- /modal-body -->
     <div class="m-actions modal-foot">
       <button class="btn btn-ok" id="presetClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 설정 -->
+<div class="modal-bg" id="settingsBg">
+  <div class="modal modal-wide modal-split set-modal">
+    <div class="modal-body set-body">
+      <nav class="set-tabs" id="setTabs">
+        <button class="set-tab on" data-set="general">일반</button>
+        <button class="set-tab" data-set="noti">알림</button>
+        <button class="set-tab" data-set="shortcut">단축키</button>
+        <button class="set-tab" data-set="data">데이터</button>
+      </nav>
+      <div class="set-panels">
+        <section class="set-panel on" data-panel="general">
+          <h3>일반</h3>
+          <label class="ck-row"><input type="checkbox" id="set-autostart"> Windows 시작 시 자동 실행</label>
+          <label class="ck-row ck-sub"><input type="checkbox" id="set-automin"> 자동 실행 시 창 없이 트레이로만 시작</label>
+          <label class="ck-row"><input type="checkbox" id="set-tray"> 창을 닫아도(X) 종료하지 않고 트레이에서 계속 실행</label>
+          <div class="set-field">
+            <div class="set-label">테마</div>
+            <div class="set-radios">
+              <label><input type="radio" name="theme" value="light"> 라이트</label>
+              <label><input type="radio" name="theme" value="dark"> 다크</label>
+              <label><input type="radio" name="theme" value="system"> 시스템</label>
+            </div>
+          </div>
+        </section>
+        <section class="set-panel" data-panel="noti">
+          <h3>알림</h3>
+          <label class="ck-row"><input type="checkbox" id="set-alarmon"> 알람 켜기 (시각 도래 시 알림)</label>
+          <label class="ck-row"><input type="checkbox" id="set-alarmsound"> 알람 소리 (비프음)</label>
+        </section>
+        <section class="set-panel" data-panel="shortcut">
+          <h3>빠른 캡처 단축키</h3>
+          <div class="m-sub">다른 프로그램을 쓰는 중에도 단축키로 미니 입력창을 열어 메모를 던져둘 수 있습니다. 등록된 메모는 '분류 대기'에 쌓입니다. (앱이 실행 중일 때만 동작)</div>
+          <div class="m-sub" style="margin:8px 0 0">현재: <b id="sk-cur" class="mono">—</b></div>
+          <input type="text" id="sk-rec" class="mono" readonly placeholder="여기를 클릭한 뒤 원하는 키 조합을 누르세요">
+          <div class="m-sub" style="margin:6px 0 0">모디파이어(Ctrl/Alt/Shift) + 키 조합만 가능 · 기본값 Ctrl+Alt+Space</div>
+          <div class="m-actions">
+            <button class="btn btn-cancel" id="sk-reset">기본값으로</button>
+            <button class="btn btn-ok" id="sk-save">단축키 저장</button>
+          </div>
+        </section>
+        <section class="set-panel" data-panel="data">
+          <h3>데이터</h3>
+          <div class="m-sub">데이터는 저장 위치 폴더의 SQLite 파일에 보관됩니다. JSON 백업은 되돌릴 수 있는 유일한 형식이고, XLSX는 내보내기 전용입니다.</div>
+          <div class="set-data-btns">
+            <button class="btn btn-tool" id="dataDirBtn" title="데이터 저장 위치 확인·변경">💾 저장 위치 변경</button>
+            <button class="btn btn-tool" id="bkExp">JSON파일 백업</button>
+            <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
+            <button class="btn btn-tool" id="xlsx">XLSX 다운로드</button>
+          </div>
+        </section>
+      </div>
+    </div><!-- /modal-body -->
+    <div class="m-actions modal-foot">
+      <button class="btn btn-ok" id="setClose">닫기</button>
     </div>
   </div>
 </div>

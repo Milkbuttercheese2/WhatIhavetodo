@@ -7,6 +7,7 @@ import {$, showToast} from './dom-utils.js';
 import {placeOf, PLACE_NAME} from './placement.js';
 import {renderPresets} from './presets.js';
 import {renderAlarmToggle} from './alarms.js';
+import {applyTheme} from './settings.js';
 import {persist} from './render.js';
 
 /* [JSON파일 백업] / Ctrl+S — 저장창을 띄워 폴더·이름 지정.
@@ -26,7 +27,7 @@ export function reconcileImported(){
   const imp=S.imported;
   if(imp.presets){ S.presets=imp.presets; imp.presets=null; window.PRESETS=S.presets; STORE.savePresets(S.presets); renderPresets(); }
   if(imp.idKinds){ S.idKinds=imp.idKinds.filter(k=>k&&k!=='기타'); imp.idKinds=null; window.ID_KINDS=S.idKinds; STORE.saveIdKinds(S.idKinds); }
-  if(imp.settings){ S.settings=Object.assign({},DEFAULT_SETTINGS,imp.settings); imp.settings=null; window.SETTINGS=S.settings; STORE.saveSettings(S.settings); renderAlarmToggle(); }
+  if(imp.settings){ S.settings=Object.assign({},DEFAULT_SETTINGS,imp.settings); imp.settings=null; window.SETTINGS=S.settings; STORE.saveSettings(S.settings); renderAlarmToggle(); applyTheme(); }
   /* 구 정기함(v2.3) 정의 — 기능은 제거됐지만 데이터는 백업 왕복을 위해 보존만 한다
      (초기 로드는 DB에 이미 있고, JSON 복원은 backup_import 트랜잭션이 이미 저장함) */
   if(imp.recurDefs){ S.recurDefs=imp.recurDefs; imp.recurDefs=null; }

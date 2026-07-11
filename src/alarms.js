@@ -27,7 +27,7 @@ export function checkAlarms(){
   });
   if(!fire.length)return; firedNow=fire;
   $('alarmList').innerHTML=fire.map(a=>`<div class="a-item"><b>#${a.label}</b>${esc(a.title||'(메모 없음)')}<span class="mono">${fmtT(a.iso)}</span></div>`).join('');
-  $('alarmBg').classList.add('on'); beep(); try{window.focus();}catch{} startTitleFlash(fire.length);
+  $('alarmBg').classList.add('on'); if(S.settings.alarmSound!==false) beep(); try{window.focus();}catch{} startTitleFlash(fire.length);
   invoke('focus_main_window').catch(()=>{}); // window.focus() can't steal OS focus from another app; this can
   if('Notification'in window&&Notification.permission==='granted'){ fire.forEach(a=>{try{
     const nt=new Notification('뭐해야 했더라 — '+a.label,{body:a.title||'',tag:'wmhh-'+a.key+'-'+a.iso});

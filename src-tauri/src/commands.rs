@@ -226,12 +226,51 @@ fn capture_hotkey_handler(app: &AppHandle, _sc: &Shortcut, ev: ShortcutEvent) {
     }
 }
 
-/// 시작 시 고정 단축키(CAPTURE_SHORTCUT) 등록 — lib.rs setup 전용.
+/// 등록만 담당 — setup(시작 시)과 set_capture_shortcut(변경 시)이 공용.
 pub fn register_capture_shortcut(app: &AppHandle, shortcut: &str) -> Result<(), String> {
     let sc: Shortcut = shortcut.parse().map_err(to_err)?;
     app.global_shortcut()
         .on_shortcut(sc, capture_hotkey_handler)
         .map_err(to_err)
+}
+
+/// 캡처 단축키 라이브 재등록. 실패 시 이전 단축키를 복구(롤백)하고 Err —
+/// 프론트는 Err를 받으면 설정값을 바꾸지 않는다.
+#[tauri::command]
+pub fn set_capture_shortcut(
+    app: AppHandle,
+    cur: State<crate::CaptureShortcut>,
+    shortcut: String,
+) -> Result<(), String> {
+    let mut cur = cur.0.lock().map_err(to_err)?;
+    // 파싱 검증을 먼저 — 기존 등록을 풀기 전에 실패해야 롤백조차 필요 없다
+    let _: Shortcut = shortcut
+        .parse()
+        .map_err(|e| format!("단축키 형식 오류: {e}"))?;
+    let gs = app.global_shortcut();
+    if let Ok(old) = cur.parse::<Shortcut>() {
+        let _ = gs.unregister(old); // 시작 시 등록 실패했던 유령 값이면 조용히 무시
+    }
+    if let Err(e) = register_capture_shortcut(&app, &shortcut) {
+        let _ = register_capture_shortcut(&app, &cur); // 롤백: 이전 단축키 복구
+        return Err(format!("단축키를 등록할 수 없습니다: {e}"));
+    }
+    *cur = shortcut;
+    Ok(())
+}
+
+/// Windows 시작 시 자동 실행 켜기/끄기 (HKCU Run 키 — 관리자 권한 불필요).
+#[tauri::command]
+pub fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+    let al = app.autolaunch();
+    if enabled {
+        al.enable().map_err(to_err)
+    } else if al.is_enabled().unwrap_or(false) {
+        al.disable().map_err(to_err)
+    } else {
+        Ok(()) // 이미 꺼져 있음 — 멱등
+    }
 }
 
 /// Opens a native "save as" dialog and writes `content` to wherever the

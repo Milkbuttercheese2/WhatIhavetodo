@@ -7,12 +7,21 @@ export const CORE_FIELDS = [
   {key:'due',      label:'마감시각', type:'datetime', on:true, builtin:true},
 ];
 export const DEFAULT_ID_KINDS = ['입찰공고번호','계약체결번호','공사관리번호','SR번호','국민신문고번호'];
-/* closeToTray 기본값은 Rust 쪽(lib.rs sget_bool 기본 인자)과 반드시 동일해야
-   한다 — 새 DB에는 settings 행이 없어 양쪽이 각자 파생한다. 캡처 단축키는
-   v2.31부터 Ctrl+Alt+Space 고정(commands.rs CAPTURE_SHORTCUT) — 설정이 아니다. */
+/* 아래 기본값 중 Rust 쪽과 짝이 있는 것들은 반드시 동일해야 한다 — 새 DB에는
+   settings 행이 없어 양쪽(JS/Rust)이 각자 이 기본값을 파생하기 때문:
+     closeToTray:true        ↔ lib.rs sget_bool("closeToTray"? .unwrap_or(true))
+     autostart:false         ↔ lib.rs sget_bool("autostart", false)
+     autostartMinimized:true ↔ lib.rs sget_bool("autostartMinimized", true)
+     captureShortcut         ↔ commands.rs CAPTURE_SHORTCUT 상수
+   나머지(alarmOn/alarmSound/theme/trayNoticeShown)는 프론트 전용이다. */
 export const DEFAULT_SETTINGS = {
   alarmOn:true,
+  alarmSound:true,                    // 알람 발생 시 비프음 재생 여부 (alarms.js beep 게이트)
   closeToTray:true,                   // 메인 창 X = 종료 대신 트레이로
+  autostart:false,                    // Windows 시작 시 자동 실행
+  autostartMinimized:true,            // 자동 실행 시 창 없이 트레이로만 시작
+  captureShortcut:'Ctrl+Alt+Space',   // 빠른 캡처 전역 단축키
+  theme:'system',                     // 'light' | 'dark' | 'system'
   trayNoticeShown:false,              // "트레이에서 계속 실행" 첫 안내를 이미 봤는가
 };
 export const DEFAULT_PRESETS = [];

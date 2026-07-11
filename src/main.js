@@ -15,6 +15,7 @@ import {initCalendar, renderCal} from './calendar.js';
 import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
+import {initSettings, closeSettings} from './settings.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -22,7 +23,7 @@ window.items=S.items; window.FIELDS=S.fields; window.PRESETS=S.presets;
 window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
-initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
+initRender(); initCalendar(); initAlarms(); initBackup(); initCapture(); initSettings();
 renderPresets();
 
 /* 탭 */
@@ -53,6 +54,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape') return;
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
+  if($('settingsBg').classList.contains('on')){ closeSettings(); return; }
 });
 
 function tickClock(){ const n=new Date();

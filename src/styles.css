@@ -17,6 +17,9 @@
     --gray-bg:#eef0f3; --gray-fg:#5a6472;
     --done:#6b7787; --focus:#1a5f6e;
     --icon-muted:#aeb4be;   /* 삭제 × 아이콘 기본색 */
+    /* 변수 밖에 하드코딩돼 있던 색 2개 — 다크 테마에서 갈아끼우려고 토큰화 */
+    --overlay:rgba(20,27,36,.42);   /* 모달 뒷배경 */
+    --surface-sunken:#fcfcfb;       /* 카드 안의 살짝 꺼진 면(새 항목 박스 등) */
 
     /* 내부망 배포 대상: 웹폰트 금지, 전부 시스템 폰트 (Windows 기본 탑재분) */
     --font-mono:'Cascadia Mono','Consolas','D2Coding',ui-monospace,monospace;
@@ -78,13 +81,13 @@
   .fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;margin-bottom:10px}
   .fm-field{display:flex;flex-direction:column;gap:3px}
   .fm-field label{font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em}
-  .fm-field input{font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  .fm-field input{font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink)}
   .fm-field input:focus{outline:none;border-color:var(--focus)}
   .fm-subs{margin:4px 0 12px}
   .fm-ids{margin:4px 0 12px}
   .fm-ids .t-head{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.04em}
   .fid-row{display:flex;align-items:center;gap:7px;padding:3px 0}
-  .fid-row select{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);flex:none;width:130px}
+  .fid-row select{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--ink);flex:none;width:130px}
   .fid-row input[type=text]{flex:1;min-width:0;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
   .fid-row input.fid-etc{flex:none;width:110px}
   .fid-row .rm{font-size:15px;line-height:1;color:var(--icon-muted);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
@@ -211,7 +214,7 @@
   .cal-detail .cards{gap:8px}
 
   /* ---- 모달 (필드/알람) ---- */
-  .modal-bg{display:none;position:fixed;inset:0;background:rgba(20,27,36,.42);z-index:50;align-items:flex-start;justify-content:center;padding:48px 20px;overflow-y:auto}
+  .modal-bg{display:none;position:fixed;inset:0;background:var(--overlay);z-index:50;align-items:flex-start;justify-content:center;padding:48px 20px;overflow-y:auto}
   .modal-bg.on{display:flex}
   .modal{background:var(--card);border-radius:9px;width:100%;max-width:560px;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.28);
          max-height:calc(100vh - 96px);overflow-y:auto;overscroll-behavior:contain}
@@ -224,7 +227,7 @@
   .f-row .f-del{font-size:12.5px;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 6px}
   .f-add{display:flex;gap:8px;margin-top:12px}
   .f-add input{flex:1;font-family:inherit;font-size:12.5px;padding:8px 10px;border:1px solid var(--line);border-radius:6px}
-  .f-add select{font-family:inherit;font-size:12.5px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .f-add select{font-family:inherit;font-size:12.5px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
   .f-add button{font-size:12.5px;padding:0 16px;background:var(--focus);color:#fff}
   .m-note{font-size:11px;color:var(--ink-soft);margin-top:10px;line-height:1.5}
   .m-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
@@ -251,10 +254,32 @@
   .ps-item .ps-del:hover,.idk-item .ps-del:hover{background:var(--red-bg);color:var(--red)}
   .ps-item .ps-edit:hover{background:var(--slate-bg)}
   .ps-item .ps-del:hover{background:var(--red-bg)}
-  .ps-new{border:1px dashed var(--line);border-radius:9px;padding:12px 14px;background:#fcfcfb;margin-bottom:14px}
+  .ps-new{border:1px dashed var(--line);border-radius:9px;padding:12px 14px;background:var(--surface-sunken);margin-bottom:14px}
   .ps-new-head{font-size:12.5px;font-weight:700;color:var(--focus);margin-bottom:10px}
   .ps-new-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:8px 10px;margin-bottom:10px}
   .ps-subs-head{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.04em}
+
+  /* ---- 설정 창 (좌측 탭 사이드바) ---- */
+  .set-modal{max-width:680px}
+  .modal-split .set-body{display:flex;gap:0;padding:0;min-height:360px}
+  .set-tabs{flex:none;width:132px;display:flex;flex-direction:column;gap:2px;padding:16px 10px;border-right:1px solid var(--line-soft);background:var(--paper)}
+  .set-tab{font-family:inherit;font-size:13px;font-weight:600;text-align:left;padding:9px 12px;border:none;border-radius:7px;background:transparent;color:var(--ink-soft);cursor:pointer}
+  .set-tab:hover{background:var(--line-soft);color:var(--ink)}
+  .set-tab.on{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(20,27,36,.1)}
+  .set-panels{flex:1;min-width:0;padding:20px 22px;overflow-y:auto}
+  .set-panel{display:none}
+  .set-panel.on{display:block}
+  .set-panel h3{margin-bottom:12px}
+  .ck-row{display:flex;align-items:center;gap:9px;font-size:13.5px;padding:7px 2px;cursor:pointer}
+  .ck-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--focus);flex:none}
+  .ck-sub{margin-left:24px;font-size:12.5px;color:var(--ink-soft)}
+  .set-field{margin-top:18px}
+  .set-label{font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+  .set-radios{display:flex;gap:18px}
+  .set-radios label{display:flex;align-items:center;gap:6px;font-size:13.5px;cursor:pointer}
+  .set-radios input[type=radio]{accent-color:var(--focus)}
+  #sk-rec{width:100%;margin-top:8px;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:7px;background:var(--surface-sunken);color:var(--ink)}
+  .set-data-btns{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-top:10px}
 
   .alarm-bg{position:fixed;inset:0;z-index:120;background:rgba(20,27,36,.5);display:none;align-items:center;justify-content:center;padding:20px}
   .alarm-bg.on{display:flex}
@@ -295,13 +320,13 @@
     .fm-grid{grid-template-columns:1fr}
   }
   /* ---- v5 추가 ---- */
-  textarea#inp{flex:1;min-width:0;resize:vertical;height:210px;font-family:inherit;font-size:14px;line-height:1.5;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;background:#fcfcfb;color:var(--ink)}
+  textarea#inp{flex:1;min-width:0;resize:vertical;height:210px;font-family:inherit;font-size:14px;line-height:1.5;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface-sunken);color:var(--ink)}
   textarea#inp::placeholder{color:var(--ink-soft);opacity:.7}
-  textarea#inp:focus{outline:none;border-color:var(--focus);background:#fff;box-shadow:0 0 0 3px rgba(26,95,110,.14)}
+  textarea#inp:focus{outline:none;border-color:var(--focus);background:var(--card);box-shadow:0 0 0 3px rgba(26,95,110,.14)}
   .cap-btns{display:flex;flex-direction:column;gap:6px;flex:none;width:132px}
   .fm-memo-wrap{margin-bottom:12px}
   .fm-label{display:block;font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em;margin-bottom:4px}
-  .fm-memo{width:100%;min-height:300px;resize:vertical;font-family:inherit;font-size:14px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
+  .fm-memo{width:100%;min-height:300px;resize:vertical;font-family:inherit;font-size:14px;line-height:1.55;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
   .fm-memo:focus{outline:none;border-color:var(--focus)}
   .fm-contacts{margin-bottom:12px}
   .fm-contacts .t-head{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.04em}
@@ -316,7 +341,7 @@
   .dt-inp .dt-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em}
   .dt-inp input:focus{outline:none;border-color:var(--focus)}
   .dt-pick{border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;font-size:11px;padding:4px 6px;line-height:1;flex:none}
-  .dt-pick:hover{border-color:var(--focus);background:#fff}
+  .dt-pick:hover{border-color:var(--focus);background:var(--card)}
   .dt-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
   .dt-inp{position:relative;align-items:center}
   .dt-dow{font-size:11px;color:var(--ink-soft);min-width:22px;flex:none}
@@ -350,3 +375,31 @@
   .adot{flex:none}
   @keyframes adotpulse{0%,100%{opacity:1}50%{opacity:.35}}
   .mini-prog{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);background:var(--line-soft);padding:1px 7px;border-radius:6px}
+
+  /* ===== 다크 테마 — :root 커스텀 프로퍼티만 갈아끼운다 (settings.js applyTheme가
+     <html data-theme="dark">를 세팅). color-scheme:dark 로 네이티브 폼 컨트롤·
+     스크롤바까지 어둡게. 라이트는 위 :root 기본값 그대로. ===== */
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --ink:#e6e9ee; --ink-soft:#9aa4b2;
+    --line:#333b45; --line-soft:#2a313a;
+    --paper:#161a20; --card:#1e242c;
+    --amber:#9aa4b2; --amber-bg:#2a2f36;
+    --slate:#6fb3c4; --slate-bg:#213a41;
+    --red:#e0564b; --red-bg:#3a2320;
+    --green:#5cb183; --green-bg:#1f3327;
+    --gray-bg:#262c34; --gray-fg:#9aa4b2;
+    --done:#8b95a3; --focus:#2b8ea3;
+    --icon-muted:#6b7482;
+    --stage-inbox:#8a9099; --stage-today:#e0564b; --stage-doing:#c9a13a; --stage-planned:#4fae77;
+    --overlay:rgba(0,0,0,.6);
+    --surface-sunken:#232a33;
+  }
+  /* --ink/--amber 를 배경으로 쓰는 몇 곳은 다크에서 색이 뒤집히므로 직접 덮어쓴다 */
+  :root[data-theme="dark"] .btn-inbox,
+  :root[data-theme="dark"] .btn-form{background:#3a4653;color:#fff}
+  :root[data-theme="dark"] .btn-inbox:hover,
+  :root[data-theme="dark"] .btn-form:hover{background:#46545f}
+  :root[data-theme="dark"] .toast{background:#333b45}
+  :root[data-theme="dark"] .alarm-bg{background:rgba(0,0,0,.66)}
+  :root[data-theme="dark"] .alarm .a-item{background:#241d1d}
