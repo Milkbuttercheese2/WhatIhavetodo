@@ -41,13 +41,19 @@ v2.2 이후의 작은 중간 업데이트(v2.21, v2.22, v2.23)를 묶어 정식 
 - 협업 워크플로 문서화(브랜치+PR 규칙), 시장 리서치 보고서 추가.
 - `CHANGELOG.md` 도입 — 이 버전부터 매 업데이트의 변경 내역을 기록.
 - `기능 제안서.md` 추가 — 조달청 내부망 관점 기능 추가 vs 단순 유지 제안 (보고서로만 유지, 신규 기능 개발은 보류).
+- `사용 설명서.md` 추가 — 사용자 관점의 친절한 안내서 (시작하기·기능별 사용법·FAQ).
 - README를 v2.3 현재 상태로 정비(전역 캡처·트레이 기능, 모듈 구조, 문서 목록).
+- GitHub Actions 수동 빌드 워크플로 추가(`build-windows-exe.yml`) — Actions 탭에서
+  버튼 한 번으로 Windows 러너가 정식 MSVC 빌드를 돌려 exe를 브랜치에 커밋.
+  push/PR에는 반응하지 않는 수동 전용 (상시 CI 아님).
 
-### 산출물 (미완 — Windows 빌드 필요)
-- `최종 프로그램 산출물/뭐해야 했더라.exe`는 아직 **v2.3 코드가 반영되지 않은 이전 빌드**다.
-  Windows PC에서 `npm run tauri build` 실행 후 `src-tauri/target/release/wmhh-desktop.exe`를
-  `뭐해야 했더라.exe`로 이름을 바꿔 이 폴더에 교체해야 한다.
-  (리눅스 MinGW 크로스빌드는 WebView2Loader.dll 동적 의존이 생겨 단일 exe 원칙에 맞지 않아 채택하지 않음.
+### 산출물
+- `최종 프로그램 산출물/뭐해야 했더라.exe`를 **v2.3 빌드로 갱신 완료** (GitHub Actions
+  windows-latest, MSVC 정적 링크 단일 exe 12.6MB, 테스트 JS 110·Rust 17 통과 후 빌드).
+- 이후 갱신 방법 두 가지:
+  ① GitHub **Actions 탭 → build-windows-exe → Run workflow** (Windows 러너가 MSVC 빌드 후 exe를 브랜치에 자동 커밋),
+  ② Windows PC에서 `npm run tauri build` 후 `src-tauri/target/release/wmhh-desktop.exe`를 `뭐해야 했더라.exe`로 개명해 교체.
+  (리눅스 MinGW 크로스빌드는 WebView2Loader.dll 동적 의존이 생겨 단일 exe 원칙에 맞지 않아 불채택.
   MSVC 정적 링크가 되는 Windows 네이티브 빌드만 공식 산출물로 사용.)
 
 ## v2.2 — 이전 릴리즈

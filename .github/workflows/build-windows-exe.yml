@@ -1,0 +1,63 @@
+# 최종 산출물 exe 빌드 — 수동 트리거 전용 (Actions 탭 → Run workflow)
+# Windows 러너에서 정식 MSVC 빌드 후, 실행한 브랜치에 exe를 커밋해 되돌려준다.
+# 상시 CI가 아니다: push/PR에는 절대 반응하지 않는다 (프로젝트 방침: 테스트는 로컬 실행).
+name: build-windows-exe
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Node 22 필수: npm test의 `node --test "glob"` 패턴이 Node 21+에서만 동작
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Rust 빌드 캐시
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: win-msvc-cargo-${{ hashFiles('src-tauri/Cargo.lock') }}
+
+      - run: npm ci
+
+      - name: 테스트 (JS + Rust)
+        shell: bash
+        run: |
+          npm test
+          cd src-tauri && cargo test --lib
+
+      - name: Tauri 릴리즈 빌드 (MSVC)
+        run: npm run tauri build
+
+      - name: 산출물 폴더로 복사
+        shell: bash
+        run: cp "src-tauri/target/release/wmhh-desktop.exe" "최종 프로그램 산출물/뭐해야 했더라.exe"
+
+      - name: 실행 브랜치에 exe 커밋
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "최종 프로그램 산출물/뭐해야 했더라.exe"
+          git diff --cached --quiet && { echo "exe 변경 없음 — 커밋 생략"; exit 0; }
+          git commit -m "build: 최종 산출물 exe 갱신 (GitHub Actions windows-latest MSVC 빌드)"
+          git push
+
+      - name: 아티팩트 업로드 (다운로드용 사본)
+        uses: actions/upload-artifact@v4
+        with:
+          name: wmhh-exe
+          path: 최종 프로그램 산출물/뭐해야 했더라.exe
