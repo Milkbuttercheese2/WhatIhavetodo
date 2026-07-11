@@ -6,7 +6,7 @@ use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutEvent, S
 
 use crate::config::{self, AppConfig};
 use crate::db;
-use crate::db::model::{AppState, BackupPayload, FieldDef, Item, Preset, Settings};
+use crate::db::model::{AppState, BackupPayload, FieldDef, Item, Preset, RecurDef, Settings};
 use crate::AppDb;
 
 /// How many rotated .sqlite backups to keep (see db::rotate_backup).
@@ -98,6 +98,13 @@ pub fn save_settings(state: State<AppDb>, settings: Settings) -> Result<(), Stri
     ensure_integrity(&state)?;
     let mut conn = state.conn.lock().map_err(to_err)?;
     db::settings::save_settings(&mut conn, &settings).map_err(to_err)
+}
+
+#[tauri::command]
+pub fn save_recur_defs(state: State<AppDb>, recur_defs: Vec<RecurDef>) -> Result<(), String> {
+    ensure_integrity(&state)?;
+    let mut conn = state.conn.lock().map_err(to_err)?;
+    db::recur_defs::save_recur_defs(&mut conn, &recur_defs).map_err(to_err)
 }
 
 #[tauri::command]

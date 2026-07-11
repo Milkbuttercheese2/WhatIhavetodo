@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use rusqlite::Connection;
 
 use super::model::*;
-use super::{backup, fields, id_kinds, items, presets, settings};
+use super::{backup, fields, id_kinds, items, presets, recur_defs, settings};
 
 fn test_conn() -> Connection {
     let mut conn = Connection::open_in_memory().unwrap();
@@ -48,6 +48,7 @@ fn sample_items() -> Vec<Item> {
         done_at: None,
         staged: true,
         al: al1,
+        recur_id: Some(3001),
     };
 
     let item2 = Item {
@@ -61,6 +62,7 @@ fn sample_items() -> Vec<Item> {
         done_at: Some(1_752_000_000_000),
         staged: false,
         al: AlarmMap::new(),
+        recur_id: None,
     };
 
     vec![item1, item2]
@@ -98,6 +100,48 @@ fn items_round_trip() {
         Some(AlarmState::Fired(true)) => {}
         other => panic!("expected fired due alarm, got {other:?}"),
     }
+
+    // recur_id (soft link to a recur_def) survives; a hand-made item stays None.
+    assert_eq!(loaded[0].recur_id, Some(3001));
+    assert_eq!(loaded[1].recur_id, None);
+}
+
+#[test]
+fn recur_defs_round_trip() {
+    let mut conn = test_conn();
+    let defs = vec![
+        RecurDef {
+            id: 3001,
+            memo: "주간 정례보고".into(),
+            freq: "weekly".into(),
+            dow: vec![1, 3, 5],
+            time: RecurTime { hh: 9, mm: 30 },
+            next: "2026-07-13T09:30:00.000Z".into(),
+            paused: false,
+        },
+        RecurDef {
+            id: 3002,
+            memo: "매일 야근 체크".into(),
+            freq: "daily".into(),
+            dow: vec![],
+            time: RecurTime { hh: 18, mm: 0 },
+            next: "2026-07-11T18:00:00.000Z".into(),
+            paused: true,
+        },
+    ];
+    recur_defs::save_recur_defs(&mut conn, &defs).unwrap();
+    let loaded = recur_defs::load_recur_defs(&conn).unwrap();
+    assert_eq!(loaded.len(), 2);
+    assert_eq!(loaded[0].id, 3001);
+    assert_eq!(loaded[0].freq, "weekly");
+    assert_eq!(loaded[0].dow, vec![1, 3, 5]);
+    assert_eq!(loaded[0].time.hh, 9);
+    assert_eq!(loaded[0].time.mm, 30);
+    assert_eq!(loaded[0].next, "2026-07-13T09:30:00.000Z");
+    assert!(!loaded[0].paused);
+    // daily def: empty dow, paused flag preserved
+    assert_eq!(loaded[1].dow, Vec::<i64>::new());
+    assert!(loaded[1].paused);
 }
 
 #[test]
@@ -174,9 +218,21 @@ fn backup_export_import_round_trip() {
     settings.insert("alarmOn".to_string(), serde_json::Value::Bool(false));
     settings::save_settings(&mut conn, &settings).unwrap();
 
+    let defs = vec![RecurDef {
+        id: 3001,
+        memo: "정례보고".into(),
+        freq: "weekly".into(),
+        dow: vec![1],
+        time: RecurTime { hh: 9, mm: 0 },
+        next: "2026-07-13T09:00:00.000Z".into(),
+        paused: false,
+    }];
+    recur_defs::save_recur_defs(&mut conn, &defs).unwrap();
+
     let payload = backup::export_payload(&conn).unwrap();
     assert_eq!(payload.v, backup::BACKUP_VERSION);
     assert_eq!(payload.items.len(), 2);
+    assert_eq!(payload.recur_defs.len(), 1);
 
     // Simulate importing into a fresh database, as would happen migrating
     // from the legacy HTML app's JSON backup.
@@ -189,6 +245,11 @@ fn backup_export_import_round_trip() {
         restored_settings.get("alarmOn"),
         Some(&serde_json::Value::Bool(false))
     );
+    // Recurrence definitions ride along in the JSON backup for free.
+    let restored_defs = recur_defs::load_recur_defs(&fresh).unwrap();
+    assert_eq!(restored_defs.len(), 1);
+    assert_eq!(restored_defs[0].id, 3001);
+    assert_eq!(restored_defs[0].next, "2026-07-13T09:00:00.000Z");
 }
 
 #[test]

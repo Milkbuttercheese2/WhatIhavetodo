@@ -12,7 +12,10 @@ use rusqlite_migration::{Migrations, M};
 /// the target intranet, so an install may jump straight from an old schema
 /// version to the newest one, skipping several releases at once.
 static MIGRATIONS: LazyLock<Migrations<'static>> = LazyLock::new(|| {
-    Migrations::new(vec![M::up(include_str!("migrations/001_init.sql"))])
+    Migrations::new(vec![
+        M::up(include_str!("migrations/001_init.sql")),
+        M::up(include_str!("migrations/002_recurrence.sql")),
+    ])
 });
 
 pub fn migrate(conn: &mut Connection) -> Result<(), rusqlite_migration::Error> {

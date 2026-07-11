@@ -4,17 +4,18 @@
    render↔form, render↔calendar 순환 import는 함수 선언만 오가므로 이 규칙이
    지켜지는 동안 안전하다.
    ========================================================================= */
-import {S, reconcileCore, migrateItem} from './state.js';
+import {S, reconcileCore, migrateItem, reconcileRecur} from './state.js';
 import {STORE, setStatus} from './store.js';
 import {$, initToast} from './dom-utils.js';
 import {initDtDelegation} from './datetime.js';
 import {initForm, closeForm} from './form.js';
 import {initPresets, renderPresets} from './presets.js';
-import {initRender, render, renderDone} from './render.js';
+import {initRender, render, renderDone, persist} from './render.js';
 import {initCalendar, renderCal} from './calendar.js';
 import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
+import {initRecurBox} from './recur-box.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -22,8 +23,16 @@ window.items=S.items; window.FIELDS=S.fields; window.PRESETS=S.presets;
 window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
-initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
+initRender(); initCalendar(); initAlarms(); initBackup(); initCapture(); initRecurBox();
 renderPresets();
+
+/* 정기함 생성기 — 도래한 회차를 보드에 스폰. 순수 reconcile는 state.js에 있고,
+   여기서 저장(items+recurDefs)과 재렌더를 묶는다. 로드 직후 + 60초마다 실행. */
+export async function runRecur(){
+  if(!S.loaded) return;
+  if(reconcileRecur()){ STORE.saveRecurDefs(S.recurDefs); await persist(); }
+}
+setInterval(runRecur, 60000);
 
 /* 탭 */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -53,6 +62,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape') return;
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
+  if($('recurModal').classList.contains('on')){ $('recurModal').classList.remove('on'); return; }
   if($('capKeyModal').classList.contains('on')){ $('capKeyModal').classList.remove('on'); return; }
 });
 
@@ -73,6 +83,8 @@ setInterval(tickClock,1000); tickClock();
     S.loaded = true;                                   // F1: 이제부터 저장 허용
     reconcileImported();
     if(pending.length) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
+    /* 정기함: 앱이 꺼져 있던 동안 도래한 회차를 스폰(놓친 건 최근 하나로 접음) */
+    if(reconcileRecur()){ STORE.saveRecurDefs(S.recurDefs); await STORE.saveAll(S.items); }
     setStatus('saved');
     render();
   }catch(e){
