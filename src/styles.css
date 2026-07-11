@@ -142,7 +142,6 @@
   .card.p-doing{border-left-color:var(--stage-doing)}
   .card.p-planned{border-left-color:var(--stage-planned)}
   .card.p-done{border-left-color:var(--done);opacity:.9}
-  .card.urgent{background:var(--red-bg)}
   .card-top{display:flex;align-items:flex-start;gap:8px}
   .chk{width:17px;height:17px;flex:none;margin-top:2px;border:1.6px solid var(--line);border-radius:6px;cursor:pointer;background:#fff;position:relative}
   .chk:hover{border-color:var(--focus)}
