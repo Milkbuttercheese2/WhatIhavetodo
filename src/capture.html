@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>빠른 메모</title>
+<!-- 미니 캡처 창 전용 페이지. 메인 앱 모듈 그래프와 완전히 독립 —
+     store.js 등을 끌어오면 이 웹뷰에서도 최상위 부작용이 실행된다.
+     외부(인터넷) 리소스 금지: 내부망(air-gapped) 배포 대상. -->
+<style>
+ html,body{margin:0;height:100%;overflow:hidden}
+ body{display:flex;background:#252b38;border:1px solid #3a4356;box-sizing:border-box}
+ #cap-inp{flex:1;resize:none;border:0;outline:0;background:transparent;color:#e8ecf4;
+   font:15px/1.45 system-ui,'Malgun Gothic',sans-serif;padding:10px 14px}
+ #cap-inp::placeholder{color:#7d8798}
+ #cap-flash{display:none;align-items:center;justify-content:center;flex:1;
+   color:#7ee08a;font:600 15px system-ui,'Malgun Gothic',sans-serif}
+ body.flash #cap-inp{display:none}
+ body.flash #cap-flash{display:flex}
+</style>
+</head>
+<body>
+<textarea id="cap-inp" placeholder="빠른 메모 — Ctrl+Enter 등록 · Esc 닫기"></textarea>
+<div id="cap-flash">✔ 등록됨</div>
+<script type="module" src="capture-boot.js"></script>
+</body>
+</html>

@@ -475,3 +475,23 @@ fn backup_rotation_keeps_only_newest_n() {
 
     let _ = std::fs::remove_dir_all(&dir);
 }
+
+#[test]
+fn now_stamp_and_fs_stamp_share_format_and_timezone() {
+    let conn = test_conn();
+    let a = super::now_stamp(&conn).unwrap();
+    let b = super::fs_stamp();
+    // 포맷: YYYYMMDD_HHMMSS — 사전순==시간순의 전제
+    for s in [&a, &b] {
+        assert_eq!(s.len(), 15, "stamp {s}");
+        assert!(s.chars().enumerate().all(|(i, c)| if i == 8 { c == '_' } else { c.is_ascii_digit() }), "stamp {s}");
+    }
+    // 같은 시각대(localtime)여야 함 — 한쪽만 UTC면 KST에서 9시간 어긋난다.
+    // 분 접두어(YYYYMMDD_HHMM)까지 비교; 분 경계 직전 호출이면 1회 재시도.
+    let same_minute = |x: &str, y: &str| x[..13] == y[..13];
+    if !same_minute(&a, &b) {
+        let a2 = super::now_stamp(&conn).unwrap();
+        let b2 = super::fs_stamp();
+        assert!(same_minute(&a2, &b2), "now_stamp {a2} vs fs_stamp {b2} — 시각대 불일치");
+    }
+}

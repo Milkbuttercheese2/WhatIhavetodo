@@ -1,6 +1,6 @@
 [package]
 name = "wmhh-desktop"
-version = "2.2.0"
+version = "2.23.0"
 description = "뭐해야 했더라 — 전화받고 잊어버리기 전에 던져두는 업무 메모 보드"
 authors = ["wooseongkyun"]
 edition = "2021"
@@ -18,10 +18,12 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 rusqlite = { version = "0.32", features = ["bundled"] }

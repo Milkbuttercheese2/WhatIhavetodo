@@ -6,7 +6,10 @@ use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::{Emitter, Manager};
+use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_dialog::{DialogExt, MessageDialogKind};
 
 pub struct AppDb {
@@ -27,6 +30,21 @@ pub struct AppDb {
     pub integrity_ok: AtomicBool,
 }
 
+/// 현재 OS에 실제로 등록돼 있는 캡처 단축키 문자열.
+/// set_capture_shortcut 이 "이전 키 해제 → 새 키 등록 → 실패 시 롤백"을
+/// 하려면 지금 등록된 값을 알아야 하는데, settings 테이블은 프론트가
+/// 언제든 통째로 갈아끼우므로(save_settings) 별도 상태로 들고 있는다.
+pub struct CaptureShortcut(pub Mutex<String>);
+
+/// 트레이 '열기'·아이콘 클릭 공용 — focus_main_window 커맨드와 같은 동작.
+fn open_main_window(app: &tauri::AppHandle) {
+    if let Some(win) = app.get_webview_window("main") {
+        let _ = win.unminimize();
+        let _ = win.show();
+        let _ = win.set_focus();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -44,7 +62,52 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        // "--autostart"는 Run 키에 박히는 표식 인자일 뿐이다 — 시작 시
+        // 최소화 여부는 그때그때 settings(autostartMinimized)로 판단해야
+        // 토글이 레지스트리 재작성 없이 즉시 반영된다.
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec!["--autostart"]),
+        ))
+        // 메인 창 닫기(X): closeToTray(기본 켬)면 종료 대신 트레이로 숨김.
+        // 종료 경로는 여기(app.exit)와 트레이 '종료' 둘로 일원화 — 숨은
+        // capture 창이 프로세스를 몰래 살려두는 좀비 경로를 만들지 않는다.
+        .on_window_event(|window, event| {
+            if window.label() != "main" {
+                return;
+            }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                let app = window.app_handle();
+                let close_to_tray = app
+                    .try_state::<AppDb>()
+                    .and_then(|db| {
+                        let conn = db.conn.lock().ok()?;
+                        db::settings::load_settings(&conn).ok()
+                    })
+                    .and_then(|s| s.get("closeToTray").and_then(|v| v.as_bool()))
+                    .unwrap_or(true);
+                if close_to_tray {
+                    api.prevent_close();
+                    let _ = window.hide();
+                    // 첫 회 안내 토스트용 — 프론트(capture-bridge.js)가 소비
+                    let _ = app.emit_to("main", "wmhh://hidden-to-tray", ());
+                } else {
+                    app.exit(0);
+                }
+            }
+        })
         .setup(|app| {
+            // conf에서 main을 visible:false로 바꾼 것은 '시작 시 최소화'를
+            // 깜빡임 없이 지원하기 위해서다. 일반 실행은 즉시 표시하고,
+            // 자동 시작(--autostart)일 때만 아래에서 설정을 보고 결정한다.
+            let autostart_launch = std::env::args().any(|a| a == "--autostart");
+            if !autostart_launch {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.show();
+                }
+            }
+
             let app_config_dir = app
                 .path()
                 .app_config_dir()
@@ -232,6 +295,81 @@ pub fn run() {
                 }
             };
 
+            /* ---- v2.23: 전역 캡처 단축키 + 트레이 상주 + 자동 시작 ---- */
+            let startup_settings = db::settings::load_settings(&conn).unwrap_or_default();
+            let sget_bool = |k: &str, d: bool| {
+                startup_settings.get(k).and_then(|v| v.as_bool()).unwrap_or(d)
+            };
+
+            // 캡처 단축키 등록 — 어떤 실패도 기동을 막지 않는다(다른 앱이
+            // 조합을 선점했을 수 있음). 실패 시 기본값으로 재시도하고,
+            // 그래도 안 되면 미등록 상태로 뜬다(설정 UI에서 재지정 가능).
+            let want = startup_settings
+                .get("captureShortcut")
+                .and_then(|v| v.as_str())
+                .unwrap_or(commands::DEFAULT_CAPTURE_SHORTCUT)
+                .to_string();
+            let registered = match commands::register_capture_shortcut(app.handle(), &want) {
+                Ok(()) => want,
+                Err(e) => {
+                    eprintln!("capture shortcut '{want}' 등록 실패: {e} — 기본값으로 재시도");
+                    let d = commands::DEFAULT_CAPTURE_SHORTCUT.to_string();
+                    if want != d && commands::register_capture_shortcut(app.handle(), &d).is_ok() {
+                        d
+                    } else {
+                        want
+                    }
+                }
+            };
+            app.manage(CaptureShortcut(Mutex::new(registered)));
+
+            // 트레이 — 창을 닫아도(X) 여기 남아서 단축키가 계속 산다.
+            // 명시적 종료는 이 메뉴의 '종료'가 유일한 정상 경로.
+            let open_i = MenuItem::with_id(app, "open", "열기", true, None::<&str>)?;
+            let quick_i = MenuItem::with_id(app, "quick", "빠른 메모", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "종료", true, None::<&str>)?;
+            let tray_menu = Menu::with_items(app, &[&open_i, &quick_i, &quit_i])?;
+            let mut tray = TrayIconBuilder::with_id("wmhh-tray")
+                .menu(&tray_menu)
+                .show_menu_on_left_click(false)
+                .tooltip("뭐해야 했더라")
+                .on_menu_event(|app, ev| match ev.id().as_ref() {
+                    "open" => open_main_window(app),
+                    "quick" => commands::show_capture_window(app),
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, ev| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = ev
+                    {
+                        open_main_window(tray.app_handle());
+                    }
+                });
+            if let Some(icon) = app.default_window_icon() {
+                tray = tray.icon(icon.clone());
+            }
+            tray.build(app)?;
+
+            // 자동 시작이 켜져 있으면 매 시작마다 enable()을 재호출 —
+            // 포터블 exe가 다른 폴더로 옮겨졌을 때 Run 키 경로를 자가 치유.
+            if sget_bool("autostart", false) {
+                use tauri_plugin_autostart::ManagerExt;
+                if let Err(e) = app.autolaunch().enable() {
+                    eprintln!("autostart 재등록 실패: {e}");
+                }
+            }
+
+            // 자동 시작 실행이지만 '시작 시 최소화'가 꺼져 있으면 창 표시
+            if autostart_launch && !sget_bool("autostartMinimized", true) {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.show();
+                }
+            }
+
             app.manage(AppDb {
                 conn: Mutex::new(conn),
                 db_path,
@@ -259,6 +397,8 @@ pub fn run() {
             commands::save_binary_file,
             commands::import_backup_file,
             commands::cancel_pending_import,
+            commands::set_capture_shortcut,
+            commands::set_autostart,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

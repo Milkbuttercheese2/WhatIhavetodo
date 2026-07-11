@@ -254,6 +254,13 @@
   .ps-new-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:8px 10px;margin-bottom:10px}
   .ps-subs-head{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.04em}
 
+  /* 빠른 메모(전역 캡처) 설정 모달 */
+  #ck-rec{width:100%;box-sizing:border-box;text-align:center;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer}
+  #ck-rec:focus{outline:none;border-color:var(--focus)}
+  .ck-row{display:flex;align-items:center;gap:7px;font-size:13px;padding:5px 0;cursor:pointer}
+  .ck-row input{cursor:pointer}
+  .ck-sub{margin-left:22px;color:var(--ink-soft)}
+
   .alarm-bg{position:fixed;inset:0;z-index:120;background:rgba(20,27,36,.5);display:none;align-items:center;justify-content:center;padding:20px}
   .alarm-bg.on{display:flex}
   .alarm{background:var(--card);border-top:5px solid var(--red);border-radius:9px;max-width:500px;width:100%;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
