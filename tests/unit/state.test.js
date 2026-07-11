@@ -5,7 +5,41 @@ import assert from 'node:assert/strict';
 // reconcileCore가 window.FIELDS에 미러를 쓰므로 최소 스텁 (import 전에)
 globalThis.window = globalThis.window || {};
 
-const {S, newId, migrateItem, reconcileCore, CORE_FIELDS} = await import('../../src/state.js');
+const {S, newId, makeItem, toggleDone, migrateItem, reconcileCore, CORE_FIELDS} = await import('../../src/state.js');
+
+test('makeItem: 기본 모양 채움 + id 자동 부여', () => {
+  S.lastId = 0;
+  const it = makeItem({memo:'테스트'});
+  assert.equal(it.memo, '테스트');
+  // 기본값 8종
+  assert.equal(it.done, false);
+  assert.equal(it.doneAt, null);
+  assert.equal(it.staged, false);
+  assert.deepEqual(it.f, {});
+  assert.deepEqual(it.contacts, []);
+  assert.deepEqual(it.ids, []);
+  assert.deepEqual(it.subs, []);
+  assert.deepEqual(it.al, {});
+  assert.equal(typeof it.id, 'number');
+});
+
+test('makeItem: partial이 기본값을 이기고, 명시 id는 보존', () => {
+  const it = makeItem({id:42, staged:true, f:{received:'x'}, subs:[{id:1,title:'s'}]});
+  assert.equal(it.id, 42);            // newId() 호출 안 함
+  assert.equal(it.staged, true);
+  assert.equal(it.f.received, 'x');
+  assert.equal(it.subs[0].title, 's');
+});
+
+test('toggleDone: done 토글 + doneAt 3상태', () => {
+  const it = makeItem({memo:'m'});
+  toggleDone(it);
+  assert.equal(it.done, true);
+  assert.equal(typeof it.doneAt, 'number');
+  toggleDone(it);
+  assert.equal(it.done, false);
+  assert.equal(it.doneAt, null);      // 재오픈 시 null
+});
 
 test('newId: F12 — 같은 ms 안에서도 단조 증가', () => {
   S.lastId = Date.now() + 10_000;               // 항상 t <= lastId가 되도록 시드

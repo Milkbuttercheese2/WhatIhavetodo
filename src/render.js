@@ -1,20 +1,18 @@
 /* =========================================================================
    렌더 — 보드/완료 카드 재생성 + persist()
    ========================================================================= */
-import {S} from './state.js';
+import {S, toggleDone} from './state.js';
 import {STORE} from './store.js';
 import {$, esc, escAttr, showToast, askNotify} from './dom-utils.js';
 import {fmtDue} from './datetime.js';
 import {placeOf} from './placement.js';
+import {textMatch} from './filters.js';
 import {openForm} from './form.js';
 import {renderCal} from './calendar.js';
 
 let q='', dq='';
 
-function contactText(it){ return (it.contacts||[]).map(c=>`${c.who} ${c.org} ${c.phone}`).join(' '); }
-function idText(it){ return (it.ids||[]).map(x=>`${x.kind} ${x.val}`).join(' '); }
-function haystack(it){ return ((it.memo||'')+' '+contactText(it)+' '+idText(it)+' '+(it.subs||[]).map(s=>s.title).join(' ')).toLowerCase(); }
-function matchesQ(it){ return !q || haystack(it).includes(q); }
+function matchesQ(it){ return textMatch(it, q); }
 
 function alarmDot(obj,key){
   const iso=key==='due'?(obj.f||{}).due:obj.mid;
@@ -108,7 +106,7 @@ export function render(){
   updateStrip(); renderCal(); renderDone();
 }
 export function renderDone(){
-  const list=S.items.filter(it=>it.done).filter(it=>!dq||haystack(it).includes(dq)).sort((a,b)=>(b.doneAt||b.id)-(a.doneAt||a.id));
+  const list=S.items.filter(it=>it.done).filter(it=>textMatch(it, dq)).sort((a,b)=>(b.doneAt||b.id)-(a.doneAt||a.id));
   $('done-count').textContent=S.items.filter(it=>it.done).length;
   $('col-done').innerHTML=list.length?list.map(it=>cardHtml(it,'done')).join(''):`<div class="empty">${dq?'검색 결과가 없습니다.':'완료된 업무가 없습니다.'}</div>`;
 }
@@ -118,7 +116,7 @@ export function initRender(){
   /* 카드 상호작용 */
   document.body.addEventListener('click',e=>{
     const chk=e.target.closest('.chk');
-    if(chk&&chk.dataset.id){ e.stopPropagation(); const it=S.items.find(x=>x.id==chk.dataset.id); if(it){it.done=!it.done; it.doneAt=it.done?Date.now():null; persist();} return; }
+    if(chk&&chk.dataset.id){ e.stopPropagation(); const it=S.items.find(x=>x.id==chk.dataset.id); if(it){toggleDone(it); persist();} return; }
     const del=e.target.closest('.del');
     if(del&&del.dataset.del){ e.stopPropagation(); const id=+del.dataset.del; const idx=S.items.findIndex(x=>x.id==id);
       if(idx>=0){

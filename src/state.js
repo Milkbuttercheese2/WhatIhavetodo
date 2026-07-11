@@ -42,6 +42,25 @@ export function newId(){
   return S.lastId;
 }
 
+/* 아이템 모양의 단일 출처. 캡처·양식 저장·마이그레이션이 전부 이걸 거치므로
+   새 필드는 여기 기본값 한 줄만 추가하면 된다(예: 반복 일정 recur).
+   partial에 id가 없으면 newId()를 부여. Rust Item 구조체(model.rs)와 형태가 짝이다. */
+export function makeItem(partial={}){
+  const it = Object.assign(
+    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], al:{}},
+    partial);
+  if(it.id==null) it.id = newId();
+  return it;
+}
+
+/* 완료 상태 토글 — 도메인 연산(순수 변경, persist/render는 호출부 책임).
+   반복 일정의 '완료 시 다음 인스턴스 생성' 훅이 향후 여기에 붙는다. */
+export function toggleDone(it){
+  it.done = !it.done;
+  it.doneAt = it.done ? Date.now() : null;
+  return it;
+}
+
 /* 코어 필드 병합 — 사용자 정의 필드는 유지하되 접수·마감은 항상 내장으로 강제 */
 export function reconcileCore(){
   const custom = S.fields.filter(f=>!CORE_FIELDS.some(cf=>cf.key===f.key) && !['who','org','phone','mid','notice','sr'].includes(f.key));

@@ -1,7 +1,7 @@
 /* =========================================================================
    바로 입력 + 양식 패널
    ========================================================================= */
-import {S, newId} from './state.js';
+import {S, newId, makeItem} from './state.js';
 import {$, esc, escAttr, enableDragReorder} from './dom-utils.js';
 import {dtInner, dtInputHtml, refreshDow, readDtInput, validateAllDt, isoToDateStr, isoToTimeStr} from './datetime.js';
 import {placeOf, PLACE_NAME} from './placement.js';
@@ -10,8 +10,7 @@ import {persist} from './render.js';
 /* (1) 메모 텍스트 → 분류 대기. 바로 입력 버튼과 미니 캡처 창(capture-bridge)이 공용 */
 export function captureMemo(t){
   t=String(t||'').trim(); if(!t) return false;
-  S.items.push({id:newId(), memo:t, done:false, staged:true,
-    f:{received:new Date().toISOString()}, contacts:[], ids:[], subs:[], al:{}});
+  S.items.push(makeItem({memo:t, staged:true, f:{received:new Date().toISOString()}}));
   persist(); return true;
 }
 /* 바로 입력 버튼/Ctrl+Enter — #inp 를 읽어 captureMemo 로 위임 */
@@ -179,7 +178,7 @@ export function initForm(){
         if(oldDue !== d.f.due) delete it.al.due;   // F2: 마감이 바뀌면 알람 재무장
       }
     }else{
-      S.items.push({id:newId(), memo:d.memo, done:false, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs, al:{}});
+      S.items.push(makeItem({memo:d.memo, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs}));
     }
     closeForm(); persist();
   });
