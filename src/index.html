@@ -180,6 +180,7 @@
         <button class="set-tab" data-set="noti">알림</button>
         <button class="set-tab" data-set="shortcut">단축키</button>
         <button class="set-tab" data-set="data">데이터</button>
+        <button class="set-tab" data-set="advanced">고급</button>
       </nav>
       <div class="set-panels">
         <section class="set-panel on" data-panel="general">
@@ -221,6 +222,11 @@
             <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
             <button class="btn btn-tool" id="xlsx">XLSX 다운로드</button>
           </div>
+        </section>
+        <section class="set-panel" data-panel="advanced">
+          <h3>고급</h3>
+          <div class="m-sub">평소엔 쓰지 않는 고급 기능을 모아두는 곳입니다. 기본은 모두 꺼져 있으며, 켠 기능만 동작합니다.</div>
+          <div class="set-adv-slots" id="setAdvSlots"></div>
         </section>
       </div>
     </div><!-- /modal-body -->

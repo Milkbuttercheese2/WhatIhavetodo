@@ -45,6 +45,20 @@ test('탭 클릭이 해당 패널만 .on 으로 바꾼다', async () => {
   assert.equal(env.document.querySelector('.set-panel[data-panel="general"]').classList.contains('on'), false);
 });
 
+test('고급 탭: nav 버튼과 슬롯 컨테이너가 있고 클릭 시 전환된다', async () => {
+  await env.resetS();
+  $('settingsBtn').click();                 // 기본 일반 탭
+  const advTab = env.document.querySelector('.set-tab[data-set="advanced"]');
+  const advPanel = env.document.querySelector('.set-panel[data-panel="advanced"]');
+  assert.ok(advTab, '고급 탭 버튼 존재');
+  assert.ok(advPanel, '고급 패널 존재');
+  assert.ok($('setAdvSlots'), '고급 기능 슬롯 컨테이너 존재');
+  assert.equal(advPanel.classList.contains('on'), false);   // 처음엔 숨김
+  advTab.click();
+  assert.ok(advPanel.classList.contains('on'));             // 전환됨
+  assert.equal(env.document.querySelector('.set-panel[data-panel="general"]').classList.contains('on'), false);
+});
+
 test('닫기 동작 체크박스 → S.settings.closeToTray + save_settings', async () => {
   await env.resetS(); S.loaded = true;
   $('settingsBtn').click();
