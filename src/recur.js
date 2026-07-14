@@ -80,17 +80,26 @@ export function initialNext(recur, now=new Date()){
   return nextOccurrence(recur, now);
 }
 
-/* 내일 00:00 — '오늘까지 도래한' 회차를 포함해 생성하기 위한 경계 */
-function endOfToday(now){ const t=new Date(now); t.setHours(0,0,0,0); t.setDate(t.getDate()+1); return t; }
+/* 생성 경계 = now 이후 가장 가까운 '월요일 06:00'.
+   주기 업무 생성은 **매주 월요일 오전 6시에 그 주 회차를 한꺼번에** 만든다:
+   이 경계보다 이른 회차를 모두 생성하므로, 월요일 06:00을 지나야 그 주(월 06:00~
+   다음 월 06:00) 회차가 보드에 올라온다. 각 자식의 마감(f.due)은 원래 회차 시각 그대로라
+   금요일 회차도 월요일 아침에 미리 예정·대기로 뜬다. */
+function nextMondaySix(now){
+  for(let i=0;i<8;i++){
+    const c=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,6,0,0,0);
+    if(c>now && c.getDay()===1) return c;      // 1 = 월요일
+  }
+  const f=new Date(now); f.setDate(f.getDate()+7); return f;   // 안전장치(도달 불가)
+}
 
-/* 부모 정의에서 예정일이 도래한 자식 업무들을 생성한다.
-   각 부모의 recur.next 가 오늘(포함) 이전이면 자식을 만들고 next 를 전진.
-   14일보다 오래된 밀린 회차는 생성하지 않고 건너뛴다(장기 미실행 시 폭주 방지) —
-   완료되지 않은 옛 알림을 수백 개 만들지 않기 위함. 반환 = 생성된 자식 배열
-   (호출부가 S.items에 push + persist). 부모의 recur.next 는 이 함수가 갱신한다. */
+/* 부모 정의에서 도래한 자식 업무들을 생성한다(매주 월 06:00 배치 — nextMondaySix 참고).
+   경계(다음 월요일 06:00)보다 이른 회차를 만들고 recur.next 를 전진시킨다.
+   14일보다 오래된 밀린 회차는 생성하지 않고 건너뛴다(장기 미실행 시 폭주 방지).
+   반환 = 생성된 자식 배열(호출부가 S.items에 push + persist). */
 export function spawnDueOccurrences(items, now=new Date()){
   const spawned=[];
-  const limit=endOfToday(now);
+  const limit=nextMondaySix(now);
   const floor=new Date(now); floor.setDate(floor.getDate()-14);   // 14일 이전 밀린 회차는 스킵
   for(const p of items){
     if(!p || !isValidRecur(p.recur) || p.recur.paused) continue;

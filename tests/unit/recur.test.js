@@ -102,7 +102,7 @@ test('spawnDueOccurrences: 14일보다 오래 밀린 회차는 생성 없이 건
   const parent = makeItem({memo:'매일', recur:{type:'every', days:1, time:'09:00',
     next:new Date(2026,0,1,9,0,0,0).toISOString()}});    // 반년 전부터 밀림
   const sp = spawnDueOccurrences([parent], now);
-  assert.ok(sp.length <= 15);                     // 최근 14일치 정도만
+  assert.ok(sp.length <= 25);                     // 최근 14일 + 이번 주 앞부분만 (폭주 방지)
   assert.ok(new Date(parent.recur.next) > now);
 });
 
