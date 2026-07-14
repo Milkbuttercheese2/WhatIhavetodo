@@ -419,10 +419,16 @@ pub fn launch_everything(settings: &Settings) {
             .and_then(|v| v.as_str())
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string());
+        // 1.4 정식판과 1.5 알파/베타(별도 'Everything 1.5a' 폴더 + Everything64.exe)
+        // 의 기본 설치 경로를 모두 훑는다. 다른 곳에 설치했다면 settings의
+        // everythingPath로 직접 지정할 수 있다.
         let candidates = configured.into_iter().chain(
             [
                 "C:\\Program Files\\Everything\\Everything.exe".to_string(),
+                "C:\\Program Files\\Everything 1.5a\\Everything64.exe".to_string(),
+                "C:\\Program Files\\Everything 1.5a\\Everything.exe".to_string(),
                 "C:\\Program Files (x86)\\Everything\\Everything.exe".to_string(),
+                "C:\\Program Files (x86)\\Everything 1.5a\\Everything.exe".to_string(),
             ]
             .into_iter(),
         );
