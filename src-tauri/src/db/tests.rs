@@ -130,6 +130,14 @@ fn items_round_trip() {
     assert_eq!(hits.len(), 1);
     let hits = items::quick_search(&conn, "%", 10).unwrap(); // 리터럴 % — 와일드카드로 새지 않음
     assert_eq!(hits.len(), 0);
+    // EXISTS 최적화 검증: 관련인·파일명 서브쿼리로도 걸리고, 여러 필드에 동시에 걸려도
+    // (예: "재발급"이 메모+파일명 양쪽 매치) 결과는 중복 없이 정확히 1건.
+    assert_eq!(items::quick_search(&conn, "행정과", 10).unwrap().len(), 1);     // 관련소속(contacts)
+    assert_eq!(items::quick_search(&conn, "홍길동", 10).unwrap().len(), 1);     // 관련인(contacts)
+    assert_eq!(items::quick_search(&conn, "양식.xlsx", 10).unwrap().len(), 1);  // 파일명(item_files)
+    let dup = items::quick_search(&conn, "재발급", 10).unwrap();               // 메모+파일 동시 매치
+    assert_eq!(dup.len(), 1);
+    assert_eq!(dup[0].0, 1001);
 }
 
 #[test]
