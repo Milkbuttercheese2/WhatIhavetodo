@@ -213,16 +213,22 @@ pub fn save_items(conn: &mut Connection, items: &[Item]) -> DbResult<()> {
 pub fn quick_search(conn: &Connection, query: &str, limit: i64) -> DbResult<Vec<(i64, String, bool)>> {
     let escaped = query.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
     let pat = format!("%{escaped}%");
+    // 성능 최적화(v2.4.0): 예전의 LEFT JOIN 4개 + DISTINCT 방식은 한 업무에 세부/관련인/
+    // 식별번호/파일이 많을수록 중간 결과 행이 (업무수 × 관련행수)로 폭증한 뒤 DISTINCT로
+    // 다시 접어야 해서 데이터가 쌓일수록 초선형으로 느려졌다. 이를 상관 EXISTS 서브쿼리로
+    // 바꿔 각 업무를 한 번만 훑고(중복 없음 → DISTINCT 불필요), 자식 검색은 기존 item_id
+    // 인덱스(idx_subtasks_item·idx_contacts_item·idx_identifiers_item·idx_item_files_item)를
+    // 그대로 탄다. 첫 조건(memo)이 맞으면 OR 단축평가로 EXISTS를 건너뛴다. 결과 집합·정렬·
+    // 이스케이프 규칙은 이전과 동일하며, 저장 스키마/포맷은 전혀 바뀌지 않는다.
     let mut stmt = conn.prepare(
-        "SELECT DISTINCT i.id, i.memo, i.done FROM items i
-         LEFT JOIN subtasks s ON s.item_id = i.id
-         LEFT JOIN contacts c ON c.item_id = i.id
-         LEFT JOIN identifiers x ON x.item_id = i.id
-         LEFT JOIN item_files fl ON fl.item_id = i.id
-         WHERE i.memo LIKE ?1 ESCAPE '\\' OR s.title LIKE ?1 ESCAPE '\\'
-            OR c.who LIKE ?1 ESCAPE '\\' OR c.org LIKE ?1 ESCAPE '\\' OR c.phone LIKE ?1 ESCAPE '\\'
-            OR x.kind LIKE ?1 ESCAPE '\\' OR x.val LIKE ?1 ESCAPE '\\'
-            OR fl.path LIKE ?1 ESCAPE '\\'
+        "SELECT i.id, i.memo, i.done FROM items i
+         WHERE i.memo LIKE ?1 ESCAPE '\\'
+            OR EXISTS (SELECT 1 FROM subtasks s WHERE s.item_id = i.id AND s.title LIKE ?1 ESCAPE '\\')
+            OR EXISTS (SELECT 1 FROM contacts c WHERE c.item_id = i.id
+                         AND (c.who LIKE ?1 ESCAPE '\\' OR c.org LIKE ?1 ESCAPE '\\' OR c.phone LIKE ?1 ESCAPE '\\'))
+            OR EXISTS (SELECT 1 FROM identifiers x WHERE x.item_id = i.id
+                         AND (x.kind LIKE ?1 ESCAPE '\\' OR x.val LIKE ?1 ESCAPE '\\'))
+            OR EXISTS (SELECT 1 FROM item_files fl WHERE fl.item_id = i.id AND fl.path LIKE ?1 ESCAPE '\\')
          ORDER BY i.done ASC, i.id DESC LIMIT ?2",
     )?;
     let mut rows = stmt.query(params![pat, limit])?;
