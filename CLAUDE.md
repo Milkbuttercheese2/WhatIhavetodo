@@ -15,7 +15,7 @@ Branch-protection rules on `main` (require PR, block direct push) have **not** b
 
 ## Versioning convention (user-defined)
 
-Current release = **v2.4.1**.
+Current release = **v2.4.2**.
 
 > ⚠️ **버전 이력 주의 (반드시 읽을 것 — 과거에 여기서 혼선이 있었다):** 저장소 git 히스토리에는
 > `v3.0.0`·`v3.1.0` 커밋과 CHANGELOG 항목이 남아 있지만, **v3.x는 실제로 배포된 적이 없다.**
@@ -23,7 +23,7 @@ Current release = **v2.4.1**.
 > 두고 **대규모 개편(major)도 아닌데 버전을 3.0.0으로 임의 상향**해 버린 것이다(잘못된 범프).
 > 저장소 소유자 결정으로 이를 바로잡아, 실제 정식 배포는 **구 v2.31 라인을 잇는 `v2.4.0`**
 > 으로 되돌렸다. 따라서:
-> - **현재/실제 배포 버전 = v2.4.1.** 세 매니페스트(package.json·Cargo.toml·tauri.conf.json) 동일.
+> - **현재/실제 배포 버전 = v2.4.2.** 세 매니페스트(package.json·Cargo.toml·tauri.conf.json) 동일.
 > - v3.0.0·v3.1.0 CHANGELOG 항목은 *내부 이력*으로만 읽고, 실 배포 번호로 착각하지 말 것.
 > - **다음 버전은 v2.4.x(버그·사소한 조정) / v2.5.0(기능 추가)로 이어간다.** 진짜 호환성 깨지는
 >   대규모 개편이 아닌 한 다시 3.x로 올리지 말 것. (자동 업데이터·버전 비교 로직이 없어 역전은 무해.)

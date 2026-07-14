@@ -45,6 +45,16 @@ test('done 아이템은 보드 제외, renderDone에 표시', async () => {
   assert.ok($('col-done').textContent.includes('끝난 일'));
 });
 
+test('완료 업무는 마감이 지났어도 빨간 알람 점(ad-ring)을 표시하지 않음', async () => {
+  await env.resetS(); S.loaded = true;
+  // 마감이 이미 지난 완료 업무 — 알람 확인 기록(al) 없음
+  S.items.push(mk({memo:'지난 완료건', done:true, doneAt:Date.now(), f:{due:iso(-120)}}));
+  render();
+  assert.ok($('col-done').textContent.includes('지난 완료건'));
+  assert.ok(!$('col-done').innerHTML.includes('ad-ring'));   // 울림(빨강) 점 없음
+  assert.ok(!$('col-done').innerHTML.includes('adot'));      // 알람 점 자체가 없음
+});
+
 test('카드 클릭 → 양식 오픈 + 메모 채워짐', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({memo:'클릭 대상', staged:true}));

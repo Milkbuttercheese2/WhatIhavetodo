@@ -19,6 +19,7 @@ let q='', dq='';
 function matchesQ(it){ return textMatch(it, q); }
 
 function alarmDot(obj,key){
+  if(obj.done) return '';                 // 완료된 업무·세부는 알람이 의미 없음 — 점 표시 안 함
   const iso=key==='due'?(obj.f||{}).due:obj.mid;
   if(!iso) return '';
   const t=new Date(iso).getTime();
