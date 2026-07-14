@@ -336,11 +336,6 @@ pub fn run() {
             }
             tray.build(app)?;
 
-            // v3.1.0: '실행 시 Everything 자동 실행' 옵션 (설정 메뉴 토글)
-            if sget_bool("everythingAutostart", false) {
-                commands::launch_everything(&startup_settings);
-            }
-
             // 자동 시작이 켜져 있으면 매 시작마다 enable()을 재호출 —
             // 포터블 exe가 다른 폴더로 옮겨졌을 때 Run 키 경로를 자가 치유.
             if sget_bool("autostart", false) {
@@ -387,10 +382,8 @@ pub fn run() {
             commands::pick_file_path,
             commands::open_file_path,
             commands::reveal_file_path,
-            commands::everything_search,
             commands::quick_search,
             commands::resize_capture,
-            commands::load_settings_only,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

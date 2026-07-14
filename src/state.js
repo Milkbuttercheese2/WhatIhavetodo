@@ -54,23 +54,6 @@ export function makeItem(partial={}){
   return it;
 }
 
-/* 주기 업무 완료 — 지금 회차의 "완료 기록"을 새 아이템으로 떼어 보관(아카이빙)하고,
-   원본은 다음 회차로 재장전한다(마감 재계산·세부 체크/알람 초기화).
-   완료본은 recur:null이라 다시 반복하지 않는다. 반환값 = 완료 기록(호출부가 push). */
-export function completeOccurrence(it, nextDueIso){
-  const archived=Object.assign({}, it, {
-    id:newId(), done:true, doneAt:Date.now(), recur:null,
-    f:Object.assign({},it.f),
-    contacts:(it.contacts||[]).slice(), ids:(it.ids||[]).slice(), files:(it.files||[]).slice(),
-    subs:(it.subs||[]).map(s=>Object.assign({},s)),
-    al:{},
-  });
-  it.f=Object.assign({},it.f,{due:nextDueIso||''});
-  it.subs=(it.subs||[]).map(s=>Object.assign({},s,{done:false,al:{}}));
-  it.al={}; it.done=false; it.doneAt=null;
-  return archived;
-}
-
 /* 완료 상태 토글 — 도메인 연산(순수 변경, persist/render는 호출부 책임). */
 export function toggleDone(it){
   it.done = !it.done;

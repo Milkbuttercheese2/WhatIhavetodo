@@ -63,7 +63,8 @@ export function fmtT(iso){ if(!iso)return null; const d=new Date(iso); if(isNaN(
   return `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 export function fmtDue(iso){ if(!iso)return null; const d=new Date(iso); if(isNaN(d))return null;   // F7: 손상 ISO 방어
   const now=new Date(); const m=Math.round((d-now)/60000);
-  let cls='',note=''; if(m<0){cls='late';note=' 지남';} else if(m<=60){cls='soon';note=` ${m}분후`;} else if(m<=240){cls='soon';note=` ${Math.round(m/60)}시간후`;}
+  // '마감 지남' 강조는 표기하지 않음(사용자 요청). 임박(2시간 내)만 남은 시간 안내.
+  let cls='',note=''; if(m>=0&&m<=60){cls='soon';note=` ${m}분후`;} else if(m>60&&m<=120){cls='soon';note=` ${Math.round(m/60)}시간후`;}
   const lbl=fmtT(iso); if(lbl===null) return null;
   return {label:lbl+note,cls}; }
 

@@ -1,6 +1,6 @@
 [package]
 name = "wmhh-desktop"
-version = "3.1.0"
+version = "2.4.0"
 description = "뭐하려 했더라 — 전화받고 잊어버리기 전에 던져두는 업무 메모 보드"
 authors = ["wooseongkyun"]
 edition = "2021"

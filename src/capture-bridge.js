@@ -44,7 +44,7 @@ export function initCapture(){
   window.__TAURI__.event.listen('wmhh://open-item', ev=>{
     const id=(ev.payload||{}).id;
     const it=S.items.find(x=>x.id===id);
-    if(it) openForm(it);
+    if(it && !it.recur) openForm(it);   // 부모(주기 정의)는 양식으로 열지 않음
   });
 
   /* X→트레이 전환 알림(Rust) — 첫 회에 한해, 창이 다시 보일 때 안내 토스트.

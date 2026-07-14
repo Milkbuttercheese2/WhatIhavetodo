@@ -9,15 +9,16 @@ import {cardHtml} from './render.js';
 
 let calY=new Date().getFullYear(), calM=new Date().getMonth(), calSel=null;
 
-/* 캘린더 이벤트: 그날이 마감일인 업무 + 그날이 시각(점검·마감)인 세부 할일만 표시.
-   그 외(마감 없는 업무, 시각 없는 세부, 접수시각 등)는 표시하지 않음. */
+/* 캘린더 이벤트: '진행 중'인 것만 — 그날이 마감일인 미완료 업무 + 그날이 시각인
+   미완료 세부 할일만 표시. 완료된 업무·완료된 세부, 부모(주기 정의)는 감춘다. */
 function dayEvents(){
   const map={};
   const push=(iso,payload)=>{ if(!iso)return; const d=new Date(iso); if(isNaN(d))return;
     const key=`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`; (map[key]=map[key]||[]).push(Object.assign({iso},payload)); };
   S.items.forEach(it=>{
+    if(it.recur || it.done) return;                 // 부모 정의·완료 업무 제외
     push((it.f||{}).due,{it,fkey:'due',label:'마감'});
-    (it.subs||[]).filter(s=>s.mid).forEach(s=>push(s.mid,{it,fkey:'mid',label:'세부',subTitle:s.title,subDone:s.done}));
+    (it.subs||[]).filter(s=>s.mid && !s.done).forEach(s=>push(s.mid,{it,fkey:'mid',label:'세부',subTitle:s.title,subDone:s.done}));
   });
   return map;
 }

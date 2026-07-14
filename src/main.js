@@ -15,8 +15,8 @@ import {initCalendar, renderCal} from './calendar.js';
 import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
-import {initEverything} from './everything.js';
 import {initSettingsMenu} from './settings-menu.js';
+import {initRecurBox, runRecurSpawn} from './recur-box.js';
 import {makeItem} from './state.js';
 
 reconcileCore();
@@ -26,7 +26,7 @@ window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
 initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
-initEverything(); initSettingsMenu();
+initSettingsMenu(); initRecurBox();
 renderPresets();
 
 /* 탭 */
@@ -35,7 +35,6 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   const v=t.dataset.view;
   $('view-board').style.display=v==='board'?'grid':'none';
   $('strip').style.display=v==='board'?'flex':'none';
-  if(v!=='board')$('ev-results').style.display='none';
   $('view-cal').classList.toggle('on',v==='cal');
   $('view-done').classList.toggle('on',v==='done');
   $('capture').style.display=v==='board'?'block':'none';
@@ -64,6 +63,8 @@ function tickClock(){ const n=new Date();
   $('clock').textContent=String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
   const days=['일','월','화','수','목','금','토']; $('today').textContent=`${n.getFullYear()}. ${n.getMonth()+1}. ${n.getDate()} (${days[n.getDay()]})`; }
 setInterval(tickClock,1000); tickClock();
+/* 주기 업무: 자정 넘김·장시간 실행 대비 주기적으로 도래분 생성 */
+setInterval(()=>{ if(S.loaded) runRecurSpawn(); }, 60000);
 
 /* =========================================================================
    초기 로드 — SQLite에서 자동 불러오기
@@ -87,6 +88,7 @@ setInterval(tickClock,1000); tickClock();
       STORE.saveSettings(S.settings);
     }
     if(pending.length||draftItem) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
+    runRecurSpawn();                                   // 주기 업무: 예정일 도래분 생성(+저장)
     render();
   }catch(e){
     // 로드 실패를 조용히 삼키면 "빈 화면 + 저장도 안 되는" 죽은 앱이 된다.

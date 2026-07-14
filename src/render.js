@@ -1,15 +1,18 @@
 /* =========================================================================
    렌더 — 보드/완료 카드 재생성 + persist()
    ========================================================================= */
-import {S, toggleDone, completeOccurrence} from './state.js';
+import {S, toggleDone} from './state.js';
 import {STORE, invoke} from './store.js';
 import {$, esc, escAttr, showToast, askNotify} from './dom-utils.js';
 import {fmtDue} from './datetime.js';
 import {placeOf} from './placement.js';
 import {textMatch} from './filters.js';
-import {isValidRecur, nextOccurrence, recurLabel} from './recur.js';
+import {recurLabel} from './recur.js';
 import {openForm} from './form.js';
 import {renderCal} from './calendar.js';
+
+/* 부모(주기 정의)는 보드 밖 — 화면 어디에도 카드로 그리지 않는다 */
+const onBoard = it => !it.recur;
 
 let q='', dq='';
 
@@ -59,7 +62,8 @@ export function cardHtml(it,place){
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
   const es=earliestSub(it);
   const progress = subs.length?`<span class="mini-prog">세부 ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
-  const recurTag = it.recur?`<span class="tag mid" title="${escAttr(recurLabel(it.recur))}">반복 · ${esc(recurLabel(it.recur))}</span>`:'';
+  const parent = it.recurId!=null ? S.items.find(x=>x.id===it.recurId) : null;
+  const recurTag = it.recurId!=null?`<span class="tag mid" title="${escAttr(parent&&parent.recur?recurLabel(parent.recur):'주기 업무에서 생성됨')}">주기</span>`:'';
   let subLine='';
   if(es){
     const m=es.mid?fmtDue(es.mid):null;
@@ -82,14 +86,9 @@ export function cardHtml(it,place){
       <button class="del" data-del="${it.id}" title="삭제">×</button>
     </div></div>`;
 }
-function updateStrip(){
-  const now=new Date(); let late=0;
-  S.items.forEach(it=>{ if(it.done)return; const d=(it.f||{}).due?new Date(it.f.due):null; if(d&&!isNaN(d)&&d<now)late++; });
-  $('st-late').textContent=late; $('st-late-wrap').style.display=late?'flex':'none';
-}
 export function render(){
   const cols={inbox:[],today:[],doing:[],planned:[]};
-  S.items.filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
+  S.items.filter(onBoard).filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
   /* 정렬: 세부 점검·마감시각 레벨 구분 없이, 먼저 도래하는 시각이 위로.
      (미완료 세부 mid + 마감 due 중 가장 이른 시각 기준 오름차순 → 시각 없으면 뒤, 최신 등록 순) */
   const keyTime=(it)=>{
@@ -111,11 +110,11 @@ export function render(){
     $('c-'+k).textContent=list.length;
     $('col-'+k).innerHTML=list.length?list.map(it=>cardHtml(it,k)).join(''):`<div class="empty">${q?'검색 결과가 없습니다.':EMPTY[k]}</div>`;
   }
-  updateStrip(); renderCal(); renderDone();
+  renderCal(); renderDone();
 }
 export function renderDone(){
-  const list=S.items.filter(it=>it.done).filter(it=>textMatch(it, dq)).sort((a,b)=>(b.doneAt||b.id)-(a.doneAt||a.id));
-  $('done-count').textContent=S.items.filter(it=>it.done).length;
+  const list=S.items.filter(onBoard).filter(it=>it.done).filter(it=>textMatch(it, dq)).sort((a,b)=>(b.doneAt||b.id)-(a.doneAt||a.id));
+  $('done-count').textContent=S.items.filter(onBoard).filter(it=>it.done).length;
   $('col-done').innerHTML=list.length?list.map(it=>cardHtml(it,'done')).join(''):`<div class="empty">${dq?'검색 결과가 없습니다.':'완료된 업무가 없습니다.'}</div>`;
 }
 export async function persist(){ window.items=S.items; await STORE.saveAll(S.items); render(); askNotify(); }
@@ -123,26 +122,14 @@ export async function persist(){ window.items=S.items; await STORE.saveAll(S.ite
 export function initRender(){
   /* 카드 상호작용 */
   document.body.addEventListener('click',e=>{
-    /* 파일 링크 — 카드 안·Everything 결과 공용. 카드 열기(data-open)보다 먼저 */
+    /* 파일 링크 클릭 — 카드 열기(data-open)보다 먼저 처리 */
     const fo=e.target.closest('[data-fopen]');
     if(fo){ e.stopPropagation(); invoke('open_file_path',{path:fo.dataset.fopen}).catch(err=>alert('파일을 열 수 없습니다:\n'+fo.dataset.fopen+'\n\n'+err)); return; }
     const fr=e.target.closest('[data-freveal]');
     if(fr){ e.stopPropagation(); invoke('reveal_file_path',{path:fr.dataset.freveal}).catch(err=>alert('폴더를 열 수 없습니다:\n'+err)); return; }
     const chk=e.target.closest('.chk');
     if(chk&&chk.dataset.id){ e.stopPropagation(); const it=S.items.find(x=>x.id==chk.dataset.id);
-      if(it){
-        /* 주기 업무 완료: 완료 기록을 떼어 보관하고 원본은 다음 회차로 재장전.
-           (완료 탭에서 완료본을 해제하는 것은 일반 toggleDone — recur:null이라 아래로 안 옴) */
-        if(!it.done && isValidRecur(it.recur)){
-          const prevDue=(it.f||{}).due, prevSubs=it.subs, prevAl=it.al;   // 실행취소용 스냅샷
-          const archived=completeOccurrence(it, nextOccurrence(it.recur, new Date()));
-          S.items.push(archived); persist();
-          showToast(`주기 업무 완료 — 다음: ${fmtDue(it.f.due)?fmtDue(it.f.due).label:'미정'}`,()=>{ // 실행취소
-            const i=S.items.indexOf(archived); if(i>=0)S.items.splice(i,1);
-            it.f.due=prevDue; it.subs=prevSubs; it.al=prevAl; persist();
-          });
-        }else{ toggleDone(it); persist(); }
-      } return; }
+      if(it){ toggleDone(it); persist(); } return; }
     const del=e.target.closest('.del');
     if(del&&del.dataset.del){ e.stopPropagation(); const id=+del.dataset.del; const idx=S.items.findIndex(x=>x.id==id);
       if(idx>=0){

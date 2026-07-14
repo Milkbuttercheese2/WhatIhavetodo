@@ -121,11 +121,3 @@ test('완료 탭 검색(dq)은 보드 검색과 독립', async () => {
   ds.value = '';
   ds.dispatchEvent(new env.window.Event('input', {bubbles:true}));
 });
-
-test('지남 스트립: 지난 마감 개수 표시', async () => {
-  await env.resetS(); S.loaded = true;
-  S.items.push(mk({f:{due:iso(-90)}}), mk({f:{due:iso(60*26)}}));
-  render();
-  assert.equal($('st-late').textContent, '1');
-  assert.equal($('st-late-wrap').style.display, 'flex');
-});

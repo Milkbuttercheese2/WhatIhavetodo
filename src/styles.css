@@ -53,6 +53,8 @@
   .btn-inbox:hover{background:#9c6120}
   .btn-form{font-size:14px;height:42px;padding:0 18px;background:var(--ink);color:#fff}
   .btn-form:hover{background:#000}
+  .btn-recur{font-size:14px;height:42px;padding:0 18px;background:var(--slate);color:#fff}
+  .btn-recur:hover{filter:brightness(.92)}
   .presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
   .preset{font-family:inherit;font-size:11px;padding:3px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper);color:var(--ink-soft);cursor:pointer}
   .preset:hover{border-color:var(--slate);color:var(--slate);background:var(--slate-bg)}
@@ -96,11 +98,15 @@
   .menu-sep{height:1px;background:var(--line);margin:5px 4px}
   .menu-check{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:7px 10px;cursor:pointer;color:var(--ink)}
   /* 반복(주기 업무) 입력 */
-  .fm-recur-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:3px 0;font-size:12.5px}
-  .fm-recur-row select{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
-  .fm-recur-row input[type=number]{width:52px;font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px}
+  .fm-recur-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0;font-size:12.5px}
+  .fm-recur-row select,.fm-recur-row input{font-size:12.5px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);box-sizing:border-box}
+  .fm-recur-row select{font-family:inherit;cursor:pointer}
+  .fm-recur-row input[type=number]{width:58px;text-align:center;font-family:inherit}
+  .fm-recur-row #rc-time{width:74px;font-family:var(--font-mono);letter-spacing:.03em;text-align:center}
+  .rc-time-wrap{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
+  #rc-dow,#rc-monthly,#rc-every{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
   #fm-recur-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px}
-  .recur-dow-btn{cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-soft)}
+  .recur-dow-btn{cursor:pointer;font-size:12px;height:34px;min-width:34px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink-soft)}
   .recur-dow-btn.on{background:var(--slate-bg);color:var(--slate);border-color:var(--slate);font-weight:600}
   .ffile-row{display:flex;align-items:center;gap:7px;padding:3px 0}
   .ffile-row input[type=text]{flex:1;min-width:0;font-family:var(--font-mono);font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
@@ -137,11 +143,6 @@
   .s-pill.warn b{color:var(--red)}
   .s-search{margin-left:auto;font-family:inherit;font-size:12.5px;padding:6px 13px;border:1px solid var(--line);border-radius:9px;background:var(--card);min-width:230px}
   .s-search:focus{outline:none;border-color:var(--focus)}
-  /* Everything 파일검색 결과 스트립 (서버 응답 시에만 표시) */
-  .ev-strip{display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:1460px;max-width:100%;margin:6px auto 0;padding:0 28px;font-size:12px}
-  .ev-head{color:var(--ink-soft);font-weight:600;flex:none}
-  .ev-item{cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:7px;padding:3px 9px;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ev-item:hover{border-color:var(--focus)}
 
   /* ---- 보드 (4열) ---- */
   /* 컬럼 폭 절대 고정: grid/flex 아이템의 기본 min-width:auto 를 모든 단계에서 차단 */
@@ -257,6 +258,17 @@
   .preset-new{border-style:dashed !important;border-color:var(--slate) !important;color:var(--slate) !important;background:transparent !important;font-weight:600}
   .preset-new:hover{background:var(--slate-bg) !important}
   .ps-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+  /* 주기 업무 관리 목록 */
+  .rc-list-head{font-weight:700;font-size:13px;color:var(--ink-soft);margin:16px 0 8px}
+  .rc-list{display:flex;flex-direction:column;gap:6px}
+  .rc-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;background:var(--paper)}
+  .rc-row.paused{opacity:.6}
+  .rc-main{flex:1;min-width:0}
+  .rc-memo{font-weight:600;font-size:13.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rc-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px}
+  .rc-acts{display:flex;gap:5px;flex:none}
+  .rc-acts .btn-tool{height:30px;padding:0 10px;font-size:12px}
+  .rc-del{color:var(--red);border-color:var(--red)}
   .ps-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--paper)}
   .ps-item .ps-body{flex:1;min-width:0}
   .ps-item .ps-name{font-size:12.5px;font-weight:600}
@@ -318,7 +330,8 @@
   .dt-inp .dt-date{width:112px;font-family:var(--font-mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em}
   .dt-inp .dt-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em}
   .dt-inp input:focus{outline:none;border-color:var(--focus)}
-  .dt-pick{border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;font-size:11px;padding:4px 6px;line-height:1;flex:none}
+  .dt-pick{border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;font-size:13px;padding:4px 6px;line-height:1;flex:none;
+    font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
   .dt-pick:hover{border-color:var(--focus);background:#fff}
   .dt-native{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0;padding:0}
   .dt-inp{position:relative;align-items:center}

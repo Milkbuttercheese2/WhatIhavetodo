@@ -6,7 +6,6 @@ import {invoke} from './store.js';
 import {$, esc, escAttr, enableDragReorder} from './dom-utils.js';
 import {dtInner, dtInputHtml, refreshDow, readDtInput, validateAllDt, isoToDateStr, isoToTimeStr} from './datetime.js';
 import {placeOf, PLACE_NAME} from './placement.js';
-import {isValidRecur, nextOccurrence, DOW_KO} from './recur.js';
 import {persist} from './render.js';
 
 /* (1) 메모 텍스트 → 분류 대기. 바로 입력 버튼과 미니 캡처 창(capture-bridge)이 공용 */
@@ -58,9 +57,6 @@ export function openForm(pre){
   // 파일 링크
   const fw=$('fm-files'); fw.innerHTML='';
   (pre.files||[]).forEach(p=>addFormFileRow(p));
-
-  // 반복 (주기 업무)
-  setRecurUi(pre.recur||null);
 
   updatePlacePreview();
   $('formPanel').classList.add('on');
@@ -131,37 +127,6 @@ function addFormSubRow(title,mid,focusIt,sub){
   if(focusIt) titleInput.focus();
 }
 
-/* 반복(주기 업무) UI — 상태는 전부 DOM에 (요일 버튼 .on 클래스) */
-function renderDowButtons(selected){
-  $('fm-recur-dow').innerHTML=DOW_KO.map((n,d)=>
-    `<button type="button" class="recur-dow-btn${(selected||[]).includes(d)?' on':''}" data-dow="${d}">${n}</button>`).join('');
-}
-function refreshRecurVisibility(){
-  const t=$('fm-recur-type').value;
-  $('fm-recur-dow').style.display = t==='dow'?'inline-flex':'none';
-  $('fm-recur-every').style.display = t==='every'?'inline':'none';
-  $('fm-recur-time-wrap').style.display = t?'inline':'none';
-  $('fm-recur-hint').style.display = t?'block':'none';
-}
-function setRecurUi(recur){
-  const t=(recur&&recur.type)||'';
-  $('fm-recur-type').value = (t==='dow'||t==='every')?t:'';
-  renderDowButtons(t==='dow'?recur.dow:[]);
-  $('fm-recur-days').value = t==='every'?(recur.days||3):3;
-  $('fm-recur-time').value = (recur&&recur.time)||'09:00';
-  refreshRecurVisibility();
-}
-function collectRecur(){
-  const t=$('fm-recur-type').value;
-  if(!t) return null;
-  const time=$('fm-recur-time').value.trim()||'09:00';
-  if(t==='dow'){
-    const dow=[...$('fm-recur-dow').querySelectorAll('.recur-dow-btn.on')].map(b=>+b.dataset.dow);
-    return {type:'dow', dow, time};
-  }
-  return {type:'every', days:Number($('fm-recur-days').value), time};
-}
-
 /* 파일 링크 행 — 경로는 문자열 그대로 (직접 붙여넣기도 허용) */
 function addFormFileRow(path){
   const row=document.createElement('div'); row.className='ffile-row';
@@ -192,7 +157,7 @@ function collectForm(){
     return {id, title:t, mid, done, al};
   }).filter(Boolean);
   const files=[...$('fm-files').querySelectorAll('.ffile-path')].map(i=>i.value.trim()).filter(Boolean);
-  return {memo:$('fm-memo').value.trim(), f, contacts, ids, subs, files, recur:collectRecur()};
+  return {memo:$('fm-memo').value.trim(), f, contacts, ids, subs, files};
 }
 function updatePlacePreview(){ try{ const d=collectForm(); const p=placeOf({staged:false,f:d.f,subs:d.subs}); $('fm-place').innerHTML=`저장 위치: <b>${PLACE_NAME[p]}</b>`; }catch{} }
 
@@ -213,11 +178,6 @@ export function initForm(){
     catch(e){ alert('파일 선택 실패: '+e); return; }
     if(p) addFormFileRow(p);
   });
-  $('fm-recur-type').addEventListener('change',refreshRecurVisibility);
-  $('fm-recur-dow').addEventListener('click',e=>{
-    const b=e.target.closest('.recur-dow-btn'); if(!b)return;
-    b.classList.toggle('on'); updatePlacePreview();
-  });
   $('blankForm').addEventListener('click',()=>{ const t=$('inp').value.trim(); openForm(t?{memo:t}:{}); if(t)$('inp').value=''; });
   $('fm-cancel').addEventListener('click',closeForm);
   $('formPanel').addEventListener('input',e=>{ if(e.target.closest('#fm-grid,#fm-subs')) updatePlacePreview(); });
@@ -229,25 +189,17 @@ export function initForm(){
       return;
     }
     const d=collectForm();
-    // 반복 검증 + 마감 자동 계산: 새 아이템이거나 반복 설정이 바뀐 경우에만
-    // 다음 회차를 계산한다 (수정 저장마다 재계산하면 일정이 자꾸 미래로 밀림).
-    if(d.recur && !isValidRecur(d.recur)){
-      alert('반복 설정이 올바르지 않습니다.\n(요일을 하나 이상 선택하거나 일수를 1 이상으로, 시각은 09:00 형식으로)');
-      return;
-    }
     const prev = editingId ? S.items.find(x=>x.id===editingId) : null;
-    const recurChanged = JSON.stringify((prev&&prev.recur)||null) !== JSON.stringify(d.recur);
-    if(d.recur && (recurChanged || !d.f.due)) d.f.due = nextOccurrence(d.recur, new Date());
     if(editingId){
       const it=prev;
       if(it){
         const oldDue=(it.f||{}).due;
-        it.memo=d.memo; it.f=d.f; it.contacts=d.contacts; it.ids=d.ids; it.subs=d.subs; it.files=d.files; it.recur=d.recur; it.staged=false;
+        it.memo=d.memo; it.f=d.f; it.contacts=d.contacts; it.ids=d.ids; it.subs=d.subs; it.files=d.files; it.staged=false;
         it.al = it.al || {};
         if(oldDue !== d.f.due) delete it.al.due;   // F2: 마감이 바뀌면 알람 재무장
       }
     }else{
-      S.items.push(makeItem({memo:d.memo, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs, files:d.files, recur:d.recur}));
+      S.items.push(makeItem({memo:d.memo, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs, files:d.files}));
     }
     closeForm(); persist();
   });

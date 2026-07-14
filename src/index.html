@@ -29,9 +29,7 @@
         <button class="menu-item" id="xlsx">XLSX 다운로드</button>
         <div class="menu-sep"></div>
         <button class="menu-item" id="presetManageBtn">프리셋·식별번호 관리</button>
-        <div class="menu-sep"></div>
-        <label class="menu-check"><input type="checkbox" id="opt-ev-autostart"> 실행 시 Everything 자동 실행</label>
-        <label class="menu-check"><input type="checkbox" id="opt-ev-quick"> 빠른 검색 시 Everything 사용</label>
+        <button class="menu-item" id="recurManageBtn">주기 업무 관리</button>
       </div>
     </div>
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div><div class="ver mono" id="appVer"></div></div>
@@ -46,6 +44,7 @@
       <div class="cap-btns">
         <button class="btn btn-inbox" id="toInbox">바로 입력</button>
         <button class="btn btn-form" id="blankForm">양식 입력</button>
+        <button class="btn btn-recur" id="recurOpen" title="주기 업무 — 예정일마다 자동으로 보드에 생성됩니다">주기 입력</button>
       </div>
     </div>
     <div class="presets" id="presets"></div>
@@ -68,21 +67,6 @@
       </div>
 
       <div class="fm-grid" id="fm-grid"></div>
-
-      <div class="fm-recur">
-        <div class="t-head">반복 (주기 업무 — 켜면 마감시각이 자동 계산됩니다)</div>
-        <div class="fm-recur-row">
-          <select id="fm-recur-type">
-            <option value="">반복 안 함</option>
-            <option value="dow">매주 요일</option>
-            <option value="every">며칠마다</option>
-          </select>
-          <span id="fm-recur-dow" style="display:none"></span>
-          <span id="fm-recur-every" style="display:none">매 <input type="number" id="fm-recur-days" min="1" value="3"> 일</span>
-          <span id="fm-recur-time-wrap" style="display:none">시각 <input type="text" id="fm-recur-time" value="09:00" placeholder="09:00"></span>
-        </div>
-        <div class="m-sub" id="fm-recur-hint" style="display:none">완료 체크하면 완료 기록은 [완료] 탭에 남고, 다음 회차가 자동으로 다시 올라옵니다.</div>
-      </div>
 
       <div class="fm-ids">
         <div class="t-head">식별번호 (명칭 + 번호)</div>
@@ -113,11 +97,8 @@
 </section>
 
 <div class="strip" id="strip">
-  <span class="s-pill warn" id="st-late-wrap" style="display:none">기한 지남 <b id="st-late">0</b></span>
   <input class="s-search" id="search" placeholder="검색: 관련인 · 관련소속 · 연락처 · 식별번호 · 파일명" autocomplete="off">
 </div>
-<!-- Everything(로컬 파일검색) 결과 — Everything HTTP 서버가 응답할 때만 표시 -->
-<div class="ev-strip" id="ev-results" style="display:none"></div>
 
 <main id="view-board">
   <div class="col">
@@ -203,6 +184,42 @@
     </div><!-- /modal-body -->
     <div class="m-actions modal-foot">
       <button class="btn btn-ok" id="presetClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 주기 업무(부모 정의) 입력·관리 -->
+<div class="modal-bg" id="recurModal">
+  <div class="modal modal-wide">
+    <h3>주기 업무</h3>
+    <div class="m-sub">공통 내용과 반복 주기만 등록하면, 예정일마다 그 내용으로 업무가 <b>보드에 자동 생성</b>됩니다. 세부 내용(관련인·식별번호·세부 할일·파일)은 생성된 각 업무에서 채우세요.</div>
+
+    <div class="ps-new">
+      <div class="ps-new-head" id="rc-new-head">＋ 새 주기 업무</div>
+      <div class="fm-field"><label>공통 내용 (제목/메모)</label>
+        <input type="text" id="rc-memo" placeholder="예: 주간 부서 업무보고 취합" autocomplete="off"></div>
+      <div class="fm-recur-row">
+        <select id="rc-type">
+          <option value="dow">매주 요일</option>
+          <option value="monthly">매월 며칠</option>
+          <option value="every">며칠마다</option>
+        </select>
+        <span id="rc-dow"></span>
+        <span id="rc-monthly" style="display:none">매월 <input type="number" id="rc-mday" min="1" max="31" value="1"> 일</span>
+        <span id="rc-every" style="display:none">매 <input type="number" id="rc-days" min="1" value="7"> 일</span>
+        <span class="rc-time-wrap">시각 <input type="text" class="dt-time" id="rc-time" maxlength="5" value="09:00" placeholder="09:00"></span>
+      </div>
+      <div class="m-actions">
+        <button class="btn btn-cancel" id="rc-cancel-edit" style="display:none">수정 취소</button>
+        <button class="btn btn-ok" id="rc-save">등록</button>
+      </div>
+    </div>
+
+    <div class="rc-list-head">등록된 주기 업무</div>
+    <div class="rc-list" id="rc-list"></div>
+
+    <div class="m-actions modal-foot">
+      <button class="btn btn-ok" id="recurClose">닫기</button>
     </div>
   </div>
 </div>

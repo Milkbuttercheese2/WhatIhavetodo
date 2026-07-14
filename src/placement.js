@@ -5,6 +5,7 @@ export function dayBounds(){ const t0=new Date();t0.setHours(0,0,0,0);const t1=n
 /* 미완료 세부 점검시각들 (지난 것 포함) */
 export function subMids(it){ return (it.subs||[]).filter(s=>!s.done&&s.mid).map(s=>new Date(s.mid)).filter(d=>!isNaN(d)); }
 export function placeOf(it){
+  if(it.recur) return 'recur';        // 부모(주기 정의)는 보드 밖
   if(it.done) return 'done';
   if(it.staged) return 'inbox';
   const f=it.f||{}, now=new Date(), [t0,t1]=dayBounds();

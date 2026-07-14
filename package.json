@@ -1,7 +1,7 @@
 {
   "name": "wmhh-desktop",
   "private": true,
-  "version": "3.1.0",
+  "version": "2.4.0",
   "type": "module",
   "scripts": {
     "tauri": "tauri",
