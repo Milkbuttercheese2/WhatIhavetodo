@@ -69,11 +69,8 @@ export function cardHtml(it,place){
     const m=es.mid?fmtDue(es.mid):null;
     subLine=`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span>${m?`${alarmDot(es,'mid')}<span class="sub-when ${m.cls==='late'?'late':''}">${esc(m.label)}</span>`:''}</div>`;
   }
-  const files=it.files||[];
-  const fileLine=files.length?`<div class="card-files">${files.map(p=>{
-    const n=String(p).split(/[\\/]/).filter(Boolean).pop()||p;
-    return `<span class="file-link" data-fopen="${escAttr(p)}" title="${escAttr('열기: '+p)}">${esc(n)}</span><span class="file-reveal" data-freveal="${escAttr(p)}" title="폴더에서 보기">폴더</span>`;
-  }).join('')}</div>`:'';
+  // 파일 링크는 카드 앞면에 표시하지 않는다 — 카드는 메모(2줄)·가장 빠른 세부·마감만.
+  // 파일은 카드를 클릭해 열리는 양식 팝업에서 다룬다(form.js addFormFileRow).
   return `<div class="card p-${place}${it.done?' done':''}" data-open="${it.id}">
     <div class="card-top">
       <div class="chk ${it.done?'on':''}" data-id="${it.id}"></div>
@@ -81,7 +78,6 @@ export function cardHtml(it,place){
         <div class="card-memo">${memoHtml}</div>
         ${subLine}
         <div class="card-meta">${dueTagHtml(it)}${recurTag}${progress}</div>
-        ${fileLine}
       </div>
       <button class="del" data-del="${it.id}" title="삭제">×</button>
     </div></div>`;

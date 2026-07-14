@@ -127,10 +127,29 @@ function addFormSubRow(title,mid,focusIt,sub){
   if(focusIt) titleInput.focus();
 }
 
-/* 파일 링크 행 — 경로는 문자열 그대로 (직접 붙여넣기도 허용) */
-function addFormFileRow(path){
+/* 파일 링크 행 — 체크 버튼으로 두 모드 전환:
+   활성화(체크 on)=이름을 클릭하면 파일 열림(수정 잠금), 비활성화(off)=경로 직접 수정.
+   경로 값은 항상 숨은 .ffile-path 인풋에 담겨 collectForm이 그대로 읽는다. */
+function fileName(p){ p=String(p||'').trim(); return (p.split(/[\\/]/).filter(Boolean).pop()||p); }
+function addFormFileRow(path, active){
+  active = active!==false;                       // 기본 활성화(링크 모드)
   const row=document.createElement('div'); row.className='ffile-row';
-  row.innerHTML=`<input type="text" class="ffile-path" placeholder="파일 경로 (직접 붙여넣기 가능)" value="${escAttr(path||'')}"><button class="rm" title="삭제">×</button>`;
+  row.innerHTML=`<button type="button" class="ffile-toggle chk ${active?'on':''}" title="활성화: 이름 클릭 시 파일 열기 · 비활성화: 경로 수정"></button>
+    <span class="ffile-link" title="열기" style="${active?'':'display:none'}">${esc(fileName(path)||'(경로 없음)')}</span>
+    <input type="text" class="ffile-path" placeholder="파일 경로 (직접 붙여넣기 가능)" value="${escAttr(path||'')}" style="${active?'display:none':''}">
+    <button class="rm" title="삭제">×</button>`;
+  const toggle=row.querySelector('.ffile-toggle'), link=row.querySelector('.ffile-link'), input=row.querySelector('.ffile-path');
+  toggle.addEventListener('click',()=>{
+    const on=toggle.classList.toggle('on');
+    if(on){                                       // → 활성화: 이름 링크 보이고 수정 잠금
+      const p=input.value.trim(); link.textContent=fileName(p)||'(경로 없음)'; link.title='열기: '+p;
+      link.style.display=''; input.style.display='none';
+    }else{                                        // → 비활성화: 경로 인풋으로 수정
+      link.style.display='none'; input.style.display=''; input.focus();
+    }
+  });
+  link.addEventListener('click',()=>{ const p=input.value.trim();
+    if(p) invoke('open_file_path',{path:p}).catch(err=>alert('파일을 열 수 없습니다:\n'+p+'\n\n'+err)); });
   row.querySelector('.rm').addEventListener('click',()=>row.remove());
   $('fm-files').appendChild(row);
 }
