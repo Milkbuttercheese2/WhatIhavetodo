@@ -127,10 +127,33 @@ function addFormSubRow(title,mid,focusIt,sub){
   if(focusIt) titleInput.focus();
 }
 
-/* 파일 링크 행 — 경로는 문자열 그대로 (직접 붙여넣기도 허용) */
-function addFormFileRow(path){
+/* 파일 링크 행 — 체크 버튼으로 두 모드 전환:
+   활성화(체크 on)=이름을 클릭하면 파일 열림(수정 잠금), 비활성화(off)=경로 직접 수정.
+   경로 값은 항상 숨은 .ffile-path 인풋에 담겨 collectForm이 그대로 읽는다. */
+function fileName(p){ p=String(p||'').trim(); return (p.split(/[\\/]/).filter(Boolean).pop()||p); }
+function addFormFileRow(path, active){
+  active = active!==false;                       // 기본 활성화(링크 모드)
   const row=document.createElement('div'); row.className='ffile-row';
-  row.innerHTML=`<input type="text" class="ffile-path" placeholder="파일 경로 (직접 붙여넣기 가능)" value="${escAttr(path||'')}"><button class="rm" title="삭제">×</button>`;
+  row.innerHTML=`<button type="button" class="ffile-toggle chk ${active?'on':''}" title="활성화: 이름 클릭 시 파일 열기 · 비활성화: 경로 수정/찾기"></button>
+    <span class="ffile-link" title="열기" style="${active?'':'display:none'}">${esc(fileName(path)||'(경로 없음)')}</span>
+    <input type="text" class="ffile-path" placeholder="파일 경로 (직접 붙여넣기 가능)" value="${escAttr(path||'')}" style="${active?'display:none':''}">
+    <button type="button" class="ffile-browse" title="파일 찾기" style="${active?'display:none':''}">찾기</button>
+    <button class="rm" title="삭제">×</button>`;
+  const toggle=row.querySelector('.ffile-toggle'), link=row.querySelector('.ffile-link'),
+        input=row.querySelector('.ffile-path'), browse=row.querySelector('.ffile-browse');
+  const setMode=on=>{ link.style.display=on?'':'none'; input.style.display=on?'none':''; browse.style.display=on?'none':''; };
+  toggle.addEventListener('click',()=>{
+    const on=toggle.classList.toggle('on');
+    if(on){ const p=input.value.trim(); link.textContent=fileName(p)||'(경로 없음)'; link.title='열기: '+p; }  // 활성화: 이름 갱신
+    setMode(on);
+    if(!on) input.focus();                        // 비활성화: 수정 편의상 포커스
+  });
+  link.addEventListener('click',()=>{ const p=input.value.trim();
+    if(p) invoke('open_file_path',{path:p}).catch(err=>alert('파일을 열 수 없습니다:\n'+p+'\n\n'+err)); });
+  browse.addEventListener('click',async()=>{     // 비활성화 모드에서 이 행의 경로를 새로 선택
+    let p=null; try{ p=await invoke('pick_file_path'); }catch(e){ alert('파일 선택 실패: '+e); return; }
+    if(p) input.value=p;
+  });
   row.querySelector('.rm').addEventListener('click',()=>row.remove());
   $('fm-files').appendChild(row);
 }
