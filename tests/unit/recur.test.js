@@ -106,6 +106,23 @@ test('spawnDueOccurrences: 14일보다 오래 밀린 회차는 생성 없이 건
   assert.ok(new Date(parent.recur.next) > now);
 });
 
+test('spawnDueOccurrences: 매주 월요일 06:00 배치 — 06시 전엔 이번 주 미생성, 06시 후 그 주 생성', () => {
+  // 2026-07-13 = 월요일. 매주 수요일 10:00 주기.
+  const mkP = () => { S.lastId = 0; return makeItem({memo:'주간 점검', recur:{type:'dow', dow:[3], time:'10:00'}}); };
+  // 월요일 05:00 (06시 전) → 이번 주 회차 아직 생성 안 함
+  const before = spawnDueOccurrences([mkP()], new Date(2026, 6, 13, 5, 0, 0, 0));
+  assert.equal(before.length, 0);
+  // 월요일 07:00 (06시 후) → 이번 주 수요일(7/15) 회차 생성
+  const p = mkP();
+  const after = spawnDueOccurrences([p], new Date(2026, 6, 13, 7, 0, 0, 0));
+  assert.equal(after.length, 1);
+  assert.equal(after[0].recurId, p.id);
+  const due = new Date(after[0].f.due);
+  assert.equal(due.getDay(), 3);            // 수요일
+  assert.equal(due.getDate(), 15);          // 7/15
+  assert.equal(due.getHours(), 10);         // 지정 시각 유지
+});
+
 test('spawnDueOccurrences: 일시정지 부모는 생성 안 함', () => {
   S.lastId = 0;
   const now = new Date(2026, 6, 14, 12, 0, 0, 0);

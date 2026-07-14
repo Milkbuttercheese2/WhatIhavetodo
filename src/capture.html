@@ -7,41 +7,40 @@
      store.js 등을 끌어오면 이 웹뷰에서도 최상위 부작용이 실행된다.
      외부(인터넷) 리소스 금지: 내부망(air-gapped) 배포 대상.
      v2.4.0: 메모 모드(기본) + Alt로 내 업무 검색 모드 전환.
-     스타일: 애플 스포트라이트풍 플로팅 바 — 창은 transparent(tauri.conf) +
-     둥근 패널(#cap-shell). v2.4.0에서 그림자 효과 제거. -->
+     스타일: 창은 transparent(tauri.conf) + 둥근 흰 패널. 폰트·글씨크기·색을 메인 앱 UI와
+     통일(Pretendard/맑은 고딕, 종이 톤 팔레트). 그림자 없음. -->
 <style>
+ /* 메인 앱(styles.css)과 동일 팔레트·폰트로 통일 */
+ :root{--ink:#141b24;--ink-soft:#4a5563;--line:#dfe3e8;--line-soft:#eceef1;
+   --paper:#f6f4ef;--card:#fff;--slate:#2f6b7a;--slate-bg:#e4eef0;--done:#6b7787;--green:#2C7A4B}
  html,body{margin:0;height:100%;overflow:hidden;background:transparent}
- body{display:flex;box-sizing:border-box;padding:0;
-   font-family:system-ui,-apple-system,'Segoe UI','Malgun Gothic',sans-serif}
- /* 세련된 스포트라이트 바 — 그림자 없이 은은한 그라데이션+상단 하이라이트 테두리 */
+ body{display:flex;box-sizing:border-box;padding:0;color:var(--ink);
+   font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,-apple-system,sans-serif}
  #cap-shell{flex:1;display:flex;flex-direction:column;min-height:0;
-   background:linear-gradient(180deg,#3a3e4b 0%,#2b2e37 100%);
-   border:1px solid rgba(255,255,255,.14);border-top-color:rgba(255,255,255,.22);
-   border-radius:18px;overflow:hidden}
- #cap-bar{display:flex;align-items:center;flex:1;min-height:58px}
+   background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+ #cap-bar{display:flex;align-items:center;flex:1;min-height:56px}
  body.search #cap-bar{flex:none}
- #cap-inp,#cap-search{flex:1;border:0;outline:0;background:transparent;color:#f4f6fb;
-   font:16.5px/1.5 inherit;padding:16px 20px;letter-spacing:.01em}
+ #cap-inp,#cap-search{flex:1;border:0;outline:0;background:transparent;color:var(--ink);
+   font:14px/1.5 inherit;padding:15px 18px}
  #cap-inp{resize:none}
- #cap-inp::placeholder,#cap-search::placeholder{color:#98a1b3}
+ #cap-inp::placeholder,#cap-search::placeholder{color:#9aa3b0}
  #cap-results{display:none;flex:1;min-height:0;flex-direction:column;
-   border-top:1px solid rgba(255,255,255,.08)}
+   border-top:1px solid var(--line-soft);background:var(--paper)}
  .cap-col{flex:1;display:flex;flex-direction:column;min-width:0}
- .cap-col-h{flex:none;font:600 11px inherit;color:#8b95a7;
-   padding:10px 18px 6px;letter-spacing:.06em;text-transform:uppercase}
- .cap-list{flex:1;overflow-y:auto;padding:0 10px 12px}
+ .cap-col-h{flex:none;font:600 11px inherit;color:var(--ink-soft);
+   padding:10px 16px 6px;letter-spacing:.04em}
+ .cap-list{flex:1;overflow-y:auto;padding:0 8px 10px}
  .cap-list::-webkit-scrollbar{width:8px}
- .cap-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
- .cap-hit{font:13.5px/1.45 inherit;color:#eef1f7;padding:8px 12px;margin:1px 0;
-   border-radius:9px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .cap-hit:hover{background:linear-gradient(90deg,#4d63a8,#3d5391)}
- .cap-hit.done{color:#8b95a7;text-decoration:line-through}
- .cap-empty{font:12.5px inherit;color:#8b95a7;padding:12px}
- #cap-hint{flex:none;font:11px inherit;color:#727d91;
-   padding:2px 18px 10px;display:none}
+ .cap-list::-webkit-scrollbar-thumb{background:#d6dae0;border-radius:4px}
+ .cap-hit{font:13px/1.45 inherit;color:var(--ink);padding:8px 11px;margin:1px 0;
+   border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .cap-hit:hover{background:var(--slate-bg)}
+ .cap-hit.done{color:var(--done);text-decoration:line-through}
+ .cap-empty{font:12.5px inherit;color:var(--ink-soft);padding:12px}
+ #cap-hint{flex:none;font:11px inherit;color:#8892a0;padding:2px 16px 10px;display:none;background:var(--paper)}
  body.search #cap-hint{display:block}
  #cap-flash{display:none;align-items:center;justify-content:center;flex:1;gap:7px;
-   color:#84e592;font:600 16px inherit}
+   color:var(--green);font:600 15px inherit}
  body.flash #cap-bar,body.flash #cap-results,body.flash #cap-hint{display:none}
  body.flash #cap-flash{display:flex}
 </style>
@@ -50,7 +49,7 @@
 <div id="cap-shell">
   <div id="cap-bar">
     <textarea id="cap-inp" placeholder="빠른 메모 — Ctrl+Enter 등록 · Esc 닫기(내용 유지) · Alt 검색"></textarea>
-    <input id="cap-search" placeholder="빠른 검색 — 업무·파일 · Alt로 메모 복귀" style="display:none" autocomplete="off">
+    <input id="cap-search" placeholder="빠른 검색 — 내 업무 · Alt로 메모 복귀" style="display:none" autocomplete="off">
   </div>
   <div id="cap-results">
     <div class="cap-col"><div class="cap-col-h">내 업무</div><div class="cap-list" id="cap-items"></div></div>
