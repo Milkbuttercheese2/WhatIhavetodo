@@ -1,12 +1,13 @@
 /* =========================================================================
    렌더 — 보드/완료 카드 재생성 + persist()
    ========================================================================= */
-import {S, toggleDone} from './state.js';
+import {S, toggleDone, completeOccurrence} from './state.js';
 import {STORE, invoke} from './store.js';
 import {$, esc, escAttr, showToast, askNotify} from './dom-utils.js';
 import {fmtDue} from './datetime.js';
 import {placeOf} from './placement.js';
 import {textMatch} from './filters.js';
+import {isValidRecur, nextOccurrence, recurLabel} from './recur.js';
 import {openForm} from './form.js';
 import {renderCal} from './calendar.js';
 
@@ -58,6 +59,7 @@ export function cardHtml(it,place){
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
   const es=earliestSub(it);
   const progress = subs.length?`<span class="mini-prog">세부 ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
+  const recurTag = it.recur?`<span class="tag mid" title="${escAttr(recurLabel(it.recur))}">반복 · ${esc(recurLabel(it.recur))}</span>`:'';
   let subLine='';
   if(es){
     const m=es.mid?fmtDue(es.mid):null;
@@ -66,7 +68,7 @@ export function cardHtml(it,place){
   const files=it.files||[];
   const fileLine=files.length?`<div class="card-files">${files.map(p=>{
     const n=String(p).split(/[\\/]/).filter(Boolean).pop()||p;
-    return `<span class="file-link" data-fopen="${escAttr(p)}" title="${escAttr('열기: '+p)}">📄 ${esc(n)}</span><span class="file-reveal" data-freveal="${escAttr(p)}" title="폴더에서 보기">📂</span>`;
+    return `<span class="file-link" data-fopen="${escAttr(p)}" title="${escAttr('열기: '+p)}">${esc(n)}</span><span class="file-reveal" data-freveal="${escAttr(p)}" title="폴더에서 보기">폴더</span>`;
   }).join('')}</div>`:'';
   return `<div class="card p-${place}${it.done?' done':''}" data-open="${it.id}">
     <div class="card-top">
@@ -74,7 +76,7 @@ export function cardHtml(it,place){
       <div class="card-body">
         <div class="card-memo">${memoHtml}</div>
         ${subLine}
-        <div class="card-meta">${dueTagHtml(it)}${progress}</div>
+        <div class="card-meta">${dueTagHtml(it)}${recurTag}${progress}</div>
         ${fileLine}
       </div>
       <button class="del" data-del="${it.id}" title="삭제">×</button>
@@ -127,7 +129,20 @@ export function initRender(){
     const fr=e.target.closest('[data-freveal]');
     if(fr){ e.stopPropagation(); invoke('reveal_file_path',{path:fr.dataset.freveal}).catch(err=>alert('폴더를 열 수 없습니다:\n'+err)); return; }
     const chk=e.target.closest('.chk');
-    if(chk&&chk.dataset.id){ e.stopPropagation(); const it=S.items.find(x=>x.id==chk.dataset.id); if(it){toggleDone(it); persist();} return; }
+    if(chk&&chk.dataset.id){ e.stopPropagation(); const it=S.items.find(x=>x.id==chk.dataset.id);
+      if(it){
+        /* 주기 업무 완료: 완료 기록을 떼어 보관하고 원본은 다음 회차로 재장전.
+           (완료 탭에서 완료본을 해제하는 것은 일반 toggleDone — recur:null이라 아래로 안 옴) */
+        if(!it.done && isValidRecur(it.recur)){
+          const prevDue=(it.f||{}).due, prevSubs=it.subs, prevAl=it.al;   // 실행취소용 스냅샷
+          const archived=completeOccurrence(it, nextOccurrence(it.recur, new Date()));
+          S.items.push(archived); persist();
+          showToast(`주기 업무 완료 — 다음: ${fmtDue(it.f.due)?fmtDue(it.f.due).label:'미정'}`,()=>{ // 실행취소
+            const i=S.items.indexOf(archived); if(i>=0)S.items.splice(i,1);
+            it.f.due=prevDue; it.subs=prevSubs; it.al=prevAl; persist();
+          });
+        }else{ toggleDone(it); persist(); }
+      } return; }
     const del=e.target.closest('.del');
     if(del&&del.dataset.del){ e.stopPropagation(); const id=+del.dataset.del; const idx=S.items.findIndex(x=>x.id==id);
       if(idx>=0){

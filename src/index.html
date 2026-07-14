@@ -19,11 +19,21 @@
     <button class="tab" data-view="done">완료</button>
   </nav>
   <div class="head-right">
-    <button class="btn btn-tool" id="alarmToggle" title="알람 켜기/끄기">🔔 알람</button>
-    <button class="btn btn-tool" id="dataDirBtn" title="데이터 저장 위치 확인·변경">💾 저장 위치</button>
-    <button class="btn btn-tool" id="bkExp">JSON파일 백업</button>
-    <button class="btn btn-tool" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
-    <button class="btn btn-tool" id="xlsx">XLSX 다운로드</button>
+    <button class="btn btn-tool" id="alarmToggle" title="알람 켜기/끄기">알람</button>
+    <div class="settings-wrap">
+      <button class="btn btn-tool" id="settingsBtn" title="백업·저장 위치·프리셋·연동 설정">설정</button>
+      <div class="settings-menu" id="settingsMenu">
+        <button class="menu-item" id="dataDirBtn" title="데이터 저장 위치 확인·변경">저장 위치 확인·변경</button>
+        <button class="menu-item" id="bkExp">JSON파일 백업</button>
+        <button class="menu-item" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
+        <button class="menu-item" id="xlsx">XLSX 다운로드</button>
+        <div class="menu-sep"></div>
+        <button class="menu-item" id="presetManageBtn">프리셋·식별번호 관리</button>
+        <div class="menu-sep"></div>
+        <label class="menu-check"><input type="checkbox" id="opt-ev-autostart"> 실행 시 Everything 자동 실행</label>
+        <label class="menu-check"><input type="checkbox" id="opt-ev-quick"> 빠른 검색 시 Everything 사용</label>
+      </div>
+    </div>
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div><div class="ver mono" id="appVer"></div></div>
   </div>
  </div>
@@ -58,6 +68,21 @@
       </div>
 
       <div class="fm-grid" id="fm-grid"></div>
+
+      <div class="fm-recur">
+        <div class="t-head">반복 (주기 업무 — 켜면 마감시각이 자동 계산됩니다)</div>
+        <div class="fm-recur-row">
+          <select id="fm-recur-type">
+            <option value="">반복 안 함</option>
+            <option value="dow">매주 요일</option>
+            <option value="every">며칠마다</option>
+          </select>
+          <span id="fm-recur-dow" style="display:none"></span>
+          <span id="fm-recur-every" style="display:none">매 <input type="number" id="fm-recur-days" min="1" value="3"> 일</span>
+          <span id="fm-recur-time-wrap" style="display:none">시각 <input type="text" id="fm-recur-time" value="09:00" placeholder="09:00"></span>
+        </div>
+        <div class="m-sub" id="fm-recur-hint" style="display:none">완료 체크하면 완료 기록은 [완료] 탭에 남고, 다음 회차가 자동으로 다시 올라옵니다.</div>
+      </div>
 
       <div class="fm-ids">
         <div class="t-head">식별번호 (명칭 + 번호)</div>
@@ -185,7 +210,7 @@
 <!-- 알람 -->
 <div class="alarm-bg" id="alarmBg">
   <div class="alarm">
-    <h3>⏰ 시각 도래 알림</h3>
+    <h3>시각 도래 알림</h3>
     <div id="alarmList"></div>
     <div class="a-actions">
       <button class="btn btn-snooze" id="alarmSnooze">10분 뒤 다시</button>

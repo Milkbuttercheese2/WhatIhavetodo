@@ -87,7 +87,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
     }
 
     let mut stmt = conn.prepare(
-        "SELECT id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id FROM items ORDER BY id",
+        "SELECT id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur FROM items ORDER BY id",
     )?;
     let mut rows = stmt.query([])?;
     let mut items = Vec::new();
@@ -97,6 +97,8 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
         let due_at: Option<String> = row.get(3)?;
         let due_alarm: Option<String> = row.get(7)?;
         let recur_id: Option<i64> = row.get(8)?;
+        let recur_text: Option<String> = row.get(9)?;
+        let recur = recur_text.and_then(|t| serde_json::from_str(&t).ok());
 
         let mut f = fields_by_item.remove(&id).unwrap_or_default();
         if let Some(r) = received_at {
@@ -119,6 +121,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
             staged: row.get::<_, i64>(4)? != 0,
             al: alarm::decode(due_alarm.as_deref(), "due"),
             recur_id,
+            recur,
         });
     }
     Ok(items)
@@ -133,8 +136,8 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
     tx.execute("DELETE FROM items", [])?; // cascades to item_fields/contacts/identifiers/subtasks
     {
         let mut ins_item = tx.prepare(
-            "INSERT INTO items (id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            "INSERT INTO items (id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
         )?;
         let mut ins_field =
             tx.prepare("INSERT INTO item_fields (item_id, field_key, value) VALUES (?1, ?2, ?3)")?;
@@ -154,6 +157,7 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
             let received = it.f.get("received").cloned();
             let due = it.f.get("due").cloned();
             let due_alarm = alarm::encode(&it.al, "due");
+            let recur_text = it.recur.as_ref().map(|v| v.to_string());
             ins_item.execute(params![
                 it.id,
                 it.memo,
@@ -164,6 +168,7 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
                 it.done_at,
                 due_alarm,
                 it.recur_id,
+                recur_text,
             ])?;
 
             for (k, v) in it
@@ -199,4 +204,31 @@ pub fn save_items(conn: &mut Connection, items: &[Item]) -> DbResult<()> {
     save_items_tx(&tx, items)?;
     tx.commit()?;
     Ok(())
+}
+
+/// 빠른 검색(미니 캡처 창의 검색 모드) — 메모·세부 제목·관련인·식별번호·
+/// 파일 경로를 LIKE로 뒤져 (id, memo, done) 목록만 돌려준다. 본 검색 규칙의
+/// 원본은 프론트 filters.js의 haystack이고, 이것은 메인 모듈에 접근할 수
+/// 없는 캡처 웹뷰를 위한 근사 검색이다 (읽기 전용).
+pub fn quick_search(conn: &Connection, query: &str, limit: i64) -> DbResult<Vec<(i64, String, bool)>> {
+    let escaped = query.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_");
+    let pat = format!("%{escaped}%");
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT i.id, i.memo, i.done FROM items i
+         LEFT JOIN subtasks s ON s.item_id = i.id
+         LEFT JOIN contacts c ON c.item_id = i.id
+         LEFT JOIN identifiers x ON x.item_id = i.id
+         LEFT JOIN item_files fl ON fl.item_id = i.id
+         WHERE i.memo LIKE ?1 ESCAPE '\\' OR s.title LIKE ?1 ESCAPE '\\'
+            OR c.who LIKE ?1 ESCAPE '\\' OR c.org LIKE ?1 ESCAPE '\\' OR c.phone LIKE ?1 ESCAPE '\\'
+            OR x.kind LIKE ?1 ESCAPE '\\' OR x.val LIKE ?1 ESCAPE '\\'
+            OR fl.path LIKE ?1 ESCAPE '\\'
+         ORDER BY i.done ASC, i.id DESC LIMIT ?2",
+    )?;
+    let mut rows = stmt.query(params![pat, limit])?;
+    let mut out = Vec::new();
+    while let Some(row) = rows.next()? {
+        out.push((row.get(0)?, row.get(1)?, row.get::<_, i64>(2)? != 0));
+    }
+    Ok(out)
 }

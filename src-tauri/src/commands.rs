@@ -211,7 +211,7 @@ pub fn show_capture_window(app: &AppHandle) {
         .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten())
         .or_else(|| app.primary_monitor().ok().flatten());
     if let Some(m) = monitor {
-        let sz = win.outer_size().unwrap_or(tauri::PhysicalSize::new(560, 64));
+        let sz = win.outer_size().unwrap_or(tauri::PhysicalSize::new(560, 128));
         let x = m.position().x + (m.size().width as i32 - sz.width as i32) / 2;
         let y = m.position().y + (m.size().height as f64 * 0.2) as i32;
         let _ = win.set_position(tauri::PhysicalPosition::new(x, y));
@@ -361,6 +361,84 @@ pub fn cancel_pending_import(state: State<AppDb>) -> Result<(), String> {
         std::fs::remove_file(&pending).map_err(to_err)?;
     }
     Ok(())
+}
+
+/* ===== v3.1.0 미니 캡처 검색 모드 + 설정 ===== */
+
+/// 캡처 창 빠른 검색의 업무 쪽 결과 한 건.
+#[derive(serde::Serialize)]
+pub struct QuickHit {
+    pub id: i64,
+    pub memo: String,
+    pub done: bool,
+}
+
+/// 미니 캡처 창(메인 모듈 접근 불가)의 업무 검색 — 읽기 전용이므로 무결성
+/// 게이트에 걸려도 빈 목록만 돌려준다 (검색이 복구를 방해할 이유가 없다).
+#[tauri::command]
+pub fn quick_search(state: State<AppDb>, query: String) -> Result<Vec<QuickHit>, String> {
+    let q = query.trim();
+    if q.is_empty() || !state.integrity_ok.load(Ordering::Relaxed) {
+        return Ok(vec![]);
+    }
+    let conn = state.conn.lock().map_err(to_err)?;
+    Ok(db::items::quick_search(&conn, q, 15)
+        .map_err(to_err)?
+        .into_iter()
+        .map(|(id, memo, done)| QuickHit { id, memo, done })
+        .collect())
+}
+
+/// 캡처 창 크기 전환 (메모 모드 64px ↔ 검색 모드 확장). 웹뷰 쪽에 창 크기
+/// 권한을 열어주는 대신 커맨드 하나로 좁게 노출한다.
+#[tauri::command]
+pub fn resize_capture(app: AppHandle, height: u32) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("capture") {
+        let h = height.clamp(64, 640);
+        win.set_size(tauri::LogicalSize::new(560.0, h as f64)).map_err(to_err)?;
+    }
+    Ok(())
+}
+
+/// 설정만 가볍게 읽기 — 캡처 웹뷰가 Everything 사용 여부/포트를 알기 위해
+/// 쓴다 (load_all은 아이템 전체를 끌고 오고 무결성 게이트도 걸린다).
+#[tauri::command]
+pub fn load_settings_only(state: State<AppDb>) -> Result<Settings, String> {
+    let conn = state.conn.lock().map_err(to_err)?;
+    db::settings::load_settings(&conn).map_err(to_err)
+}
+
+/// '실행 시 Everything 자동 실행' — settings.everythingPath(선택)를 먼저,
+/// 없으면 일반 설치 경로들을 시도한다. 못 찾으면 조용히 넘어간다(기동을
+/// 막을 이유가 없는 편의 기능). Windows 전용 no-op 가드.
+pub fn launch_everything(settings: &Settings) {
+    #[cfg(windows)]
+    {
+        let configured = settings
+            .get("everythingPath")
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string());
+        let candidates = configured.into_iter().chain(
+            [
+                "C:\\Program Files\\Everything\\Everything.exe".to_string(),
+                "C:\\Program Files (x86)\\Everything\\Everything.exe".to_string(),
+            ]
+            .into_iter(),
+        );
+        for p in candidates {
+            if std::path::Path::new(&p).exists() {
+                // -startup: 창 없이 백그라운드(트레이)로 시작
+                let _ = std::process::Command::new(&p).arg("-startup").spawn();
+                return;
+            }
+        }
+        eprintln!("everythingAutostart is on but Everything.exe was not found");
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = settings;
+    }
 }
 
 /* ===== v3.0.0 파일 링크 + Everything(voidtools) 연동 ===== */

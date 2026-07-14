@@ -11,13 +11,14 @@ function saveIdKinds(){ window.ID_KINDS=S.idKinds; STORE.saveIdKinds(S.idKinds);
 
 export function renderPresets(){
   const w=$('presets');
+  /* 관리 진입은 헤더 [설정] 메뉴로 통합(v3.1.0) — 여기는 사용 버튼만 */
   w.innerHTML = S.presets.map((p,i)=>
     `<span class="preset-wrap"><button class="preset" data-p="${i}">＋ ${esc(p.label)}</button><button class="preset-del" data-pdel="${i}" title="이 프리셋 삭제">×</button></span>`
-  ).join('') + `<button class="preset preset-new" id="presetNewBtn">＋ 프리셋 관리</button>`;
+  ).join('');
 }
 
-/* 프리셋 관리 모달 */
-function openPresetModal(){ renderPresetList(); clearPresetForm(); renderIdKindList(); $('presetModal').classList.add('on'); }
+/* 프리셋 관리 모달 — 설정 메뉴(settings-menu.js)에서 연다 */
+export function openPresetModal(){ renderPresetList(); clearPresetForm(); renderIdKindList(); $('presetModal').classList.add('on'); }
 
 /* 식별번호 명칭 관리 */
 function renderIdKindList(){
@@ -62,8 +63,7 @@ export function initPresets(){
     const del=e.target.closest('[data-pdel]');
     if(del){ const i=+del.dataset.pdel,p=S.presets[i];
       if(confirm(`프리셋 "${p.label}"을(를) 삭제할까요?`)){ S.presets.splice(i,1); savePresets(); renderPresets(); } return; }
-    if(e.target.closest('#presetNewBtn')){ openPresetModal(); return; }
-    const b=e.target.closest('.preset'); if(!b||b.id==='presetNewBtn')return;
+    const b=e.target.closest('.preset'); if(!b)return;
     const p=S.presets[+b.dataset.p]; if(!p)return;
     openForm({memo:p.sum, subs:(p.subs||[]).map(t=>({title:t,mid:''}))});
   });

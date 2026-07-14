@@ -23,6 +23,7 @@ function candidates(){
 function hide(){ const w=$('ev-results'); w.style.display='none'; w.innerHTML=''; }
 
 async function run(q){
+  if(S.settings.everythingQuickSearch===false){ hide(); return; }   // 설정 메뉴 토글
   if(Date.now()<downUntil) return;
   let body=null;
   for(const p of candidates()){
@@ -35,12 +36,12 @@ async function run(q){
   const rs=Array.isArray(d.results)?d.results:[];
   if(!rs.length){ hide(); return; }
   const w=$('ev-results');
-  w.innerHTML=`<span class="ev-head">📁 파일 (Everything) ${Number(d.totalResults)||rs.length}건</span>`
+  w.innerHTML=`<span class="ev-head">파일 (Everything) ${Number(d.totalResults)||rs.length}건</span>`
     + rs.map(r=>{
         const name=r.name||'';
         const full=(r.path?r.path+'\\':'')+name;
         const folder=r.type==='folder';
-        return `<span class="ev-item" data-fopen="${escAttr(full)}" title="${escAttr('열기: '+full)}">${folder?'📂':'📄'} ${esc(name)}</span>`;
+        return `<span class="ev-item" data-fopen="${escAttr(full)}" title="${escAttr('열기: '+full)}">${esc(name)}</span>`;
       }).join('');
   w.style.display='flex';
 }

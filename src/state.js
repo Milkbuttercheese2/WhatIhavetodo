@@ -48,10 +48,27 @@ export function newId(){
    partial에 id가 없으면 newId()를 부여. Rust Item 구조체(model.rs)와 형태가 짝이다. */
 export function makeItem(partial={}){
   const it = Object.assign(
-    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], files:[], al:{}, recurId:null},
+    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], files:[], al:{}, recur:null, recurId:null},
     partial);
   if(it.id==null) it.id = newId();
   return it;
+}
+
+/* 주기 업무 완료 — 지금 회차의 "완료 기록"을 새 아이템으로 떼어 보관(아카이빙)하고,
+   원본은 다음 회차로 재장전한다(마감 재계산·세부 체크/알람 초기화).
+   완료본은 recur:null이라 다시 반복하지 않는다. 반환값 = 완료 기록(호출부가 push). */
+export function completeOccurrence(it, nextDueIso){
+  const archived=Object.assign({}, it, {
+    id:newId(), done:true, doneAt:Date.now(), recur:null,
+    f:Object.assign({},it.f),
+    contacts:(it.contacts||[]).slice(), ids:(it.ids||[]).slice(), files:(it.files||[]).slice(),
+    subs:(it.subs||[]).map(s=>Object.assign({},s)),
+    al:{},
+  });
+  it.f=Object.assign({},it.f,{due:nextDueIso||''});
+  it.subs=(it.subs||[]).map(s=>Object.assign({},s,{done:false,al:{}}));
+  it.al={}; it.done=false; it.doneAt=null;
+  return archived;
 }
 
 /* 완료 상태 토글 — 도메인 연산(순수 변경, persist/render는 호출부 책임). */
@@ -79,6 +96,7 @@ export function migrateItem(o){
   it.ids=Array.isArray(o.ids)?o.ids.slice():[];
   it.subs=Array.isArray(o.subs)?o.subs:[];
   it.files=Array.isArray(o.files)?o.files.slice():[];   // v3.0.0 파일 링크 (구버전 데이터엔 없음)
+  it.recur=(o.recur&&typeof o.recur==='object')?o.recur:null;   // v3.1.0 주기 업무 (구버전엔 없음)
   // 메모 승계
   if(it.memo==null) it.memo = o.memo || o.title || '';
   // 관련인 승계

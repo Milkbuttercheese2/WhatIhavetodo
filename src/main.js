@@ -16,6 +16,8 @@ import {initAlarms} from './alarms.js';
 import {initBackup, reconcileImported} from './backup.js';
 import {initCapture} from './capture-bridge.js';
 import {initEverything} from './everything.js';
+import {initSettingsMenu} from './settings-menu.js';
+import {makeItem} from './state.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -24,7 +26,7 @@ window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
 initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
-initEverything();
+initEverything(); initSettingsMenu();
 renderPresets();
 
 /* 탭 */
@@ -74,7 +76,17 @@ setInterval(tickClock,1000); tickClock();
     window.items = S.items;
     S.loaded = true;                                   // F1: 이제부터 저장 허용
     reconcileImported();
-    if(pending.length) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
+    /* 캡처 초안 회수(v3.1.0): 지난 세션이 미등록 초안을 남긴 채 꺼졌다면
+       (전원 차단 포함) 분류 대기로 자동 등록하고 초안을 비운다. */
+    const draft=(S.settings.captureDraft||'').trim();
+    let draftItem=null;
+    if(draft){
+      draftItem=makeItem({memo:draft, staged:true, f:{received:new Date().toISOString()}});
+      S.items.push(draftItem);
+      S.settings.captureDraft='';
+      STORE.saveSettings(S.settings);
+    }
+    if(pending.length||draftItem) await STORE.saveAll(S.items);   // 보류됐던 저장 플러시
     render();
   }catch(e){
     // 로드 실패를 조용히 삼키면 "빈 화면 + 저장도 안 되는" 죽은 앱이 된다.

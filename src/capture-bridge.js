@@ -11,15 +11,40 @@
 import {S} from './state.js';
 import {STORE} from './store.js';
 import {showToast} from './dom-utils.js';
-import {captureMemo} from './form.js';
+import {captureMemo, openForm} from './form.js';
 
 let trayNoticePending=false;
+let draftSaveTimer=null;
+
+/* 캡처 초안 → settings.captureDraft. 앱이 초안을 남긴 채 꺼지면(전원 차단 포함)
+   다음 실행의 초기 로드(main.js flushCaptureDraft)가 분류 대기로 자동 등록한다.
+   F1 게이트: 로드 전에는 저장하지 않는다(빈 설정으로 덮어쓰기 방지) — 그 사이
+   초안은 캡처 창 textarea에 그대로 살아 있으므로 유실이 아니다. */
+function saveDraft(text){
+  S.settings.captureDraft=String(text??'');
+  window.SETTINGS=S.settings;
+  if(!S.loaded) return;
+  clearTimeout(draftSaveTimer);
+  draftSaveTimer=setTimeout(()=>STORE.saveSettings(S.settings),300);
+}
 
 export function initCapture(){
   /* 캡처 창에서 온 메모 — captureMemo 가 F1 게이트·pending-merge 를 그대로 태운다 */
   window.__TAURI__.event.listen('wmhh://capture-memo', ev=>{
     const t=(ev.payload||{}).text;
     if(t) captureMemo(t);
+  });
+
+  /* 캡처 창 초안 흘려받기 (입력 시마다·숨김 직전 플러시) */
+  window.__TAURI__.event.listen('wmhh://capture-draft', ev=>{
+    saveDraft((ev.payload||{}).text);
+  });
+
+  /* 캡처 검색 모드에서 업무 클릭 → 메인 창에서 양식 열기 */
+  window.__TAURI__.event.listen('wmhh://open-item', ev=>{
+    const id=(ev.payload||{}).id;
+    const it=S.items.find(x=>x.id===id);
+    if(it) openForm(it);
   });
 
   /* X→트레이 전환 알림(Rust) — 첫 회에 한해, 창이 다시 보일 때 안내 토스트.

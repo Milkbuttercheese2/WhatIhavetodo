@@ -110,9 +110,9 @@ test('토글: alarmOn 반전 + save_settings + 버튼 표시 + 열린 모달 닫
   await env.flush();
   assert.equal(S.settings.alarmOn, false);
   assert.ok(env.invokeCalls.some(c=>c.cmd==='save_settings'));
-  assert.equal($('alarmToggle').textContent, '🔕 알람 꺼짐');
+  assert.equal($('alarmToggle').textContent, '알람 꺼짐');
   assert.equal($('alarmBg').classList.contains('on'), false);         // 모달도 닫힘
   $('alarmToggle').click();                                           // 다시 켜기
   assert.equal(S.settings.alarmOn, true);
-  assert.equal($('alarmToggle').textContent, '🔔 알람 켜짐');
+  assert.equal($('alarmToggle').textContent, '알람 켜짐');
 });

@@ -84,6 +84,24 @@
   .fid-row input.fid-etc{flex:none;width:110px}
   .fid-row .rm{font-size:15px;line-height:1;color:var(--icon-muted);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
   .fm-subs .t-head{font-size:11px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;letter-spacing:.04em}
+  /* 설정 드롭다운 */
+  .settings-wrap{position:relative}
+  .settings-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);
+    border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.16);
+    padding:6px;z-index:60;min-width:236px;flex-direction:column}
+  .settings-menu.on{display:flex}
+  .menu-item{text-align:left;font-family:inherit;font-size:12.5px;padding:8px 10px;background:none;
+    border:0;border-radius:7px;cursor:pointer;color:var(--ink)}
+  .menu-item:hover{background:var(--slate-bg)}
+  .menu-sep{height:1px;background:var(--line);margin:5px 4px}
+  .menu-check{display:flex;align-items:center;gap:7px;font-size:12.5px;padding:7px 10px;cursor:pointer;color:var(--ink)}
+  /* 반복(주기 업무) 입력 */
+  .fm-recur-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:3px 0;font-size:12.5px}
+  .fm-recur-row select{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  .fm-recur-row input[type=number]{width:52px;font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px}
+  #fm-recur-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px}
+  .recur-dow-btn{cursor:pointer;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink-soft)}
+  .recur-dow-btn.on{background:var(--slate-bg);color:var(--slate);border-color:var(--slate);font-weight:600}
   .ffile-row{display:flex;align-items:center;gap:7px;padding:3px 0}
   .ffile-row input[type=text]{flex:1;min-width:0;font-family:var(--font-mono);font-size:12px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
   .ffile-row .rm{font-size:15px;line-height:1;color:var(--icon-muted);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
