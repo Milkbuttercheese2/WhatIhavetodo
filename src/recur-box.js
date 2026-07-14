@@ -6,7 +6,7 @@
    ========================================================================= */
 import {S, makeItem} from './state.js';
 import {$, esc, escAttr, showToast} from './dom-utils.js';
-import {fmtT} from './datetime.js';
+import {fmtT, parseTimeStr} from './datetime.js';
 import {isValidRecur, recurLabel, initialNext, spawnDueOccurrences, DOW_KO} from './recur.js';
 import {persist, render} from './render.js';
 
@@ -33,9 +33,17 @@ function refreshTypeVis(){
   $('rc-monthly').style.display = t==='monthly'?'inline':'none';
   $('rc-every').style.display = t==='every'?'inline':'none';
 }
+/* 시각 입력 정규화 — HH:MM 뿐 아니라 HHMM·HMM·HH(콜론 없이)도 허용해 'HH:MM'으로.
+   앱 공용 파서(parseTimeStr) 재사용. 파싱 실패 시 원본 반환(isValidRecur에서 걸림). */
+function normTime(raw){
+  const p=parseTimeStr(raw);
+  if(!p) return raw;
+  const hh=p.dayOverflow?0:p.hh;
+  return String(hh).padStart(2,'0')+':'+String(p.mm).padStart(2,'0');
+}
 function collectRecur(){
   const type=$('rc-type').value;
-  const time=$('rc-time').value.trim()||'09:00';
+  const time=normTime($('rc-time').value.trim()||'09:00');
   if(type==='dow'){
     const dow=[...$('rc-dow').querySelectorAll('.recur-dow-btn.on')].map(b=>+b.dataset.dow);
     return {type:'dow', dow, time};
@@ -135,6 +143,7 @@ export function initRecurBox(){
   $('recurModal').addEventListener('click',e=>{ if(e.target.id==='recurModal') closeRecurModal(); });
   $('rc-type').addEventListener('change', refreshTypeVis);
   $('rc-dow').addEventListener('click',e=>{ const b=e.target.closest('.recur-dow-btn'); if(b) b.classList.toggle('on'); });
+  $('rc-time').addEventListener('blur',e=>{ const n=normTime(e.target.value.trim()); if(n) e.target.value=n; });   // 0930 → 09:30 즉시 반영
   $('rc-save').addEventListener('click', saveParent);
   $('rc-cancel-edit').addEventListener('click', resetInput);
   $('rc-list').addEventListener('click',e=>{
