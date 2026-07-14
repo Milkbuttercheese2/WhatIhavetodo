@@ -36,7 +36,7 @@
 | 작업 | 명령 |
 |---|---|
 | 개발 실행 (핫리로드) | `npm run tauri dev` |
-| 프론트 테스트 (node:test + jsdom, 88개) | `npm test` |
+| 프론트 테스트 (node:test + jsdom, 108개) | `npm test` |
 | 백엔드 테스트 | `cd src-tauri && cargo test --lib` |
 | 릴리즈 빌드 | `npm run tauri build` → `src-tauri/target/release/wmhh-desktop.exe` |
 
