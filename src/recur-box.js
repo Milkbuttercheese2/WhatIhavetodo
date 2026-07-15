@@ -31,7 +31,6 @@ function refreshTypeVis(){
   const t=$('rc-type').value;
   $('rc-dow').style.display = t==='dow'?'inline-flex':'none';
   $('rc-monthly').style.display = t==='monthly'?'inline':'none';
-  $('rc-every').style.display = t==='every'?'inline':'none';
 }
 /* 시각 입력 정규화 — HH:MM 뿐 아니라 HHMM·HMM·HH(콜론 없이)도 허용해 'HH:MM'으로.
    앱 공용 파서(parseTimeStr) 재사용. 파싱 실패 시 원본 반환(isValidRecur에서 걸림). */
@@ -44,19 +43,16 @@ function normTime(raw){
 function collectRecur(){
   const type=$('rc-type').value;
   const time=normTime($('rc-time').value.trim()||'09:00');
-  if(type==='dow'){
-    const dow=[...$('rc-dow').querySelectorAll('.recur-dow-btn.on')].map(b=>+b.dataset.dow);
-    return {type:'dow', dow, time};
-  }
   if(type==='monthly') return {type:'monthly', day:Number($('rc-mday').value)||1, time};
-  return {type:'every', days:Number($('rc-days').value)||1, time};
+  const dow=[...$('rc-dow').querySelectorAll('.recur-dow-btn.on')].map(b=>+b.dataset.dow);
+  return {type:'dow', dow, time};
 }
 /* 스케줄(주기)만 비교 — next/paused 등 부가 상태는 제외 */
 function sameSchedule(a,b){
   if(!a||!b||a.type!==b.type||a.time!==b.time) return false;
   if(a.type==='dow') return JSON.stringify([...(a.dow||[])].sort((x,y)=>x-y))===JSON.stringify([...(b.dow||[])].sort((x,y)=>x-y));
   if(a.type==='monthly') return Number(a.day)===Number(b.day);
-  return Number(a.days)===Number(b.days);
+  return Number(a.days)===Number(b.days);   // (구 데이터) every — 신규 입력에선 안 나옴
 }
 
 function resetInput(){
@@ -66,7 +62,6 @@ function resetInput(){
   $('rc-type').value='dow';
   renderDow([]);
   $('rc-mday').value=1;
-  $('rc-days').value=7;
   $('rc-time').value='09:00';
   $('rc-save').textContent='등록';
   $('rc-cancel-edit').style.display='none';
@@ -77,10 +72,10 @@ function fillForEdit(p){
   $('rc-new-head').textContent='주기 업무 수정';
   $('rc-memo').value=p.memo||'';
   const r=p.recur||{};
-  $('rc-type').value=(r.type==='every'||r.type==='monthly')?r.type:'dow';
+  // '며칠마다'(every)는 v2.4.4에서 제거 — 옛 every 부모를 열면 요일 반복으로 표시(저장 시 전환)
+  $('rc-type').value=(r.type==='monthly')?'monthly':'dow';
   renderDow(r.type==='dow'?r.dow:[]);
   $('rc-mday').value=r.type==='monthly'?(r.day||1):1;
-  $('rc-days').value=r.type==='every'?(r.days||7):7;
   $('rc-time').value=r.time||'09:00';
   $('rc-save').textContent='수정 저장';
   $('rc-cancel-edit').style.display='';
@@ -114,7 +109,7 @@ function saveParent(){
   if(!memo){ alert('공통 내용(제목/메모)을 입력하세요.'); $('rc-memo').focus(); return; }
   const recur=collectRecur();
   if(!isValidRecur(recur)){
-    alert('반복 주기가 올바르지 않습니다.\n(요일을 하나 이상 선택하거나 일수를 1 이상으로, 시각은 09:00 형식으로)');
+    alert('반복 주기가 올바르지 않습니다.\n(요일을 하나 이상 선택하거나 매월 날짜를 1~31로, 시각은 09:00 형식으로)');
     return;
   }
   if(editingParentId){

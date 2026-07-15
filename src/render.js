@@ -18,43 +18,39 @@ let q='', dq='';
 
 function matchesQ(it){ return textMatch(it, q); }
 
+/* 알람 점 — "울렸는지"만 3단계로 단순화(v2.4.4). 미룸(스누즈) 색 구분은 없앤다.
+   ○ 대기(안 울림·빈 점) / ● 울림(시각 지남·빨강) / ● 확인함(팝업에서 [확인]·초록).
+   스누즈(al=숫자)도 이미 울린 것이므로 '울림(빨강)'으로 묶는다. 완료 업무·세부는 점 없음. */
 function alarmDot(obj,key){
-  if(obj.done) return '';                 // 완료된 업무·세부는 알람이 의미 없음 — 점 표시 안 함
+  if(obj.done) return '';
   const iso=key==='due'?(obj.f||{}).due:obj.mid;
   if(!iso) return '';
   const t=new Date(iso).getTime();
   if(isNaN(t)) return '';
   const st=(obj.al||{})[key];
-  const passed=t<=Date.now();
   let cls,tip;
-  if(st===true){ cls='ad-done'; tip='알람 확인함'; }                       // ● 확인됨(초록)
-  else if(typeof st==='number'){                                            // F6: 스누즈 중
-    cls='ad-snooze';
-    const at=new Date(st);
-    tip = isNaN(at) ? '알람 미룸' : `알람 미룸 — ${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')} 재알림`;
-  }
-  else if(passed){ cls='ad-ring'; tip='알람 울림 (미확인)'; }               // ● 울림(빨강)
-  else { cls='ad-wait'; tip='알람 대기'; }                                  // ○ 대기
+  if(st===true){ cls='ad-done'; tip='알람 확인함'; }              // ● 확인함(초록)
+  else if(t<=Date.now()){ cls='ad-ring'; tip='알람 울림'; }        // ● 울림(빨강) — 미확인·스누즈 포함
+  else { cls='ad-wait'; tip='알람 대기'; }                         // ○ 대기
   return `<span class="adot ${cls}" title="${escAttr(tip)}"></span>`;
 }
-/* 카드에 보일 세부 할일: 앞으로 도래할 것 중 가장 가까운 것.
-   그런 게 없고 '이미 지난 미완료' 점검이 있으면 그것을 (지남 표시로) 보여줌. */
+/* 카드에 보일 세부 할일: '울린 것(지난 미완료 점검)'을 우선 표시 —
+   지나서 울린 점검이 있으면 가장 오래된(먼저 지난) 것을, 없으면 가장 임박한 미래 것을 보여준다. */
 function earliestSub(it){
   const now=Date.now();
   const pend=(it.subs||[]).filter(s=>!s.done && s.mid);
   if(!pend.length) return null;
+  const past=pend.filter(s=>new Date(s.mid).getTime()<=now).sort((a,b)=>new Date(a.mid)-new Date(b.mid));
+  if(past[0]) return past[0];   // 울린 것 우선 — 먼저 지난(가장 오래된) 것
   const future=pend.filter(s=>new Date(s.mid).getTime()>now).sort((a,b)=>new Date(a.mid)-new Date(b.mid));
-  if(future[0]) return future[0];
-  const past=pend.filter(s=>new Date(s.mid).getTime()<=now).sort((a,b)=>new Date(b.mid)-new Date(a.mid));
-  return past[0]||null;   // 가장 최근에 지난 것
+  return future[0]||null;
 }
 /* 카드 겉면: 메모(2줄) · 가장 임박한 세부 할일 · 마감시각 만.
    관련인/식별번호는 카드에서 감추고 팝업에서만 표시. */
 function dueTagHtml(it){
   const v=(it.f||{}).due; if(!v) return '';
   const m=fmtDue(v); if(!m) return '';        // F7: 손상 ISO면 렌더 생략
-  // adot는 태그(pill) 밖에 둔다 — 세부(mid) 쪽과 동일하게. pill 안에 넣으면
-  // '대기'(ad-wait) 상태의 투명 배경이 pill 색과 겹쳐 항상 칠해진 것처럼 보인다.
+  // adot는 태그(pill) 밖에 둔다 — '대기'의 투명 배경이 pill 색과 겹치지 않도록.
   return `${alarmDot(it,'due')}<span class="tag time ${m.cls}"><span class="k">#마감:</span>${esc(m.label)}</span>`;
 }
 export function cardHtml(it,place){
