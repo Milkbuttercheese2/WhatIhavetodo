@@ -64,7 +64,7 @@ export function cardHtml(it,place){
   let subLine='';
   if(es){
     const m=es.mid?fmtDue(es.mid):null;
-    subLine=`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span>${m?`${alarmDot(es,'mid')}<span class="sub-when ${m.cls==='late'?'late':''}">${esc(m.label)}</span>`:''}</div>`;
+    subLine=`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span>${m?`${alarmDot(es,'mid')}<span class="sub-when ${m.cls}">${esc(m.label)}</span>`:''}</div>`;
   }
   // 파일 링크는 카드 앞면에 표시하지 않는다 — 카드는 메모(2줄)·가장 빠른 세부·마감만.
   // 파일은 카드를 클릭해 열리는 양식 팝업에서 다룬다(form.js addFormFileRow).

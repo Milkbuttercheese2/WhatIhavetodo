@@ -16,7 +16,7 @@
  body{display:flex;box-sizing:border-box;padding:0;color:#f2f5fa;
    font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,-apple-system,sans-serif}
  #cap-shell{flex:1;display:flex;flex-direction:column;min-height:0;
-   background:#26282f;border:1px solid rgba(255,255,255,.12);border-radius:16px;overflow:hidden}
+   background:#1e2128;border:1px solid #2c313b;border-radius:18px;overflow:hidden}
  #cap-bar{display:flex;align-items:center;flex:1;min-height:56px}
  body.search #cap-bar{flex:none}
  #cap-inp,#cap-search{flex:1;border:0;outline:0;background:transparent;color:#f2f5fa;
@@ -33,22 +33,29 @@
  .cap-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
  .cap-hit{font:14px/1.45 inherit;color:#eef1f7;padding:8px 11px;margin:1px 0;
    border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .cap-hit:hover{background:#3d5391}
- .cap-hit.done{color:#8b95a7;text-decoration:line-through}
+ .cap-hit:hover{background:#173f3a;color:#4fe0c8}
+ .cap-hit.done{color:#8b95a7}
  .cap-empty{font:12.5px inherit;color:#8b95a7;padding:12px}
  #cap-hint{flex:none;font:11px inherit;color:#727d91;padding:2px 16px 10px;display:none}
- body.search #cap-hint{display:block}
+ body.search #cap-hint{display:none}
  #cap-flash{display:none;align-items:center;justify-content:center;flex:1;gap:7px;
-   color:#84e592;font:600 15px inherit}
+   color:#3dd7bf;font:600 15px inherit}
  body.flash #cap-bar,body.flash #cap-results,body.flash #cap-hint{display:none}
  body.flash #cap-flash{display:flex}
+ .cap-col-h{display:none}
+ .cap-hit{display:flex;align-items:center;gap:9px}
+ .cap-hit-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .cap-tag{flex:none;font:700 10.5px inherit;padding:2.5px 9px;border-radius:999px;letter-spacing:.02em}
+ .cap-tag.ongoing{background:#153f39;color:#54e2ca}
+ .cap-tag.done{background:#2b3039;color:#8b95a7}
+ .cap-hit.done .cap-hit-txt{color:#8b95a7}
 </style>
 </head>
 <body>
 <div id="cap-shell">
   <div id="cap-bar">
-    <textarea id="cap-inp" placeholder="빠른 메모 — Ctrl+Enter 등록 · Esc 닫기(내용 유지) · Alt 검색"></textarea>
-    <input id="cap-search" placeholder="빠른 검색 — 내 업무 · Alt로 메모 복귀" style="display:none" autocomplete="off">
+    <textarea id="cap-inp" placeholder="빠른 메모 · Alt 검색"></textarea>
+    <input id="cap-search" placeholder="검색" style="display:none" autocomplete="off">
   </div>
   <div id="cap-results">
     <div class="cap-col"><div class="cap-col-h">내 업무</div><div class="cap-list" id="cap-items"></div></div>

@@ -15,7 +15,7 @@ Branch-protection rules on `main` (require PR, block direct push) have **not** b
 
 ## Versioning convention (user-defined)
 
-Current release = **v2.4.3**.
+Current release = **v2.4.5**.
 
 > ⚠️ **버전 이력 주의 (반드시 읽을 것 — 과거에 여기서 혼선이 있었다):** 저장소 git 히스토리에는
 > `v3.0.0`·`v3.1.0` 커밋과 CHANGELOG 항목이 남아 있지만, **v3.x는 실제로 배포된 적이 없다.**
@@ -23,7 +23,7 @@ Current release = **v2.4.3**.
 > 두고 **대규모 개편(major)도 아닌데 버전을 3.0.0으로 임의 상향**해 버린 것이다(잘못된 범프).
 > 저장소 소유자 결정으로 이를 바로잡아, 실제 정식 배포는 **구 v2.31 라인을 잇는 `v2.4.0`**
 > 으로 되돌렸다. 따라서:
-> - **현재/실제 배포 버전 = v2.4.3.** 세 매니페스트(package.json·Cargo.toml·tauri.conf.json) 동일.
+> - **현재/실제 배포 버전 = v2.4.5.** 세 매니페스트(package.json·Cargo.toml·tauri.conf.json) 동일.
 > - v3.0.0·v3.1.0 CHANGELOG 항목은 *내부 이력*으로만 읽고, 실 배포 번호로 착각하지 말 것.
 > - **다음 버전은 v2.4.x(버그·사소한 조정) / v2.5.0(기능 추가)로 이어간다.** 진짜 호환성 깨지는
 >   대규모 개편이 아닌 한 다시 3.x로 올리지 말 것. (자동 업데이터·버전 비교 로직이 없어 역전은 무해.)
@@ -81,6 +81,7 @@ Split from the former single-file `app.js` in v2.21 along single-responsibility 
 - `settings-menu.js` — header [설정] dropdown that hosts 저장 위치/백업/불러오기/XLSX/프리셋·식별번호 관리/주기 업무 입력·관리 buttons (ids unchanged — action listeners stay in their own modules). (The two Everything toggles were removed in v2.4.0.)
 - `filters.js` — `haystack()`/`textMatch()` search predicates (pure functions, no state/DOM; board search and done search share them, and future saved-filter views build on them). Since v3.0.0 the haystack includes linked file *names* (last path segment only, not folder names).
 - (`everything.js` — **removed in v2.4.0**. The Everything(voidtools) file-search integration was deleted because it slowed the board/quick-memo search.) File links are **not shown on board cards since v2.4.1** — cards render memo(2 lines)·earliest sub·due only; files live in the form popup (`form.js` `addFormFileRow`) where each row has an active↔edit toggle (active = name shown as a link that opens on click / edit = editable path input + a **찾기** button calling `pick_file_path`).
+- `styles.css` — single global stylesheet. **v2.4.5 디자인 리뉴얼:** 팔레트가 뮤트 틸 액센트(`--slate`/`--focus`/`--amber` = `#4d938a`) + 따뜻한 뉴트럴 배경(`--paper:#f4f3f0`) + 흰 카드. 단계 표시는 카드 좌측 풀바 → **`.card::before` 짧은 색 세그먼트**(`--stage-*`). 원형 체크박스(`.chk` border-radius:50%), 알약형 탭/태그(999px), 소프트 hover 섀도. 색은 전부 CSS 변수라 팔레트 변경은 `:root` 토큰만 고치면 전파된다. (`.adot` 3단계 알람 점 규칙은 그대로 — render.js가 emit.)
 - `placement.js` — `placeOf()` / `dayBounds` / `PLACE_NAME` (the core scheduling logic).
 - `datetime.js` — date/time parsers (F3/F4/F13), dt input widget helpers, `DOW`/`fmtT`/`fmtDue`, `initDtDelegation()` (document-level delegated listeners for the widget).
 - `store.js` — `invoke` (from `window.__TAURI__.core`; `withGlobalTauri: true`), `STORE` persistence facade (single-flight `saveAll` queue, F1 gate on `S.loaded`).
