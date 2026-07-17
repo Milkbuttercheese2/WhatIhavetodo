@@ -1,7 +1,10 @@
 /* placeOf 자동 배치 규칙 — 전 분기. 픽스처는 실제 now 기준 상대 생성 */
-import {test} from 'node:test';
+import {test, afterEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {placeOf, dayBounds, subMids, PLACE_NAME} from '../../src/placement.js';
+import {placeOf, dayBounds, subMids, PLACE_NAME, setPlaceMode, placeMode, ownerOf} from '../../src/placement.js';
+
+/* MODE는 모듈 상태 — owner 모드 테스트가 실패해도 다른 테스트가 오염되지 않게 항상 리셋 */
+afterEach(() => setPlaceMode('time'));
 
 const iso = min => new Date(Date.now() + min*60e3).toISOString();
 const base = o => Object.assign({done:false, staged:false, f:{}, subs:[]}, o);
@@ -93,4 +96,66 @@ test('subMids: 완료·무시각·손상 mid 걸러냄', () => {
 
 test('PLACE_NAME 5개 구역 전부 존재', () => {
   for(const k of ['inbox','today','doing','planned','done']) assert.ok(PLACE_NAME[k]);
+});
+
+/* ===== 시간·담당자(owner) 모드 — v2.5.0 ===== */
+
+test('setPlaceMode: owner 이외 값은 전부 time', () => {
+  setPlaceMode('owner'); assert.equal(placeMode(), 'owner');
+  setPlaceMode('뭔가이상한값'); assert.equal(placeMode(), 'time');
+});
+
+test('owner 모드: staged/done/recur는 시간 모드와 동일 (inbox/done/recur)', () => {
+  setPlaceMode('owner');
+  assert.equal(placeOf(base({staged:true})), 'inbox');
+  assert.equal(placeOf(base({done:true, f:{due:iso(-120)}})), 'done');
+  assert.equal(placeOf(base({recur:{type:'dow',dow:[1],time:'09:00'}})), 'recur');
+});
+
+test('owner 모드: 본인(빈 owner) + 오늘 마감 → metoday', () => {
+  setPlaceMode('owner');
+  const [, t1] = dayBounds();
+  const dueToday = new Date(t1.getTime() - 60e3).toISOString();
+  assert.equal(placeOf(base({owner:'', f:{due:dueToday}})), 'metoday');
+  assert.equal(placeOf(base({f:{due:iso(-60)}})), 'metoday');      // 지난 시각도 오늘로 침
+});
+
+test('owner 모드: 세부 담당자 김 + 오늘 점검 → othtoday (가장 이른 세부의 owner가 이김)', () => {
+  setPlaceMode('owner');
+  assert.equal(placeOf(base({subs:[{title:'a', mid:iso(-30), done:false, owner:'김'}]})), 'othtoday');
+});
+
+test('owner 모드: 본인 + 3일 뒤 마감 → meplan', () => {
+  setPlaceMode('owner');
+  assert.equal(placeOf(base({owner:'', f:{due:iso(60*72)}})), 'meplan');
+});
+
+test('owner 모드: 담당자 박 + 3일 뒤 마감 → othplan', () => {
+  setPlaceMode('owner');
+  assert.equal(placeOf(base({owner:'박', f:{due:iso(60*72)}})), 'othplan');
+});
+
+test('owner 모드: 시각 정보 전혀 없음 → 오늘로 취급 (metoday / 타인은 othtoday)', () => {
+  setPlaceMode('owner');
+  assert.equal(placeOf(base({})), 'metoday');
+  assert.equal(placeOf(base({owner:'이'})), 'othtoday');
+});
+
+test('ownerOf: 가장 이른 미완료 세부 owner → 비면 아이템 owner → 빈 문자열', () => {
+  const it = base({owner:'상위담당', subs:[
+    {title:'늦은', mid:iso(120), done:false, owner:'늦은담당'},
+    {title:'이른', mid:iso(30),  done:false, owner:'이른담당'},
+    {title:'완료', mid:iso(-60), done:true,  owner:'완료담당'},   // done → 제외
+  ]});
+  assert.equal(ownerOf(it), '이른담당');
+  assert.equal(ownerOf(base({owner:'상위담당', subs:[{title:'무명', mid:iso(30), done:false, owner:''}]})), '상위담당');
+  assert.equal(ownerOf(base({subs:[{title:'무시각', done:false, owner:'무시각담당'}]})), '');   // mid 없음 → 세부 제외
+  assert.equal(ownerOf(base({})), '');
+});
+
+test('owner 모드 PLACE_NAME 4개 구역 존재 + time 모드 복귀 시 기존 규칙 그대로', () => {
+  for(const k of ['metoday','othtoday','meplan','othplan']) assert.ok(PLACE_NAME[k]);
+  setPlaceMode('owner');
+  setPlaceMode('time');
+  assert.equal(placeOf(base({owner:'박', f:{due:iso(-60)}})), 'today');   // owner는 시간 모드에 영향 없음
 });

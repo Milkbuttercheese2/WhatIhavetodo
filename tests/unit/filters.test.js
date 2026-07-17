@@ -29,6 +29,14 @@ test('textMatch: 빈 검색어는 전체 통과, 부분일치, 불일치', () =>
   assert.equal(textMatch(it, '없는말'), false);
 });
 
+test('haystack: 담당자(아이템·세부 owner) 포함 — 이름 검색으로 맡긴 업무 검색 (v2.5.0)', () => {
+  const withOwner = Object.assign({}, it, {owner:'박주무관', subs:[{title:'회신', owner:'이담당'}]});
+  const h = haystack(withOwner);
+  assert.ok(h.includes('박주무관'));
+  assert.ok(h.includes('이담당'));
+  assert.equal(textMatch(withOwner, '박주무관'), true);
+});
+
 test('haystack: 파일 링크는 파일명만 포함(경로 폴더명은 제외)', () => {
   const withFiles = Object.assign({}, it, {files:['C:\\비밀폴더\\계약서.HWP','\\\\share\\양식\\보고서.xlsx']});
   const h = haystack(withFiles);

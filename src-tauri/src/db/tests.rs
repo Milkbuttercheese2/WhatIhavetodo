@@ -27,6 +27,7 @@ fn sample_items() -> Vec<Item> {
     let item1 = Item {
         id: 1001,
         memo: "민원 전화 — 재발급 문의".to_string(),
+        owner: "박주무관".to_string(),
         f: f1,
         contacts: vec![Contact {
             who: "홍길동".into(),
@@ -40,6 +41,7 @@ fn sample_items() -> Vec<Item> {
         subs: vec![SubTask {
             id: 2001,
             title: "서류 확인".into(),
+            owner: "김담당".into(),
             mid: "2026-07-03T10:00:00.000Z".into(),
             done: false,
             al: sub_al,
@@ -59,6 +61,7 @@ fn sample_items() -> Vec<Item> {
     let item2 = Item {
         id: 1002,
         memo: "완료된 업무".to_string(),
+        owner: String::new(),
         f: HashMap::new(),
         contacts: vec![],
         ids: vec![],
@@ -119,6 +122,11 @@ fn items_round_trip() {
     // v3.1.0 주기 업무: recur JSON이 손대지 않고 왕복, 없는 아이템은 None.
     assert_eq!(loaded[0].recur, original[0].recur);
     assert_eq!(loaded[1].recur, None);
+
+    // v2.5.0 담당자: 아이템·세부의 owner가 그대로 왕복, 빈 값("" = 본인)도 보존.
+    assert_eq!(loaded[0].owner, "박주무관");
+    assert_eq!(loaded[0].subs[0].owner, "김담당");
+    assert_eq!(loaded[1].owner, "");
 
     // 빠른 검색: 메모·세부 제목·식별번호 어느 쪽으로도 걸리고 LIKE 특수문자는 이스케이프
     let hits = items::quick_search(&conn, "재발급", 10).unwrap();
@@ -274,6 +282,10 @@ fn backup_export_import_round_trip() {
     backup::import_payload(&mut fresh, payload).unwrap();
     let restored = items::load_items(&fresh).unwrap();
     assert_eq!(restored.len(), 2);
+    // v2.5.0 담당자: JSON 백업 내보내기→복원에서도 owner가 보존된다.
+    assert_eq!(restored[0].owner, "박주무관");
+    assert_eq!(restored[0].subs[0].owner, "김담당");
+    assert_eq!(restored[1].owner, "");
     let restored_settings = settings::load_settings(&fresh).unwrap();
     assert_eq!(
         restored_settings.get("alarmOn"),

@@ -30,6 +30,7 @@ export function openForm(pre){
   editingId=pre.id||null;
   $('fm-title').textContent=editingId?'양식 채우기 — 저장하면 규칙에 따라 자동 배치됩니다':'양식 입력';
   $('fm-memo').value = pre.memo || '';
+  $('fm-owner').value = pre.owner || '';
 
   // 상위 시각 필드 (접수·마감)
   const g=$('fm-grid'); g.innerHTML='';
@@ -106,6 +107,7 @@ function addFormSubRow(title,mid,focusIt,sub){
   row.innerHTML=`<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
     <div class="fsub-chk chk ${sub.done?'on':''}" title="완료 표시"></div>
     <input type="text" class="fsub-title" placeholder="세부 할 일" value="${escAttr(title||'')}">
+    <input type="text" class="sub-owner" placeholder="담당" title="비우면 본인" value="${escAttr(sub.owner||'')}">
     <span class="dt-inp fsub-dt">${dtInner(md.date, md.time)}</span>
     <button class="rm" title="삭제">×</button>`;
   const chk=row.querySelector('.fsub-chk');
@@ -177,12 +179,12 @@ function collectForm(){
     let al={};
     if(editingId){ const cur=S.items.find(x=>x.id===editingId); const prev=cur&&(cur.subs||[]).find(s=>s.id===id);
       if(prev){ al = (prev.mid===mid) ? (prev.al||{}) : {}; } }
-    return {id, title:t, mid, done, al};
+    return {id, title:t, mid, done, al, owner:r.querySelector('.sub-owner').value.trim()};
   }).filter(Boolean);
   const files=[...$('fm-files').querySelectorAll('.ffile-path')].map(i=>i.value.trim()).filter(Boolean);
-  return {memo:$('fm-memo').value.trim(), f, contacts, ids, subs, files};
+  return {memo:$('fm-memo').value.trim(), owner:$('fm-owner').value.trim(), f, contacts, ids, subs, files};
 }
-function updatePlacePreview(){ try{ const d=collectForm(); const p=placeOf({staged:false,f:d.f,subs:d.subs}); $('fm-place').innerHTML=`저장 위치: <b>${PLACE_NAME[p]}</b>`; }catch{} }
+function updatePlacePreview(){ try{ const d=collectForm(); const p=placeOf({staged:false,owner:d.owner,f:d.f,subs:d.subs}); $('fm-place').innerHTML=`저장 위치: <b>${PLACE_NAME[p]}</b>`; }catch{} }
 
 export function initForm(){
   // 팝업이 어느 탭에서든 뜨도록 formPanel을 body 직속으로 이동
@@ -203,7 +205,7 @@ export function initForm(){
   });
   $('blankForm').addEventListener('click',()=>{ const t=$('inp').value.trim(); openForm(t?{memo:t}:{}); if(t)$('inp').value=''; });
   $('fm-cancel').addEventListener('click',closeForm);
-  $('formPanel').addEventListener('input',e=>{ if(e.target.closest('#fm-grid,#fm-subs')) updatePlacePreview(); });
+  $('formPanel').addEventListener('input',e=>{ if(e.target.closest('#fm-grid,#fm-subs,#fm-owner')) updatePlacePreview(); });
   $('fm-save').addEventListener('click',()=>{
     // F3: 저장 전 오입력 검사 (포커스 남아있으면 판정되도록 먼저 blur)
     if(document.activeElement && $('formPanel').contains(document.activeElement)) document.activeElement.blur();
@@ -217,12 +219,12 @@ export function initForm(){
       const it=prev;
       if(it){
         const oldDue=(it.f||{}).due;
-        it.memo=d.memo; it.f=d.f; it.contacts=d.contacts; it.ids=d.ids; it.subs=d.subs; it.files=d.files; it.staged=false;
+        it.memo=d.memo; it.owner=d.owner; it.f=d.f; it.contacts=d.contacts; it.ids=d.ids; it.subs=d.subs; it.files=d.files; it.staged=false;
         it.al = it.al || {};
         if(oldDue !== d.f.due) delete it.al.due;   // F2: 마감이 바뀌면 알람 재무장
       }
     }else{
-      S.items.push(makeItem({memo:d.memo, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs, files:d.files}));
+      S.items.push(makeItem({memo:d.memo, owner:d.owner, staged:false, f:d.f, contacts:d.contacts, ids:d.ids, subs:d.subs, files:d.files}));
     }
     closeForm(); persist();
   });

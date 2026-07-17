@@ -12,7 +12,7 @@
 
 <header>
  <div class="header-inner">
-  <div class="brand"><h1>뭐하려 했더라</h1><span class="sub">전화받고 잊어버리기 전에 던져두는 곳</span></div>
+  <div class="brand"><h1>뭐하려 했더라</h1><span class="sub">전화받고 잊어버리기 전에 던져두는 곳</span><span class="mode-pill" id="modePill"><span data-mode="time" class="on">시간</span><span data-mode="owner">시간·담당자</span></span></div>
   <nav class="tabs">
     <button class="tab on" data-view="board">보드</button>
     <button class="tab" data-view="cal">캘린더</button>
@@ -58,6 +58,8 @@
         <label class="fm-label">메모</label>
         <textarea id="fm-memo" class="fm-memo" placeholder="업무 내용을 자유롭게 적으세요"></textarea>
       </div>
+
+      <div class="fm-field" style="max-width:220px;margin:-4px 0 12px"><label>담당자 (비우면 본인)</label><input type="text" id="fm-owner" autocomplete="off"></div>
 
       <div class="fm-contacts">
         <div class="t-head">관련인 · 관련소속 · 연락처 (여러 명 추가 가능)</div>
@@ -120,6 +122,35 @@
     <div class="col-desc"></div>
     <div class="cards" id="col-planned"></div>
   </div>
+</main>
+
+<!-- 시간·담당자 모드 보드 (5열) — v2.5.0. 표시 전환은 render.js syncBoardVisibility -->
+<main id="view-board5" style="display:none">
+  <section class="col">
+    <div class="col-head"><span class="dot dot-inbox" aria-hidden="true"></span><h2>분류 대기</h2><span class="count" id="c5-inbox">0</span></div>
+    <div class="col-desc"></div>
+    <div class="cards" id="col5-inbox"></div>
+  </section>
+  <section class="col">
+    <div class="col-head"><span class="dot dot-today" aria-hidden="true"></span><h2>본인 진행 · 오늘</h2><span class="count" id="c5-metoday">0</span></div>
+    <div class="col-desc"></div>
+    <div class="cards" id="col5-metoday"></div>
+  </section>
+  <section class="col">
+    <div class="col-head"><span class="dot dot-doing" aria-hidden="true"></span><h2>타인 진행 · 오늘</h2><span class="count" id="c5-othtoday">0</span></div>
+    <div class="col-desc"></div>
+    <div class="cards" id="col5-othtoday"></div>
+  </section>
+  <section class="col">
+    <div class="col-head"><span class="dot dot-planned" aria-hidden="true"></span><h2>본인 예정</h2><span class="count" id="c5-meplan">0</span></div>
+    <div class="col-desc"></div>
+    <div class="cards" id="col5-meplan"></div>
+  </section>
+  <section class="col">
+    <div class="col-head"><span class="dot dot-planned" aria-hidden="true"></span><h2>타인 예정</h2><span class="count" id="c5-othplan">0</span></div>
+    <div class="col-desc"></div>
+    <div class="cards" id="col5-othplan"></div>
+  </section>
 </main>
 
 <section id="view-cal">

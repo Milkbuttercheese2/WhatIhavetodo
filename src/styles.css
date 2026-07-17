@@ -45,6 +45,10 @@
   .brand{display:flex;align-items:baseline;gap:12px;flex:none}
   .brand h1{font-size:19px;font-weight:700;letter-spacing:-.02em}
   .brand .sub{font-size:12.5px;color:var(--ink-soft)}
+  /* 보드 모드 토글 (시간 | 시간·담당자, v2.5.0) */
+  .mode-pill{display:inline-flex;gap:2px;background:var(--line-soft);border-radius:999px;padding:2px;margin-left:10px;vertical-align:middle}
+  .mode-pill span{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;color:var(--ink-soft);cursor:pointer}
+  .mode-pill span.on{background:#fff;color:var(--focus);box-shadow:0 1px 2px rgba(31,42,51,.12)}
   nav.tabs{display:flex;gap:4px;background:var(--line-soft);padding:3px;border-radius:999px}
   .tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 18px;border:none;border-radius:999px;background:transparent;color:var(--ink-soft);cursor:pointer}
   .tab.on{background:#e9efec;color:var(--focus);box-shadow:none}
@@ -137,6 +141,7 @@
   .idk-add input:focus{outline:none;border-color:var(--focus)}
   #alarmToggle.alarm-off{color:var(--ink-soft);opacity:.7}
   .fsub-row input[type=text]{flex:1;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
+  .fsub-row input.sub-owner{flex:none;width:96px;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
   .fsub-row input[type=text].sdone{text-decoration:line-through;color:var(--done)}
   .fsub-row input[type=datetime-local]{font-family:inherit;font-size:11px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;color:var(--ink-soft)}
   .fsub-row .rm{font-size:15px;line-height:1;color:var(--icon-muted);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
@@ -161,6 +166,11 @@
   /* 컬럼 폭 절대 고정: grid/flex 아이템의 기본 min-width:auto 를 모든 단계에서 차단 */
   main{display:grid;grid-template-columns:repeat(4,365px);width:1460px;margin:0 auto;min-height:calc(100vh - 250px)}
   .col{width:365px;min-width:0;max-width:365px;padding:18px 18px;border-right:none;display:flex;flex-direction:column;overflow:hidden}
+  /* ---- 시간·담당자 모드 보드 (5열, v2.5.0) — main 공통 규칙 뒤에서 열 폭만 덮어씀 (5×292=1460) ---- */
+  #view-board5{display:none;grid-template-columns:repeat(5,292px);width:1460px;margin:0 auto;min-height:calc(100vh - 250px)}
+  #view-board5 .col{width:292px;max-width:292px;padding:16px 12px}
+  .card.p-metoday::before,.card.p-othtoday::before{background:var(--stage-today)}
+  .card.p-meplan::before,.card.p-othplan::before{background:var(--stage-planned)}
   .col:last-child{border-right:none}
   .col-head{display:flex;align-items:center;gap:8px;margin-bottom:3px}
   .dot{width:9px;height:9px;border-radius:50%;flex:none}
@@ -195,6 +205,7 @@
   .tag.time.u-today,.tag.mid.u-today{background:#fbe8d4;color:#b5651c}
   .tag.time.u-tmr,.tag.mid.u-tmr{background:#faf1d4;color:#8f7118}
   .tag.time.u-2d,.tag.mid.u-2d{background:#f1f0dc;color:#6f6b3a}
+  .tag.owner{background:var(--slate-bg);color:var(--slate);font-weight:600}
   .tag.custom{background:var(--gray-bg);color:var(--gray-fg)}
   .tag.idnum{background:#e9e4f2;color:#5b4a86}
   .tag .k{opacity:.72;margin-right:2px;font-weight:600}

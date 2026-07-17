@@ -68,7 +68,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
     let mut subs_by_item: HashMap<i64, Vec<SubTask>> = HashMap::new();
     {
         let mut stmt = conn.prepare(
-            "SELECT item_id, id, title, mid_at, done, alarm FROM subtasks ORDER BY item_id, sort_order, id",
+            "SELECT item_id, id, title, mid_at, done, alarm, owner FROM subtasks ORDER BY item_id, sort_order, id",
         )?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
@@ -79,6 +79,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
             subs_by_item.entry(item_id).or_default().push(SubTask {
                 id: sub_id,
                 title: row.get(2)?,
+                owner: row.get(6)?,
                 mid: mid_at.unwrap_or_default(),
                 done: row.get::<_, i64>(4)? != 0,
                 al: alarm::decode(alarm_text.as_deref(), "mid"),
@@ -87,7 +88,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
     }
 
     let mut stmt = conn.prepare(
-        "SELECT id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur FROM items ORDER BY id",
+        "SELECT id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur, owner FROM items ORDER BY id",
     )?;
     let mut rows = stmt.query([])?;
     let mut items = Vec::new();
@@ -111,6 +112,7 @@ pub fn load_items(conn: &Connection) -> DbResult<Vec<Item>> {
         items.push(Item {
             id,
             memo: row.get(1)?,
+            owner: row.get(10)?,
             f,
             contacts: contacts_by_item.remove(&id).unwrap_or_default(),
             ids: ids_by_item.remove(&id).unwrap_or_default(),
@@ -136,8 +138,8 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
     tx.execute("DELETE FROM items", [])?; // cascades to item_fields/contacts/identifiers/subtasks
     {
         let mut ins_item = tx.prepare(
-            "INSERT INTO items (id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
+            "INSERT INTO items (id, memo, received_at, due_at, staged, done, done_at, due_alarm, recur_id, recur, owner, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, strftime('%Y-%m-%dT%H:%M:%fZ','now'))",
         )?;
         let mut ins_field =
             tx.prepare("INSERT INTO item_fields (item_id, field_key, value) VALUES (?1, ?2, ?3)")?;
@@ -148,7 +150,7 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
             "INSERT INTO identifiers (item_id, kind, val, sort_order) VALUES (?1, ?2, ?3, ?4)",
         )?;
         let mut ins_sub = tx.prepare(
-            "INSERT INTO subtasks (id, item_id, title, mid_at, done, alarm, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO subtasks (id, item_id, title, mid_at, done, alarm, owner, sort_order) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         )?;
         let mut ins_file = tx
             .prepare("INSERT INTO item_files (item_id, path, sort_order) VALUES (?1, ?2, ?3)")?;
@@ -169,6 +171,7 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
                 due_alarm,
                 it.recur_id,
                 recur_text,
+                it.owner,
             ])?;
 
             for (k, v) in it
@@ -187,7 +190,7 @@ pub fn save_items_tx(tx: &Transaction, items: &[Item]) -> DbResult<()> {
             for (i, s) in it.subs.iter().enumerate() {
                 let mid = if s.mid.is_empty() { None } else { Some(s.mid.clone()) };
                 let sub_alarm = alarm::encode(&s.al, "mid");
-                ins_sub.execute(params![s.id, it.id, s.title, mid, s.done as i64, sub_alarm, i as i64])?;
+                ins_sub.execute(params![s.id, it.id, s.title, mid, s.done as i64, sub_alarm, s.owner, i as i64])?;
             }
             for (i, p) in it.files.iter().enumerate() {
                 ins_file.execute(params![it.id, p, i as i64])?;
