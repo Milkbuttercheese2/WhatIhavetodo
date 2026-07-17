@@ -18,8 +18,18 @@
     --done:#6b7787; --focus:#4d938a;
     --icon-muted:#aeb4be;   /* 삭제 × 아이콘 기본색 */
 
-    /* 내부망 배포 대상: 웹폰트 금지, 전부 시스템 폰트 (Windows 기본 탑재분) */
+    /* 내부망 배포 대상: 외부 웹폰트 금지 — Pretendard는 아래 @font-face로 로컬 번들(v2.4.6).
+       모노는 시스템 폰트 (Windows 기본 탑재분). */
     --font-mono:'Cascadia Mono','Consolas','D2Coding',ui-monospace,monospace;
+  }
+  /* Pretendard 가변 폰트 로컬 번들 (fonts/PretendardVariable.woff2, OFL 라이선스).
+     이전엔 이름만 지정돼 있어 미설치 PC에선 맑은 고딕으로 폴백돼 화면이 다르게 보였다. */
+  @font-face{
+    font-family:'Pretendard';
+    src:url('fonts/PretendardVariable.woff2') format('woff2-variations');
+    font-weight:45 920;
+    font-style:normal;
+    font-display:swap;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
