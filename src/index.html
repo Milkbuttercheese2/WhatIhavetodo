@@ -40,14 +40,14 @@
 <section class="capture" id="capture">
   <div class="cap-box">
     <div class="cap-row">
-      <textarea id="inp" placeholder="바로 입력 — 메모를 자유롭게 적고 Ctrl+Enter. '분류 대기'에 쌓입니다"></textarea>
+      <textarea id="inp" placeholder="바로 입력 · Ctrl+Enter"></textarea>
       <div class="cap-btns">
         <button class="btn btn-inbox" id="toInbox">바로 입력</button>
         <button class="btn btn-form" id="blankForm">양식 입력</button>
       </div>
     </div>
     <div class="presets" id="presets"></div>
-    <div class="hint"><b>Ctrl+Enter</b> = 분류 대기로 · 프리셋 = 세부 할일까지 채워진 양식 · 카드 위치는 시각 기준 자동 결정</div>
+    <div class="hint" style="display:none"></div>
 
     <!-- 양식 패널 -->
     <div class="form-panel" id="formPanel">
@@ -96,28 +96,28 @@
 </section>
 
 <div class="strip" id="strip">
-  <input class="s-search" id="search" placeholder="검색: 관련인 · 관련소속 · 연락처 · 식별번호 · 파일명" autocomplete="off">
+  <input class="s-search" id="search" placeholder="검색" autocomplete="off">
 </div>
 
 <main id="view-board">
   <div class="col">
     <div class="col-head"><span class="dot dot-inbox" aria-hidden="true"></span><h2>분류 대기</h2><span class="count" id="c-inbox">0</span></div>
-    <div class="col-desc">바로 입력 보관함</div>
+    <div class="col-desc"></div>
     <div class="cards" id="col-inbox"></div>
   </div>
   <div class="col">
     <div class="col-head"><span class="dot dot-today" aria-hidden="true"></span><h2>오늘 처리</h2><span class="count" id="c-today">0</span></div>
-    <div class="col-desc">마감·점검일이 오늘이거나 이미 지난 것</div>
+    <div class="col-desc"></div>
     <div class="cards" id="col-today"></div>
   </div>
   <div class="col">
     <div class="col-head"><span class="dot dot-doing" aria-hidden="true"></span><h2>진행 중</h2><span class="count" id="c-doing">0</span></div>
-    <div class="col-desc">손을 댄 업무</div>
+    <div class="col-desc"></div>
     <div class="cards" id="col-doing"></div>
   </div>
   <div class="col">
     <div class="col-head"><span class="dot dot-planned" aria-hidden="true"></span><h2>예정 · 대기</h2><span class="count" id="c-planned">0</span></div>
-    <div class="col-desc">마감이 내일 이후거나 시간이 지정되지 않은 것</div>
+    <div class="col-desc"></div>
     <div class="cards" id="col-planned"></div>
   </div>
 </main>
@@ -144,7 +144,7 @@
   <div class="done-head">
     <h2>완료 업무 <span id="done-count" class="done-cnt">0</span></h2>
     <div class="done-tools">
-      <input class="s-search" id="done-search" placeholder="검색: 관련인 · 관련소속 · 연락처 · 식별번호" autocomplete="off">
+      <input class="s-search" id="done-search" placeholder="검색" autocomplete="off">
     </div>
   </div>
   <div class="cards" id="col-done"></div>

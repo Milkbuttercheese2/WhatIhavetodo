@@ -46,7 +46,7 @@ async function runSearch(q){
   const items=await invoke('quick_search',{query:q}).catch(()=>[]);
   if(seq!==searchSeq) return;               // 그 사이 새 검색어 입력됨
   iw.innerHTML=items.length?items.map(h=>
-    `<div class="cap-hit${h.done?' done':''}" data-item="${h.id}">${h.done?'[완료] ':''}${esc(h.memo||'(메모 없음)')}</div>`
+    `<div class="cap-hit${h.done?' done':''}" data-item="${h.id}"><span class="cap-tag ${h.done?'done':'ongoing'}">${h.done?'완료':'진행'}</span><span class="cap-hit-txt">${esc(h.memo||'(메모 없음)')}</span></div>`
   ).join(''):'<div class="cap-empty">일치하는 업무 없음</div>';
 }
 
