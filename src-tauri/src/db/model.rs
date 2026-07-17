@@ -38,6 +38,9 @@ pub struct SubTask {
     pub id: i64,
     #[serde(default)]
     pub title: String,
+    /// v2.5.0 담당자 (자유 텍스트, "" = 본인).
+    #[serde(default)]
+    pub owner: String,
     /// ISO datetime string, or "" when unset — kept as a plain string to
     /// match the existing frontend's date handling verbatim.
     #[serde(default)]
@@ -80,6 +83,9 @@ pub struct Item {
     pub id: i64,
     #[serde(default)]
     pub memo: String,
+    /// v2.5.0 담당자 (자유 텍스트, "" = 본인) — 시간·담당자 보드 모드용.
+    #[serde(default)]
+    pub owner: String,
     /// Field-key -> value. Always the two builtin keys ("received","due")
     /// plus whatever custom fields the user defined; values are always
     /// plain strings on the wire (dates as ISO strings).

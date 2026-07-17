@@ -18,6 +18,7 @@ import {initCapture} from './capture-bridge.js';
 import {initSettingsMenu} from './settings-menu.js';
 import {initRecurBox, runRecurSpawn} from './recur-box.js';
 import {makeItem} from './state.js';
+import {setPlaceMode, placeMode} from './placement.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -33,7 +34,8 @@ renderPresets();
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
   const v=t.dataset.view;
-  $('view-board').style.display=v==='board'?'grid':'none';
+  $('view-board').style.display=v==='board'&&placeMode()==='time'?'grid':'none';
+  $('view-board5').style.display=v==='board'&&placeMode()==='owner'?'grid':'none';
   $('strip').style.display=v==='board'?'flex':'none';
   $('view-cal').classList.toggle('on',v==='cal');
   $('view-done').classList.toggle('on',v==='done');
@@ -41,6 +43,16 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   if(v==='cal')renderCal(); if(v==='done')renderDone();
 }));
 /* '완료 전체 비우기' 제거됨 */
+
+/* 보드 모드 토글 (시간 | 시간·담당자) — settings.boardMode 로 영속 */
+function syncModePill(m){ [...$('modePill').children].forEach(x=>x.classList.toggle('on', x.dataset.mode===m)); }
+$('modePill').addEventListener('click',e=>{
+  const b=e.target.closest('[data-mode]'); if(!b) return;
+  const m=b.dataset.mode;
+  if((S.settings.boardMode||'time')===m) return;
+  S.settings.boardMode=m; STORE.saveSettings(S.settings);
+  setPlaceMode(m); syncModePill(m); render();
+});
 
 /* Ctrl+S: 양식 팝업 열려 있으면 저장, 아니면 JSON 백업 */
 document.addEventListener('keydown',e=>{
@@ -77,6 +89,9 @@ setInterval(()=>{ if(S.loaded) runRecurSpawn(); }, 60000);
     window.items = S.items;
     S.loaded = true;                                   // F1: 이제부터 저장 허용
     reconcileImported();
+    /* 보드 모드 복원 (v2.5.0) — 저장된 boardMode 반영 후 아래 render()가 그린다 */
+    const bm = S.settings.boardMode==='owner' ? 'owner' : 'time';
+    setPlaceMode(bm); syncModePill(bm);
     /* 캡처 초안 회수(v3.1.0): 지난 세션이 미등록 초안을 남긴 채 꺼졌다면
        (전원 차단 포함) 분류 대기로 자동 등록하고 초안을 비운다. */
     const draft=(S.settings.captureDraft||'').trim();

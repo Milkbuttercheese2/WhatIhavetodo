@@ -41,7 +41,8 @@ export function initBackup(){
   $('xlsx').addEventListener('click', async ()=>{
     // 분류 대기·예정 항목은 아직 손 안 댄 메모라 보고용 목록에는 의미가 적어
     // 제외 — 오늘 처리·진행 중·완료(=실제로 다루고 있거나 다룬 업무)만 담는다.
-    const exportable=S.items.filter(it=>it.done||['today','doing'].includes(placeOf(it)));
+    // (시간·담당자 모드에서는 오늘 두 열(metoday/othtoday)이 같은 역할)
+    const exportable=S.items.filter(it=>it.done||['today','doing','metoday','othtoday'].includes(placeOf(it)));
     if(!exportable.length){alert('내보낼 항목이 없습니다 (오늘 처리·진행 중·완료된 업무만 내보냅니다).');return;}
     const fx=iso=>{ if(!iso)return''; const d=new Date(iso); if(isNaN(d))return'';
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };

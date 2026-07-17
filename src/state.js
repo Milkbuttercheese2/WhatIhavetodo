@@ -48,7 +48,7 @@ export function newId(){
    partial에 id가 없으면 newId()를 부여. Rust Item 구조체(model.rs)와 형태가 짝이다. */
 export function makeItem(partial={}){
   const it = Object.assign(
-    {memo:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], files:[], al:{}, recur:null, recurId:null},
+    {memo:'', owner:'', done:false, doneAt:null, staged:false, f:{}, contacts:[], ids:[], subs:[], files:[], al:{}, recur:null, recurId:null},
     partial);
   if(it.id==null) it.id = newId();
   return it;
@@ -80,6 +80,7 @@ export function migrateItem(o){
   it.subs=Array.isArray(o.subs)?o.subs:[];
   it.files=Array.isArray(o.files)?o.files.slice():[];   // v3.0.0 파일 링크 (구버전 데이터엔 없음)
   it.recur=(o.recur&&typeof o.recur==='object')?o.recur:null;   // v3.1.0 주기 업무 (구버전엔 없음)
+  it.owner = typeof o.owner==='string'?o.owner:'';              // v2.5.0 담당자 (''=본인, 구버전엔 없음)
   // 메모 승계
   if(it.memo==null) it.memo = o.memo || o.title || '';
   // 관련인 승계
@@ -99,6 +100,7 @@ export function migrateItem(o){
     const t=Object.assign({}, s);
     if(t.id==null || t.id==='') t.id = newId();
     if(!t.al || typeof t.al!=='object') t.al = {};
+    t.owner = typeof t.owner==='string'?t.owner:'';   // v2.5.0 담당자
     return t;
   });
   // _lastId 시드: 기존 id보다 항상 크게

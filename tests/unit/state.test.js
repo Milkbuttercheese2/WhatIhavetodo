@@ -31,6 +31,21 @@ test('migrateItem: 구버전(files 없음) 아이템에 files 배열 보정, 기
   assert.deepEqual(withFiles.files, ['C:\\a\\b.hwp']);
 });
 
+test('makeItem: owner 기본값은 빈 문자열(=본인), partial이 이김 (v2.5.0)', () => {
+  assert.equal(makeItem({memo:'m'}).owner, '');
+  assert.equal(makeItem({memo:'m', owner:'김담당'}).owner, '김담당');
+});
+
+test('migrateItem: 구버전(owner 없음) 아이템·세부에 owner 보정, 기존 값은 보존 (v2.5.0)', () => {
+  const old = migrateItem({id:9, memo:'m', subs:[{id:1, title:'s'}]});
+  assert.equal(old.owner, '');
+  assert.equal(old.subs[0].owner, '');
+  const withOwner = migrateItem({id:10, memo:'m', owner:'박담당', subs:[{id:2, title:'s', owner:'김담당'}]});
+  assert.equal(withOwner.owner, '박담당');
+  assert.equal(withOwner.subs[0].owner, '김담당');
+  assert.equal(migrateItem({id:11, memo:'m', owner:123}).owner, '');   // 문자열 아니면 ''
+});
+
 test('makeItem: partial이 기본값을 이기고, 명시 id는 보존', () => {
   const it = makeItem({id:42, staged:true, f:{received:'x'}, subs:[{id:1,title:'s'}]});
   assert.equal(it.id, 42);            // newId() 호출 안 함

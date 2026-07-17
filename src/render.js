@@ -5,7 +5,7 @@ import {S, toggleDone} from './state.js';
 import {STORE, invoke} from './store.js';
 import {$, esc, escAttr, showToast, askNotify} from './dom-utils.js';
 import {fmtDue} from './datetime.js';
-import {placeOf} from './placement.js';
+import {placeOf, placeMode, ownerOf} from './placement.js';
 import {textMatch} from './filters.js';
 import {recurLabel} from './recur.js';
 import {openForm} from './form.js';
@@ -61,6 +61,9 @@ export function cardHtml(it,place){
   const progress = subs.length?`<span class="mini-prog">세부 ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
   const parent = it.recurId!=null ? S.items.find(x=>x.id===it.recurId) : null;
   const recurTag = it.recurId!=null?`<span class="tag mid" title="${escAttr(parent&&parent.recur?recurLabel(parent.recur):'주기 업무에서 생성됨')}">주기</span>`:'';
+  /* v2.5.0 담당 배지 — 시간·담당자 모드에서 타인 업무에만 (''=본인은 표시 없음) */
+  const ow=ownerOf(it);
+  const ownerTag=(placeMode()==='owner'&&ow)?`<span class="tag owner">담당 ${esc(ow)}</span>`:'';
   let subLine='';
   if(es){
     const m=es.mid?fmtDue(es.mid):null;
@@ -74,14 +77,20 @@ export function cardHtml(it,place){
       <div class="card-body">
         <div class="card-memo">${memoHtml}</div>
         ${subLine}
-        <div class="card-meta">${dueTagHtml(it)}${recurTag}${progress}</div>
+        <div class="card-meta">${dueTagHtml(it)}${ownerTag}${recurTag}${progress}</div>
       </div>
       <button class="del" data-del="${it.id}" title="삭제">×</button>
     </div></div>`;
 }
+/* v2.5.0 보드 모드에 맞는 main 표시 — 보드 탭일 때만 placeMode() 쪽을 보인다 */
+function syncBoardVisibility(){
+  const t=document.querySelector('.tab.on');
+  const onTab=!t||t.dataset.view==='board';
+  $('view-board').style.display = onTab&&placeMode()==='time' ? 'grid':'none';
+  $('view-board5').style.display = onTab&&placeMode()==='owner' ? 'grid':'none';
+}
 export function render(){
-  const cols={inbox:[],today:[],doing:[],planned:[]};
-  S.items.filter(onBoard).filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
+  syncBoardVisibility();
   /* 정렬: 세부 점검·마감시각 레벨 구분 없이, 먼저 도래하는 시각이 위로.
      (미완료 세부 mid + 마감 due 중 가장 이른 시각 기준 오름차순 → 시각 없으면 뒤, 최신 등록 순) */
   const keyTime=(it)=>{
@@ -97,6 +106,20 @@ export function render(){
     if(at==null&&bt!=null) return 1;
     return b.id-a.id;
   };
+  if(placeMode()==='owner'){
+    /* 시간·담당자 모드(5열) — 필터·정렬은 시간 모드와 동일, 배치만 placeOwner 결과 */
+    const cols={inbox:[],metoday:[],othtoday:[],meplan:[],othplan:[]};
+    S.items.filter(onBoard).filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
+    for(const k of ['inbox','metoday','othtoday','meplan','othplan']){
+      const list=cols[k].sort(sorter);
+      $('c5-'+k).textContent=list.length;
+      $('col5-'+k).innerHTML=list.length?list.map(it=>cardHtml(it,k)).join(''):`<div class="empty">${q?'검색 결과가 없습니다.':(k==='inbox'?'자유 입력이 여기 쌓입니다.':'해당 업무가 없습니다.')}</div>`;
+    }
+    renderCal(); renderDone();
+    return;
+  }
+  const cols={inbox:[],today:[],doing:[],planned:[]};
+  S.items.filter(onBoard).filter(matchesQ).forEach(it=>{ const p=placeOf(it); if(cols[p])cols[p].push(it); });
   const EMPTY={inbox:'자유 입력이 여기 쌓입니다.',today:'오늘 마감·점검 건이 없습니다.<br><b>여유 있는 날</b>',doing:'진행 중인 업무가 없습니다.',planned:'예정 건이 없습니다.'};
   for(const k of ['inbox','today','doing','planned']){
     const list=cols[k].sort(sorter);

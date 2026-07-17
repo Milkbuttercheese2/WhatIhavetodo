@@ -7,6 +7,7 @@ mock.timers.enable({apis:['setTimeout','setInterval']});
 const env = setupEnv();
 const {S, newId} = await import('../../src/state.js');
 const {render, renderDone, initRender} = await import('../../src/render.js');
+const {setPlaceMode} = await import('../../src/placement.js');
 const {initForm} = await import('../../src/form.js');
 const {initToast} = await import('../../src/dom-utils.js');
 initForm();          // 카드 클릭 → openForm 경로에 필요
@@ -33,6 +34,37 @@ test('render: placeOf에 따라 4열 분배 + 카운트 + empty 문구', async (
   assert.ok($('col-today').textContent.includes('지남건'));
   assert.ok($('col-doing').textContent.includes('진행건'));
   assert.ok($('col-planned').querySelector('.empty'));
+});
+
+test('owner 모드: 5열 분배 + 담당 태그 + 보드 표시 전환 (v2.5.0)', async () => {
+  await env.resetS(); S.loaded = true;
+  try{
+    setPlaceMode('owner');
+    S.items.push(
+      mk({memo:'본인오늘건', f:{due:iso(-60)}}),
+      mk({memo:'타인오늘건', owner:'김', f:{due:iso(-60)}}),
+      mk({memo:'본인예정건', f:{due:iso(60*72)}}),
+      mk({memo:'타인예정건', subs:[{id:newId(), title:'s', mid:iso(60*72), done:false, owner:'박'}]}),
+      mk({memo:'대기건', staged:true}),
+    );
+    render();
+    assert.equal($('c5-inbox').textContent, '1');
+    assert.equal($('c5-metoday').textContent, '1');
+    assert.equal($('c5-othtoday').textContent, '1');
+    assert.equal($('c5-meplan').textContent, '1');
+    assert.equal($('c5-othplan').textContent, '1');
+    assert.ok($('col5-metoday').textContent.includes('본인오늘건'));
+    assert.ok($('col5-othtoday').textContent.includes('타인오늘건'));
+    assert.ok($('col5-othtoday').innerHTML.includes('담당 김'));      // 타인 카드에만 담당 배지
+    assert.ok(!$('col5-metoday').innerHTML.includes('tag owner'));
+    assert.ok($('col5-othplan').textContent.includes('타인예정건'));  // 세부 owner도 타인 판정
+    // 보드 탭 활성 상태에서는 5열 보드만 보인다
+    assert.equal($('view-board5').style.display, 'grid');
+    assert.equal($('view-board').style.display, 'none');
+  }finally{ setPlaceMode('time'); }
+  render();
+  assert.equal($('view-board').style.display, 'grid');
+  assert.equal($('view-board5').style.display, 'none');
 });
 
 test('done 아이템은 보드 제외, renderDone에 표시', async () => {
