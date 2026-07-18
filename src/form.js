@@ -78,6 +78,16 @@ function addContactRow(c){
     <input type="text" class="c-phone" placeholder="연락처" value="${escAttr(c.phone||'')}">
     <button class="rm" title="삭제">×</button>`;
   row.querySelector('.rm').addEventListener('click',()=>row.remove());
+  /* Enter → 다음 행 이동/추가 (세부 할 일과 동일 UX, v2.5.3) — 같은 칸(열)으로 포커스.
+     한글 IME 조합 중 Enter는 무시(조합 확정이 새 행을 만들지 않게). */
+  row.querySelectorAll('input').forEach(inp=>inp.addEventListener('keydown',e=>{
+    if(e.key!=='Enter'||e.isComposing||e.keyCode===229) return;
+    e.preventDefault();
+    const rows=[...$('fm-contacts').querySelectorAll('.contact-row')];
+    const isLast=rows[rows.length-1]===row;
+    if(isLast){ addContactRow(); $('fm-contacts').lastElementChild.querySelector('.'+inp.classList[0]).focus(); }
+    else rows[rows.indexOf(row)+1].querySelector('.'+inp.classList[0]).focus();
+  }));
   $('fm-contacts').appendChild(row);
 }
 
