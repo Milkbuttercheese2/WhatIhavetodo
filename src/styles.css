@@ -99,8 +99,10 @@
   .form-panel .fm-inner{max-width:720px;margin:0 auto;background:#fff;border-radius:18px;padding:20px 22px;box-shadow:0 24px 70px rgba(20,27,36,.22)}
   .form-panel h3{font-size:12.5px;font-weight:700;color:var(--focus);margin-bottom:10px}
   /* v2.5.3: 접수·마감 줄은 드래그 핸들이 없지만 입력칸만 핸들 있는 행들(⠿ 11px + 간격 7px)과
-     시작선을 맞춘다. 라벨(접수시각·마감시각 글자)은 다른 섹션 제목처럼 왼쪽 끝 그대로. */
-  .fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;margin-bottom:10px}
+     시작선을 맞춘다. 라벨(접수시각·마감시각 글자)은 다른 섹션 제목처럼 왼쪽 끝 그대로.
+     v2.5.7: 전체화면에서 접수·마감 dt 입력이 좁은 1fr 칸에 눌려 날짜/시각이 잘리던 문제 수정 —
+     각 칸을 내용 너비(max-content)로 두어 눌리지 않게. (좁은 창 ≤1080은 아래 미디어에서 1열로 덮음) */
+  .fm-grid{display:grid;grid-template-columns:repeat(2,max-content);gap:8px 16px;margin-bottom:10px}
   .fm-grid .dt-inp{margin-left:18px}
   .fm-field{display:flex;flex-direction:column;gap:3px;min-width:0}
   .fm-field label{font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em}
