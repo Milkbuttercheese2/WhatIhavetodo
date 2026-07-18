@@ -1,0 +1,38 @@
+# 실제 Windows 렌더링 오버플로 검사 — 수동 트리거 전용.
+# windows-latest 러너의 Edge(=WebView2와 동일한 Chromium/Blink 엔진 + Windows 폰트)로
+# src/ UI 를 렌더해 가로 오버플로(scrollWidth > clientWidth)를 자동 단언한다.
+# 브랜치에 커밋하지 않고 스크린샷/리포트를 '아티팩트'로만 올린다 —
+# exe 빌드 워크플로의 커밋 푸시와 경쟁(race)하지 않도록.
+name: win-render
+
+on:
+  workflow_dispatch:
+
+jobs:
+  render:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # playwright-core 만 필요 — 앱 의존성(package.json/lockfile)은 건드리지 않는다(--no-save).
+      # Edge 는 windows-latest 에 기본 설치돼 있어 브라우저 다운로드 불필요(channel:msedge).
+      - name: playwright-core 설치(임시)
+        run: npm install --no-save playwright-core@1.61.1
+
+      - name: Windows Edge 로 렌더 + 오버플로 검사
+        shell: bash
+        env:
+          PW_CHANNEL: msedge
+        run: node tools/win-render.mjs
+
+      # 검사 실패(오버플로)든 통과든 스크린샷은 항상 올린다.
+      - name: 스크린샷·리포트 아티팩트 업로드
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-render
+          path: docs/win-render/

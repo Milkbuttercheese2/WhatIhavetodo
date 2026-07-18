@@ -34,6 +34,10 @@
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
+  /* v2.5.8: 세로 스크롤바 자리를 항상 확보 — 목록이 줄어 스크롤바가 사라질 때
+     margin-left:auto(검색창 등)가 옆으로 튀는 현상 제거. Windows 클래식 스크롤바에서만
+     보이던 문제(리눅스 오버레이 스크롤바에선 안 남)라 실제 타깃 기준으로 고친다. */
+  html{scrollbar-gutter:stable}
   body{font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,-apple-system,sans-serif;
        font-size:14px;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;
        overflow-x:clip}   /* v2.5.4: 가로 스크롤 제거(세로 sticky 헤더에 영향 없는 clip 사용) */
@@ -448,6 +452,11 @@
     .header-inner,.cap-box,.strip,main,#view-board5,#view-done,#view-cal{max-width:560px}
     /* 보드는 단일 열 */
     main,#view-board5{grid-template-columns:1fr}
+    /* v2.5.8: 단일 열에서 검색창을 오른쪽에 띄우지 말고 한 줄 전체로 — 빈 띠에 홀로 떠
+       어색하던 배치 제거(보드 상단·완료 상단 공통). */
+    .strip .s-search{margin-left:0;width:100%;min-width:0}
+    .done-tools{margin-left:0;width:100%}
+    .done-tools .s-search{width:100%;min-width:0}
     /* 헤더 컴팩트: 시계는 오른쪽 끝, 부제 숨김, 브랜드 줄바꿈 허용 */
     .head-right{margin-left:auto}
     .brand{flex-wrap:wrap;min-width:0}
