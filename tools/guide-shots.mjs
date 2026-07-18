@@ -47,9 +47,11 @@ const INIT = `(()=>{
     mk({id:2,memo:'예산 집행 잔액 정리해서 재무팀에 회신하기',f:{received:iso,due:at(0,17,0)},
       contacts:[{who:'김주무관',org:'재무팀',phone:'02-1234-5678'}],
       ids:[{kind:'SR번호',val:'SR-2026-0718-0091'}],
+      files:['C:\\\\업무\\\\2026\\\\예산_집행내역_정리.xlsx'],
       subs:[{id:21,title:'집행내역 대사 후 잔액 확정',mid:at(0,16,0),done:false,al:null,owner:''}]}),
     mk({id:3,memo:'감사 대비 증빙자료 스캔·정리',f:{received:iso,due:at(4,10,0)},
-      subs:[{id:31,title:'1차 증빙 취합 상태 점검',mid:at(1,9,30),done:false,al:null,owner:'박주무관'}]}),
+      subs:[{id:30,title:'담당 부서 지정 및 협조 요청',mid:at(-1,10,0),done:true,al:null,owner:''},
+            {id:31,title:'1차 증빙 취합 상태 점검',mid:at(1,9,30),done:false,al:null,owner:'박주무관'}]}),
     mk({id:4,memo:'차기 사업 계획서 초안 작성',f:{received:iso,due:at(6,15,0)}}),
     mk({id:5,memo:'노후 비품 교체 신청 취합',f:{received:iso,due:at(0,14,0)},
       subs:[{id:51,title:'각 팀 신청서 회신 확인',mid:at(0,13,0),done:false,al:null,owner:'최주무관'}]}),
@@ -59,7 +61,7 @@ const INIT = `(()=>{
   let store={items,fields:null,
     presets:[{label:'계약 변경 통보 접수건 처리',memo:'○○ 사업 계약변경 통보 접수 및 검토',subs:[]},
              {label:'감사 자료 제출',memo:'○○ 감사 대비 증빙자료 정리',subs:[]}],
-    idKinds:['입찰공고번호','SR번호'],settings:{alarmOn:true,boardMode:'time',captureDraft:''},recurDefs:[]};
+    idKinds:['입찰공고번호','SR번호'],settings:{alarmOn:false,boardMode:'time',captureDraft:''},recurDefs:[]};
   const noop=async()=>{};
   window.__TAURI__={
     core:{invoke:async(c,a)=>{
@@ -67,6 +69,7 @@ const INIT = `(()=>{
       if(c==='save_all'){store.items=(a&&a.items)||store.items;return null;}
       if(c==='save_settings'){store.settings=(a&&a.settings)||store.settings;return null;}
       if(c==='quick_search')return (store.items||[]).filter(function(it){return (it.memo||'').indexOf(a&&a.q||'')>=0;}).map(function(it){return {id:it.id,memo:it.memo,done:!!it.done};});
+      if(c==='pick_file_path')return 'C:\\\\업무\\\\2026\\\\회의실_예약대장.hwp';
       return null;}},
     app:{getVersion:async()=>'2.5.8'},
     event:{listen:async()=>()=>{},emit:noop,emitTo:noop,once:async()=>()=>{}},
@@ -99,7 +102,8 @@ const shotPage = (page, file, clip) => page.screenshot({path: path.join(OUT, fil
   await page.click('#settingsBtn'); await page.waitForTimeout(200);
   await page.click('#boardModeBtn'); await page.waitForTimeout(300);
   await page.click('.bm-opt[data-mode="owner"]'); await page.waitForTimeout(300);
-  await page.click('#boardModeClose').catch(()=>{}); await page.waitForTimeout(400);
+  await page.click('#boardModeClose').catch(()=>{}); await page.waitForTimeout(200);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(400);   // 모달 확실히 닫기
   await shotPage(page, 'board-owner.png');
   await page.close();
   console.log('board-owner.png');
@@ -122,7 +126,7 @@ const shotPage = (page, file, clip) => page.screenshot({path: path.join(OUT, fil
 /* ---- 5. form.png : 양식(채워진 상태) -------------------------------- */
 {
   const page = await open({width: 1180, height: 900});
-  await page.click('#col-today .card, .card'); await page.waitForTimeout(600);
+  await page.click('.card:has-text("예산 집행")'); await page.waitForTimeout(600);
   await shotEl(page, '#formPanel .fm-inner', 'form.png');
   await page.close();
   console.log('form.png');
@@ -130,20 +134,13 @@ const shotPage = (page, file, clip) => page.screenshot({path: path.join(OUT, fil
 /* ---- 6. filelink.png : 파일 링크 행(활성/편집) ---------------------- */
 {
   const page = await open({width: 1180, height: 900});
-  await page.click('#col-today .card, .card'); await page.waitForTimeout(600);
-  // 파일 두 행: 하나는 활성(링크), 하나는 편집(경로 입력)
-  await page.evaluate(()=>{
-    const wrap=document.getElementById('fm-files');
-    if(!wrap) return;
-    // 기존 데모용으로 파일 2개 주입 후 재렌더가 없으니 직접 add 버튼 사용
-  });
-  await page.click('#fm-fileadd').catch(()=>{}); await page.waitForTimeout(200);
-  await page.click('#fm-fileadd').catch(()=>{}); await page.waitForTimeout(200);
-  // 첫 행 경로 채우고 활성화, 둘째 행은 편집상태로 경로 입력
-  const inputs = await page.$$('#fm-files input');
-  if(inputs[0]){ await inputs[0].fill('C:\\\\업무\\\\2026\\\\회의실_예약대장.xlsx'); }
-  if(inputs[1]){ await inputs[1].fill('C:\\\\업무\\\\2026\\\\예산_집행내역.hwp'); }
-  await page.waitForTimeout(200);
+  try{
+    await page.click('.card:has-text("예산 집행")'); await page.waitForTimeout(600);
+    // 이 항목은 파일 1개(활성/링크 상태). 두 번째 행을 추가(mock pick_file_path가 경로 반환)한 뒤
+    // 그 행의 토글을 눌러 편집(경로 입력 + 찾기) 상태로 바꿔 두 상태를 한 컷에 보여준다.
+    await page.click('#fm-fileadd'); await page.waitForTimeout(300);
+    await page.click('#fm-files .ffile-row:last-child .ffile-toggle'); await page.waitForTimeout(250);
+  }catch(e){ console.log('filelink prep warn:', e.message); }
   await shotEl(page, '.fm-files-wrap', 'filelink.png');
   await page.close();
   console.log('filelink.png');
