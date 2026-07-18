@@ -459,5 +459,7 @@
     .fsub-row{flex-wrap:wrap;row-gap:4px}        /* 세부 할 일 행: 시각 위젯을 둘째 줄로 */
     .fsub-row .fsub-title{flex:1 1 auto;min-width:0}
     .fsub-row input.sub-owner{width:84px}
-    .fsub-row .fsub-dt{order:1;flex-basis:100%;margin-left:43px}  /* 둘째 줄 첫 칸을 제목 입력칸(⠿11+7+체크18+7)과 같은 시작선에 */
+    /* 둘째 줄 시각 위젯: 왼쪽은 제목칸 시작선(⠿11+7+체크18+7=43), 오른쪽은 담당칸 끝(첫 줄 × 버튼+간격=28)과 정렬 */
+    .fsub-row .fsub-dt{order:1;flex-basis:100%;margin-left:43px;margin-right:28px}
+    .fsub-row .fsub-dt .dt-date{flex:1 1 auto;min-width:0}  /* 남는 폭을 날짜칸이 흡수해 오른쪽 끝까지 채움 */
   }
