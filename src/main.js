@@ -44,6 +44,17 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
 }));
 /* '완료 전체 비우기' 제거됨 */
 
+/* 커스텀 타이틀바 (v2.5.1) — decorations:false 메인 창의 최소화·최대화·닫기.
+   닫기는 close() → Rust CloseRequested 핸들러가 closeToTray 설정대로 트레이 숨김/종료 결정.
+   __TAURI__.window 는 지연 접근(테스트·일반 브라우저에서 죽지 않게). */
+{
+  const tbWin=()=>window.__TAURI__.window.getCurrentWindow();
+  const tbSafe=fn=>()=>{ try{ fn().catch(()=>{}); }catch{} };
+  $('tbMin').addEventListener('click', tbSafe(()=>tbWin().minimize()));
+  $('tbMax').addEventListener('click', tbSafe(()=>tbWin().toggleMaximize()));
+  $('tbClose').addEventListener('click', tbSafe(()=>tbWin().close()));
+}
+
 /* 보드 모드 토글 (시간 | 시간·담당자) — settings.boardMode 로 영속 */
 function syncModePill(m){ [...$('modePill').children].forEach(x=>x.classList.toggle('on', x.dataset.mode===m)); }
 $('modePill').addEventListener('click',e=>{

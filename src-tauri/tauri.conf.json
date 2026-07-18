@@ -14,7 +14,8 @@
         "width": 1400,
         "height": 900,
         "visible": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": false,
+        "decorations": false
       },
       {
         "label": "capture",
