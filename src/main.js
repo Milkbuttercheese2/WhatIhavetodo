@@ -55,14 +55,20 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('tbClose').addEventListener('click', tbSafe(()=>tbWin().close()));
 }
 
-/* 보드 모드 토글 (시간 | 시간·담당자) — settings.boardMode 로 영속 */
-function syncModePill(m){ [...$('modePill').children].forEach(x=>x.classList.toggle('on', x.dataset.mode===m)); }
-$('modePill').addEventListener('click',e=>{
-  const b=e.target.closest('[data-mode]'); if(!b) return;
-  const m=b.dataset.mode;
-  if((S.settings.boardMode||'time')===m) return;
-  S.settings.boardMode=m; STORE.saveSettings(S.settings);
-  setPlaceMode(m); syncModePill(m); render();
+/* 보드 모드 선택 (시간 | 시간·담당자) — settings.boardMode 로 영속.
+   헤더 모드 필(v2.5.0)이 산만하다 하여 v2.5.6에서 [설정] 메뉴의 팝업으로 이동. */
+document.body.appendChild($('boardModeModal'));   // 어느 탭에서든 뜨도록 body 직속
+function syncBoardModeSel(m){ [...$('boardModeModal').querySelectorAll('.bm-opt')].forEach(x=>x.classList.toggle('on', x.dataset.mode===m)); }
+function closeBoardModeModal(){ $('boardModeModal').classList.remove('on'); }
+$('boardModeBtn').addEventListener('click',()=>{ syncBoardModeSel(S.settings.boardMode==='owner'?'owner':'time'); $('boardModeModal').classList.add('on'); });
+$('boardModeClose').addEventListener('click', closeBoardModeModal);
+$('boardModeModal').addEventListener('click',e=>{
+  const b=e.target.closest('.bm-opt');
+  if(b){ const m=b.dataset.mode;
+    if((S.settings.boardMode||'time')!==m){ S.settings.boardMode=m; STORE.saveSettings(S.settings); setPlaceMode(m); render(); }
+    syncBoardModeSel(m); return;                 // 선택 즉시 적용, 모달은 열어둔다
+  }
+  if(e.target.id==='boardModeModal') closeBoardModeModal();   // 배경 클릭 닫기
 });
 
 /* Ctrl+S: 양식 팝업 열려 있으면 저장, 아니면 JSON 백업 */
@@ -80,6 +86,7 @@ document.addEventListener('keydown',e=>{
   if(e.key!=='Escape') return;
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
+  if($('boardModeModal').classList.contains('on')){ closeBoardModeModal(); return; }
 });
 
 function tickClock(){ const n=new Date();
@@ -102,7 +109,7 @@ setInterval(()=>{ if(S.loaded) runRecurSpawn(); }, 60000);
     reconcileImported();
     /* 보드 모드 복원 (v2.5.0) — 저장된 boardMode 반영 후 아래 render()가 그린다 */
     const bm = S.settings.boardMode==='owner' ? 'owner' : 'time';
-    setPlaceMode(bm); syncModePill(bm);
+    setPlaceMode(bm); syncBoardModeSel(bm);
     /* 캡처 초안 회수(v3.1.0): 지난 세션이 미등록 초안을 남긴 채 꺼졌다면
        (전원 차단 포함) 분류 대기로 자동 등록하고 초안을 비운다. */
     const draft=(S.settings.captureDraft||'').trim();

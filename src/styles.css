@@ -63,10 +63,6 @@
   .brand{display:flex;align-items:baseline;gap:12px;flex:none}
   .brand h1{font-size:19px;font-weight:700;letter-spacing:-.02em}
   .brand .sub{font-size:12.5px;color:var(--ink-soft)}
-  /* 보드 모드 토글 (시간 | 시간·담당자, v2.5.0) */
-  .mode-pill{display:inline-flex;gap:2px;background:var(--line-soft);border-radius:999px;padding:2px;margin-left:10px;vertical-align:middle}
-  .mode-pill span{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;color:var(--ink-soft);cursor:pointer}
-  .mode-pill span.on{background:#fff;color:var(--focus);box-shadow:0 1px 2px rgba(31,42,51,.12)}
   nav.tabs{display:flex;gap:4px;background:var(--line-soft);padding:3px;border-radius:999px}
   .tab{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 18px;border:none;border-radius:999px;background:transparent;color:var(--ink-soft);cursor:pointer}
   .tab.on{background:#e9efec;color:var(--focus);box-shadow:none}
@@ -106,9 +102,9 @@
      시작선을 맞춘다. 라벨(접수시각·마감시각 글자)은 다른 섹션 제목처럼 왼쪽 끝 그대로. */
   .fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;margin-bottom:10px}
   .fm-grid .dt-inp{margin-left:18px}
-  .fm-field{display:flex;flex-direction:column;gap:3px}
+  .fm-field{display:flex;flex-direction:column;gap:3px;min-width:0}
   .fm-field label{font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em}
-  .fm-field input{font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+  .fm-field input{width:100%;min-width:0;font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
   .fm-field input:focus{outline:none;border-color:var(--focus)}
   .fm-subs{margin:4px 0 12px}
   .fm-ids{margin:4px 0 12px}
@@ -160,7 +156,7 @@
   .idk-item{display:flex;align-items:center;gap:9px;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);margin-bottom:5px}
   .idk-name{flex:1;font-size:12.5px}
   .idk-add{display:flex;gap:7px;align-items:center;margin-top:8px}
-  .idk-add input{flex:1;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
+  .idk-add input{flex:1;min-width:0;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
   .idk-add input:focus{outline:none;border-color:var(--focus)}
   #alarmToggle.alarm-off{color:var(--ink-soft);opacity:.7}
   .fsub-row input[type=text]{flex:1;font-family:inherit;font-size:12.5px;padding:6px 9px;border:1px solid var(--line);border-radius:6px}
@@ -301,6 +297,15 @@
   .f-add button{font-size:12.5px;padding:0 16px;background:var(--focus);color:#fff}
   .m-note{font-size:11px;color:var(--ink-soft);margin-top:10px;line-height:1.5}
   .m-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+  /* 보드 모드 선택 옵션 카드 (v2.5.6) — 탭/필과 같은 틸 액센트·둥근 .on 표시.
+     button은 폰트를 상속하지 않으므로 font-family:inherit 필수(검토 지적). */
+  .bm-opts{display:flex;flex-direction:column;gap:8px}
+  .bm-opt{display:block;width:100%;text-align:left;font-family:inherit;border:1.5px solid var(--line);border-radius:12px;padding:11px 14px;background:#fff;cursor:pointer;transition:border-color .12s,background .12s}
+  .bm-opt:hover{border-color:var(--focus)}
+  .bm-opt.on{border-color:var(--focus);background:var(--slate-bg)}
+  .bm-opt-name{font-size:13.5px;font-weight:700;color:var(--ink)}
+  .bm-opt.on .bm-opt-name{color:var(--focus)}
+  .bm-opt-desc{font-size:11.5px;color:var(--ink-soft);margin-top:3px}
   .modal-wide{max-width:640px}
   /* 본문만 스크롤하고 하단 버튼은 항상 보이도록 고정 */
   .modal-split{display:flex;flex-direction:column;overflow:hidden;padding:0}
@@ -443,10 +448,16 @@
     .head-right{margin-left:auto}
     .brand{flex-wrap:wrap;min-width:0}
     .brand .sub{display:none}
-    .mode-pill{margin-left:0;margin-top:2px}
     /* 입력부 세로 스택(입력칸 위 · 버튼 아래 한 줄) */
     .cap-row{flex-direction:column;align-items:stretch}
     textarea#inp{width:100%;min-height:110px}
     .cap-btns{flex-direction:row;width:100%}
     .cap-btns .btn{flex:1;height:38px}
+    /* 좁은 창(560px 컴팩트) 가로 넘침 방지 (v2.5.6) — 필드를 다음 줄로 내리거나 1열로 접는다 */
+    .fm-grid{grid-template-columns:1fr}          /* 접수시각·마감시각 세로로 쌓기 */
+    .ps-new-grid{grid-template-columns:1fr}      /* 새 프리셋 버튼이름·메모 1열로 */
+    .fsub-row{flex-wrap:wrap;row-gap:4px}        /* 세부 할 일 행: 시각 위젯을 둘째 줄로 */
+    .fsub-row .fsub-title{flex:1 1 auto;min-width:0}
+    .fsub-row input.sub-owner{width:84px}
+    .fsub-row .fsub-dt{order:1;flex-basis:100%;margin-left:26px}  /* 제목 아래 들여쓴 둘째 줄 */
   }

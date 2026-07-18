@@ -23,7 +23,7 @@
 
 <header>
  <div class="header-inner">
-  <div class="brand"><h1>뭐하려 했더라</h1><span class="sub">전화받고 잊어버리기 전에 던져두는 곳</span><span class="mode-pill" id="modePill"><span data-mode="time" class="on">시간</span><span data-mode="owner">시간·담당자</span></span></div>
+  <div class="brand"><h1>뭐하려 했더라</h1><span class="sub">전화받고 잊어버리기 전에 던져두는 곳</span></div>
   <nav class="tabs">
     <button class="tab on" data-view="board">보드</button>
     <button class="tab" data-view="cal">캘린더</button>
@@ -41,6 +41,7 @@
         <div class="menu-sep"></div>
         <button class="menu-item" id="presetManageBtn">프리셋·식별번호 관리</button>
         <button class="menu-item" id="recurManageBtn">주기 업무 입력·관리</button>
+        <button class="menu-item" id="boardModeBtn">보드 모드 선택</button>
       </div>
     </div>
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div><div class="ver mono" id="appVer"></div></div>
@@ -267,6 +268,27 @@
 
     <div class="m-actions modal-foot">
       <button class="btn btn-ok" id="recurClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 보드 모드 선택 (v2.5.6 — 헤더 모드 필에서 설정 팝업으로 이동) -->
+<div class="modal-bg" id="boardModeModal">
+  <div class="modal">
+    <h3>보드 모드 선택</h3>
+    <div class="m-sub">업무 카드를 어떤 기준으로 배치할지 고릅니다. 데이터는 그대로이고 보이는 방식만 바뀝니다.</div>
+    <div class="bm-opts">
+      <button class="bm-opt" data-mode="time">
+        <div class="bm-opt-name">시간</div>
+        <div class="bm-opt-desc">분류 대기 · 오늘 처리 · 진행 중 · 예정·대기 (4열)</div>
+      </button>
+      <button class="bm-opt" data-mode="owner">
+        <div class="bm-opt-name">시간 · 담당자</div>
+        <div class="bm-opt-desc">분류 대기 · 본인/타인 진행 오늘 · 오늘 외 (5열)</div>
+      </button>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ok" id="boardModeClose">닫기</button>
     </div>
   </div>
 </div>
