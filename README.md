@@ -1,6 +1,27 @@
+<div align="center">
+
+<img src="src-tauri/icons/128x128@2x.png" width="128" alt="뭐하려 했더라 아이콘" />
+
 # 뭐하려 했더라
 
-전화받고 잊어버리기 전에 던져두는 업무 메모 보드. 공무원 내부망(인터넷 차단, 관리자 권한 없는 PC) 환경을 위한 **오프라인 단독 실행형 Windows 데스크톱 앱**입니다. (이름이 '뭐해야 했더라' → **'뭐하려 했더라'**로 바뀌었고, 버전은 X.Y.Z 체계를 씁니다. 현재 배포 버전은 **v2.5.7**. 기존 데이터·백업과 완전 호환됩니다.)
+**전화 받다 떠오른 일을, 잊기 전에 던져두는 곳.**
+
+마감·점검 **시각만** 적어 두면 프로그램이 "오늘 할 일"을 알아서 위로 올려 주는 개인 업무 보드.<br/>
+인터넷도 · 설치도 · 계정도 필요 없습니다.
+
+&nbsp;
+
+![platform](https://img.shields.io/badge/platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![tech](https://img.shields.io/badge/Tauri-Rust%20%2B%20JS-4d938a?style=for-the-badge&logo=tauri&logoColor=white)
+![offline](https://img.shields.io/badge/%EC%A0%80%EC%9E%A5-100%25%20%EB%A1%9C%EC%BB%AC%20%C2%B7%20%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8-2ea043?style=for-the-badge)
+![license](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)
+![version](https://img.shields.io/badge/version-v2.5.11-4d938a?style=for-the-badge)
+
+</div>
+
+---
+
+공무원 내부망(인터넷 차단·관리자 권한 없는 PC) 환경을 위한 **오프라인 단독 실행형 Windows 데스크톱 앱**입니다. 이름이 '뭐해야 했더라' → **'뭐하려 했더라'**로 바뀌었고, 버전은 표준 X.Y.Z(semver) 체계를 씁니다(최신 버전은 위 배지·[CHANGELOG](./CHANGELOG.md) 참고). 기존 데이터·백업과 완전 호환됩니다.
 
 > 📖 **처음 사용하시나요?** 사용자용 안내는 [`사용 설명서.md`](./사용%20설명서.md)에 친절하게 정리돼 있습니다. 아래는 요약과 개발자용 정보입니다.
 
@@ -15,7 +36,7 @@
 
 ## 실행
 
-`최종 프로그램 산출물/뭐하려 했더라.exe` 를 복사해서 더블클릭하면 됩니다. 설치 과정도, 관리자 권한도 필요 없습니다.
+`최종 프로그램 산출물/뭐하려 했더라v{버전}.exe` 를 복사해서 더블클릭하면 됩니다. 설치 과정도, 관리자 권한도 필요 없습니다.
 
 - 유일한 요구사항: **WebView2 런타임** (Windows 11 및 최신 Windows 10에 기본 내장). 없는 구형 PC는 Microsoft의 WebView2 오프라인 설치 파일을 한 번 설치해야 합니다.
 - 인터넷 연결 불필요 — 외부 리소스(웹폰트 포함)를 일절 사용하지 않습니다.
@@ -36,7 +57,7 @@
 | 작업 | 명령 |
 |---|---|
 | 개발 실행 (핫리로드) | `npm run tauri dev` |
-| 프론트 테스트 (node:test + jsdom, 125개) | `npm test` |
+| 프론트 테스트 (node:test + jsdom, 128개) | `npm test` |
 | 백엔드 테스트 | `cd src-tauri && cargo test --lib` |
 | 릴리즈 빌드 | `npm run tauri build` → `src-tauri/target/release/wmhh-desktop.exe` |
 
