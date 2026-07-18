@@ -469,14 +469,15 @@
     /* 좁은 창(560px 컴팩트) 가로 넘침 방지 (v2.5.6) — 필드를 다음 줄로 내리거나 1열로 접는다 */
     .fm-grid{grid-template-columns:1fr}          /* 접수시각·마감시각 세로로 쌓기 */
     .ps-new-grid{grid-template-columns:1fr}      /* 새 프리셋 버튼이름·메모 1열로 */
-    /* 세부 할 일: 1줄 제목 / 2줄 담당·날짜·시각 (v2.5.9).
-       날짜칸을 112px 고정으로 줄여 담당(112)+날짜(112)+시각(64)+아이콘이 한 줄에 들어간다.
-       ::after(order:0)로 제목 뒤 강제 개행 → 담당·날짜·시각은 order:1로 둘째 줄에 함께. */
+    /* 세부 할 일: 1줄 제목 / 2줄 담당 / 3줄 날짜·시각 (v2.5.10).
+       한 줄에 몰면 DPI·폰트에 따라 밀려 깨지므로, 각 요소를 자기 줄에 강제 고정한다:
+         ::after(order:0)로 제목 뒤 개행 → 담당(order:1) → 날짜·시각(order:2, flex-basis:100%로 자기 줄).
+       담당·날짜칸 모두 112px, 세 줄 다 margin-left:43px(x=85)로 다른 섹션과 정렬 통일. */
     .fsub-row{flex-wrap:wrap;row-gap:5px}
     .fsub-row::after{content:"";flex:0 0 100%;height:0;order:0}               /* 1줄(제목) 끝 강제 개행 */
     .fsub-row .fsub-title{flex:1 1 auto;min-width:0}                          /* 1줄: 제목(남는 폭 채움) */
-    .fsub-row input.sub-owner{order:1;flex:0 0 auto;width:112px;margin-left:43px}  /* 2줄: 담당 (날짜칸과 동일 폭 112px) */
-    .fsub-row .fsub-dt{order:1;flex:0 1 auto;min-width:0}                     /* 2줄: 담당 옆 날짜·시각 */
+    .fsub-row input.sub-owner{order:1;flex:0 0 auto;width:112px;margin-left:43px}  /* 2줄: 담당 (112px) */
+    .fsub-row .fsub-dt{order:2;flex:1 1 100%;min-width:0;margin-left:43px}    /* 3줄: 날짜·시각 (basis 100%로 자기 줄) */
     .fsub-row .fsub-dt .dt-date{flex:0 0 auto;width:112px}                    /* 날짜칸 112px — 담당칸과 동일 폭 */
     /* 관련인: 1줄 관련소속·관련인 / 2줄 연락처 (v2.5.9). ⠿·× 는 1줄에 유지. */
     .contact-row{flex-wrap:wrap;row-gap:5px}

@@ -71,7 +71,7 @@ const INIT = `(()=>{
       if(c==='quick_search')return (store.items||[]).filter(function(it){return (it.memo||'').indexOf(a&&a.q||'')>=0;}).map(function(it){return {id:it.id,memo:it.memo,done:!!it.done};});
       if(c==='pick_file_path')return 'C:\\\\업무\\\\2026\\\\회의실_예약대장.hwp';
       return null;}},
-    app:{getVersion:async()=>'2.5.9'},
+    app:{getVersion:async()=>'2.5.10'},
     event:{listen:async()=>()=>{},emit:noop,emitTo:noop,once:async()=>()=>{}},
     window:{getCurrentWindow:()=>({hide:noop,show:noop,setSize:noop,maximize:noop,minimize:noop,toggleMaximize:noop,close:noop,setFocus:noop,label:'main'})}};
   window.Notification={permission:'granted',requestPermission:async()=>'granted'};
