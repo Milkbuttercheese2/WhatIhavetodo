@@ -85,20 +85,7 @@ export function initCaptureWin(){
     if(e.key==='Alt'&&!e.repeat){ e.preventDefault(); setMode(mode==='memo'?'search':'memo'); }
   });
 
-  /* Ctrl 단독(다른 키와 조합 없이 눌렀다 뗌) → 메인 앱을 최대화로 전면에(v2.5.3).
-     Ctrl+Enter(등록) 등 조합과 충돌하지 않도록 keyup에서 판정한다 —
-     Ctrl을 누른 채 다른 키가 눌리면 조합으로 보고 무시. */
-  let ctrlCombo=false;
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Control'){ if(!e.repeat) ctrlCombo=false; return; }
-    if(e.ctrlKey) ctrlCombo=true;
-  });
-  document.addEventListener('keyup',e=>{
-    if(e.key!=='Control'||ctrlCombo) return;
-    sendDraft($id('cap-inp').value);              // 초안 보존 후
-    invoke('open_main_maximized').catch(()=>{});  // 메인 창 최대화 + 전면
-    hideWin();
-  });
+  /* (v2.5.5 제거) 'Ctrl 단독 → 메인 창 최대화' 기능 삭제 — 의도치 않게 자주 발동돼 제거. */
 
   /* 검색 결과 클릭 — 업무를 메인 창에서 연다 */
   $id('cap-results').addEventListener('click',e=>{
