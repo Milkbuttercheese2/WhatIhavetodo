@@ -14,7 +14,7 @@
 ![platform](https://img.shields.io/badge/platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 ![tech](https://img.shields.io/badge/Tauri-Rust%20%2B%20JS-4d938a?style=for-the-badge&logo=tauri&logoColor=white)
 ![offline](https://img.shields.io/badge/%EC%A0%80%EC%9E%A5-100%25%20%EB%A1%9C%EC%BB%AC%20%C2%B7%20%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8-2ea043?style=for-the-badge)
-![license](https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge)
+![license](https://img.shields.io/badge/license-AGPL%20v3-A31F34?style=for-the-badge)
 ![version](https://img.shields.io/badge/version-v2.5.13-4d938a?style=for-the-badge)
 
 </div>
@@ -76,3 +76,7 @@
 | [`시장 리서치 보고서.md`](./시장%20리서치%20보고서.md) | 유사 서비스 조사 — 포지셔닝·킬러기능 로드맵 |
 | [`기능 제안서.md`](./기능%20제안서.md) | 조달청 내부망 관점의 기능 추가 vs 단순 유지 제안 (보고서로만 유지, 개발 미착수) |
 | `CLAUDE.md` | 개발 규칙·아키텍처 가이드 (AI 협업용) |
+
+## 라이선스
+
+이 프로젝트는 **GNU AGPL v3**([`LICENSE`](./LICENSE))로 배포됩니다. 소스를 이용·수정해 **재배포하거나 네트워크 서비스로 제공**하면 그 소스도 동일하게 AGPL v3로 **공개**해야 합니다. (앱을 그대로 받아 **개인·기관 내부에서 사용**하는 것만으로는 공개 의무가 생기지 않습니다 — 재배포·개작 배포 시에 적용됩니다.)
