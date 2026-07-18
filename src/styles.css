@@ -101,7 +101,9 @@
   .form-panel.on{display:block}
   .form-panel .fm-inner{max-width:720px;margin:0 auto;background:#fff;border-radius:18px;padding:20px 22px;box-shadow:0 24px 70px rgba(20,27,36,.22)}
   .form-panel h3{font-size:12.5px;font-weight:700;color:var(--focus);margin-bottom:10px}
-  .fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;margin-bottom:10px}
+  /* v2.5.3: 접수·마감 줄은 드래그 핸들이 없지만, 핸들 있는 행들(⠿ 11px + 간격 7px)과
+     첫 칸 들여쓰기를 맞춘다 — 양식 세로 정렬 통일 */
+  .fm-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;margin-bottom:10px;margin-left:18px}
   .fm-field{display:flex;flex-direction:column;gap:3px}
   .fm-field label{font-size:11px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em}
   .fm-field input{font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
