@@ -21,7 +21,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import {fileURLToPath} from 'url';
+import {fileURLToPath, pathToFileURL} from 'url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -30,8 +30,10 @@ const OUT  = path.join(REPO, 'docs', 'win-render');
 fs.mkdirSync(OUT, {recursive: true});
 
 /* playwright-core 위치: workflow 에서 --no-save 설치되므로 node_modules 에 있다.
+   Windows 에선 동적 import() 에 반드시 file:// URL 을 넘겨야 한다(절대경로 'D:\\...' 는 거부됨).
    CommonJS default export 이므로 .default 에서 chromium 을 꺼낸다. */
-const pw = await import(path.join(REPO, 'node_modules', 'playwright-core', 'index.js'));
+const pwHref = pathToFileURL(path.join(REPO, 'node_modules', 'playwright-core', 'index.js')).href;
+const pw = await import(pwHref);
 const chromium = (pw.default && pw.default.chromium) || pw.chromium;
 
 const MIME = {'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.png':'image/png','.svg':'image/svg+xml'};
