@@ -26,7 +26,7 @@ export function checkAlarms(){
     (it.subs||[]).forEach(s=>{ if(!s.done)test(s,'mid',s.mid,'중간점검',s.title); });
   });
   if(!fire.length)return; firedNow=fire;
-  $('alarmList').innerHTML=fire.map(a=>`<div class="a-item"><b>#${a.label}</b>${esc(a.title||'(메모 없음)')}<span class="mono">${fmtT(a.iso)}</span></div>`).join('');
+  $('alarmList').innerHTML=fire.map(a=>`<div class="a-item"><b>${a.label}</b>${esc(a.title||'(메모 없음)')}<span class="mono">${fmtT(a.iso)}</span></div>`).join('');
   $('alarmBg').classList.add('on'); beep(); try{window.focus();}catch{} startTitleFlash(fire.length);
   invoke('focus_main_window').catch(()=>{}); // window.focus() can't steal OS focus from another app; this can
   if('Notification'in window&&Notification.permission==='granted'){ fire.forEach(a=>{try{
