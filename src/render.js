@@ -73,7 +73,8 @@ export function cardHtml(it,place){
   }
   const es=earliestSub(it);
   const parent = it.recurId!=null ? S.items.find(x=>x.id===it.recurId) : null;
-  const recurTag = it.recurId!=null?`<span class="tag mid" title="${escAttr(parent&&parent.recur?recurLabel(parent.recur):'주기 업무에서 생성됨')}">주기</span>`:'';
+  /* v2.5.3: 주기 배지에 recur 클래스 — 5열 모드 시각 줄에서도 시각과 한 줄에 들어가게 축소 표기 */
+  const recurTag = it.recurId!=null?`<span class="tag mid recur" title="${escAttr(parent&&parent.recur?recurLabel(parent.recur):'주기 업무에서 생성됨')}">주기</span>`:'';
   /* v2.5.1 시각 표시 정책 — 마감보다 앞서는 미완료 세부가 있으면 그 세부의 점검시각만
      보이고 마감 태그는 감춘다(둘 다 보이던 중복 제거). 앞서는 세부가 없거나 전부
      완료면 마감만. 시각 칩은 세부 제목 줄이 아니라 메타 줄에 둔다(제목 잘림 방지). */

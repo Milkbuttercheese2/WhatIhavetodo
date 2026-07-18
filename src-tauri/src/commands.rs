@@ -192,6 +192,53 @@ pub fn focus_main_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// 캡처 창에서 Ctrl 단독 입력(v2.5.3) — 메인 창을 최대화 상태로 전면에 띄운다.
+/// focus_main_window와 같되 maximize가 추가된 변형(전체화면 요청은 '최대화' 의미).
+#[tauri::command]
+pub fn open_main_maximized(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("main") {
+        win.unminimize().map_err(to_err)?;
+        win.show().map_err(to_err)?;
+        win.maximize().map_err(to_err)?;
+        win.set_focus().map_err(to_err)?;
+    }
+    Ok(())
+}
+
+/// 작업표시줄 알람 표시(v2.5.3) — 알람이 울리면 on=true로 호출되어
+/// Windows 작업표시줄 아이콘을 깜빡이고(FlashWindow, 포커스를 받으면 OS가 멈춤)
+/// 아이콘 위에 빨간 점 오버레이 배지를 얹는다. 사용자가 알람을 확인(on=false)하면
+/// 배지를 제거한다. 오버레이는 Windows 전용 API라 실패해도 조용히 무시.
+#[tauri::command]
+pub fn alarm_attention(app: AppHandle, on: bool) -> Result<(), String> {
+    let Some(win) = app.get_webview_window("main") else {
+        return Ok(());
+    };
+    if on {
+        let _ = win.request_user_attention(Some(tauri::UserAttentionType::Critical));
+        let _ = win.set_overlay_icon(Some(red_dot_icon()));
+    } else {
+        let _ = win.request_user_attention(None);
+        let _ = win.set_overlay_icon(None);
+    }
+    Ok(())
+}
+
+/// 32×32 빨간 원 오버레이(가장자리 1px 안티앨리어스) — PNG 자산 없이 런타임 생성.
+fn red_dot_icon() -> tauri::image::Image<'static> {
+    const S: u32 = 32;
+    let (cx, cy, r) = (15.5f32, 15.5f32, 14.0f32);
+    let mut px = Vec::with_capacity((S * S * 4) as usize);
+    for y in 0..S {
+        for x in 0..S {
+            let d = ((x as f32 - cx).powi(2) + (y as f32 - cy).powi(2)).sqrt();
+            let a = ((r - d + 0.5).clamp(0.0, 1.0) * 255.0) as u8;
+            px.extend_from_slice(&[0xE8, 0x11, 0x23, a]); // Windows 경고 빨강 (#E81123)
+        }
+    }
+    tauri::image::Image::new_owned(px, S, S)
+}
+
 /// 미니 캡처 창 전역 단축키 — v2.31부터 이 값으로 고정(설정 UI 없음).
 /// (Ctrl+Space 는 한/영 전환, Alt+Space 는 시스템 메뉴와 충돌해서 피했다.)
 pub const CAPTURE_SHORTCUT: &str = "Ctrl+Alt+Space";

@@ -123,6 +123,38 @@ test('spawnDueOccurrences: 매주 월요일 06:00 배치 — 06시 전엔 이번
   assert.equal(due.getHours(), 10);         // 지정 시각 유지
 });
 
+test('spawn 생성 시점(v2.5.3): day=당일 06시, eve=하루 전 06시, 기본/이상값=주초 일괄', () => {
+  // 2026-07-15 = 수요일. 매주 수요일 10:00 주기.
+  const mkP = spawn => { S.lastId = 0; return makeItem({memo:'주간', recur:{type:'dow', dow:[3], time:'10:00', spawn}}); };
+  // day: 수요일 05:00(06시 전) → 미생성 / 07:00(06시 후) → 당일 회차 생성
+  assert.equal(spawnDueOccurrences([mkP('day')], new Date(2026, 6, 15, 5, 0)).length, 0);
+  const d = spawnDueOccurrences([mkP('day')], new Date(2026, 6, 15, 7, 0));
+  assert.equal(d.length, 1);
+  assert.equal(new Date(d[0].f.due).getDate(), 15);
+  // eve: 화요일(하루 전) 07:00 → 수요일 회차 미리 생성 / 월요일 07:00은 아직
+  const e = spawnDueOccurrences([mkP('eve')], new Date(2026, 6, 14, 7, 0));
+  assert.equal(e.length, 1);
+  assert.equal(new Date(e[0].f.due).getDate(), 15);
+  assert.equal(spawnDueOccurrences([mkP('eve')], new Date(2026, 6, 13, 7, 0)).length, 0);
+  // spawn 없음(옛 데이터)·이상값 → week(월 06시 일괄) 그대로: 월요일 07:00에 그 주 수요일 생성
+  assert.equal(spawnDueOccurrences([mkP(undefined)], new Date(2026, 6, 13, 7, 0)).length, 1);
+  assert.equal(spawnDueOccurrences([mkP('이상값')], new Date(2026, 6, 13, 7, 0)).length, 1);
+});
+
+test('spawnAt 생성 기준 시각(v2.5.3): 지정 시각 전 미생성·후 생성, 무효값은 06:00', () => {
+  const mkP = (spawn, spawnAt) => { S.lastId = 0;
+    return makeItem({memo:'주간', recur:{type:'dow', dow:[3], time:'18:00', spawn, spawnAt}}); };
+  // day + 09:30 기준: 수요일 09:00 → 아직, 09:30 → 생성
+  assert.equal(spawnDueOccurrences([mkP('day','09:30')], new Date(2026, 6, 15, 9, 0)).length, 0);
+  assert.equal(spawnDueOccurrences([mkP('day','09:30')], new Date(2026, 6, 15, 9, 30)).length, 1);
+  // week + 08:00 기준: 월요일 07:00 → 아직, 08:30 → 그 주 수요일 생성
+  assert.equal(spawnDueOccurrences([mkP('week','08:00')], new Date(2026, 6, 13, 7, 0)).length, 0);
+  assert.equal(spawnDueOccurrences([mkP('week','08:00')], new Date(2026, 6, 13, 8, 30)).length, 1);
+  // 무효 spawnAt → 기본 06:00 (월 05:00 미생성 / 07:00 생성)
+  assert.equal(spawnDueOccurrences([mkP('week','25:99')], new Date(2026, 6, 13, 5, 0)).length, 0);
+  assert.equal(spawnDueOccurrences([mkP('week','25:99')], new Date(2026, 6, 13, 7, 0)).length, 1);
+});
+
 test('spawnDueOccurrences: 일시정지 부모는 생성 안 함', () => {
   S.lastId = 0;
   const now = new Date(2026, 6, 14, 12, 0, 0, 0);

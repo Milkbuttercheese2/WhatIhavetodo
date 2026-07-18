@@ -29,6 +29,7 @@ export function checkAlarms(){
   $('alarmList').innerHTML=fire.map(a=>`<div class="a-item"><b>${a.label}</b>${esc(a.title||'(메모 없음)')}<span class="mono">${fmtT(a.iso)}</span></div>`).join('');
   $('alarmBg').classList.add('on'); beep(); try{window.focus();}catch{} startTitleFlash(fire.length);
   invoke('focus_main_window').catch(()=>{}); // window.focus() can't steal OS focus from another app; this can
+  invoke('alarm_attention',{on:true}).catch(()=>{}); // v2.5.3 작업표시줄 깜빡임 + 빨간 배지 (확인 전까지 유지)
   if('Notification'in window&&Notification.permission==='granted'){ fire.forEach(a=>{try{
     const nt=new Notification('뭐하려 했더라 — '+a.label,{body:a.title||'',tag:'wmhh-'+a.key+'-'+a.iso});
     nt.onclick=()=>{ try{window.focus();}catch{} try{nt.close();}catch{} };
@@ -53,11 +54,13 @@ export function initAlarms(){
   // 창을 다시 보면 깜빡임 중지
   window.addEventListener('focus',stopTitleFlash);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) stopTitleFlash(); });
-  $('alarmOk').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=true;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); persist(); });
-  $('alarmSnooze').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=Date.now()+6e5;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); persist(); });
+  /* v2.5.3: 확인·미룸·알람 끔이 작업표시줄 배지도 함께 걷는다 (미룸은 재울림 때 다시 켜짐) */
+  const attentionOff=()=>invoke('alarm_attention',{on:false}).catch(()=>{});
+  $('alarmOk').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=true;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); attentionOff(); persist(); });
+  $('alarmSnooze').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=Date.now()+6e5;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); attentionOff(); persist(); });
   $('alarmToggle').addEventListener('click',()=>{
     S.settings.alarmOn=!S.settings.alarmOn; saveSettings(); renderAlarmToggle();
-    if(!S.settings.alarmOn){ $('alarmBg').classList.remove('on'); firedNow=[]; stopTitleFlash(); }
+    if(!S.settings.alarmOn){ $('alarmBg').classList.remove('on'); firedNow=[]; stopTitleFlash(); attentionOff(); }
     showToast(S.settings.alarmOn?'알람을 켰습니다':'알람을 껐습니다');
   });
   renderAlarmToggle();

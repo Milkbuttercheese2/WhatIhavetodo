@@ -180,6 +180,35 @@ test('연락처는 입력 그대로 저장 — 자동 하이픈 변환 없음 (v
   assert.equal(S.items[0].contacts[0].phone, '01099998888');   // 억지 변환하지 않는다
 });
 
+test('관련인 행에 드래그 핸들 존재 — DOM 순서가 저장 순서 (v2.5.3)', async () => {
+  await env.resetS(); S.loaded = true;
+  openForm({memo:'관련인 정렬', contacts:[{who:'김',org:'a과',phone:'1'},{who:'박',org:'b과',phone:'2'}]});
+  const rows = $('fm-contacts').querySelectorAll('.contact-row');
+  assert.equal(rows.length, 2);
+  for(const r of rows) assert.ok(r.querySelector('.drag-handle'));
+  $('fm-contacts').appendChild(rows[0]);        // 드래그 결과와 동일한 DOM 재배열
+  $('fm-save').click();
+  await env.flush();
+  assert.deepEqual(S.items[0].contacts.map(c=>c.who), ['박','김']);
+});
+
+test('관련인: Enter로 다음 행 추가/이동, IME 조합 중은 무시 (v2.5.3)', async () => {
+  await env.resetS(); S.loaded = true;
+  openForm({});
+  const rows0 = $('fm-contacts').querySelectorAll('.contact-row').length;   // 기본 1행
+  const phone = $('fm-contacts').querySelector('.c-phone');
+  phone.dispatchEvent(new env.window.KeyboardEvent('keydown', {key:'Enter', bubbles:true, cancelable:true}));
+  assert.equal($('fm-contacts').querySelectorAll('.contact-row').length, rows0 + 1);   // 마지막 행 → 새 행
+  const firstOrg = $('fm-contacts').querySelector('.c-org');
+  firstOrg.dispatchEvent(new env.window.KeyboardEvent('keydown', {key:'Enter', bubbles:true, cancelable:true}));
+  assert.equal($('fm-contacts').querySelectorAll('.contact-row').length, rows0 + 1);   // 중간 행 → 추가 없음(이동만)
+  const ime = new env.window.KeyboardEvent('keydown', {key:'Enter', bubbles:true, cancelable:true});
+  Object.defineProperty(ime, 'isComposing', {value:true});
+  $('fm-contacts').querySelectorAll('.c-phone')[1].dispatchEvent(ime);
+  assert.equal($('fm-contacts').querySelectorAll('.contact-row').length, rows0 + 1);   // IME 조합 중 무시
+  closeForm();
+});
+
 test('식별번호 행에 드래그 핸들 존재 — 순서 변경 가능 (v2.5.1)', async () => {
   await env.resetS(); S.loaded = true;
   const it = fullItem(); S.items.push(it);

@@ -42,16 +42,21 @@ jobs:
       - name: Tauri 릴리즈 빌드 (MSVC)
         run: npm run tauri build
 
-      - name: 산출물 폴더로 복사
+      # v2.5.3 소유자 지정: 산출물 이름에 버전 표기 (뭐하려 했더라v X.Y.Z.exe).
+      # 이전 버전 exe는 지우고 최신 하나만 폴더에 남긴다 (git 이력에는 남음).
+      - name: 산출물 폴더로 복사 (버전 표기)
         shell: bash
-        run: cp "src-tauri/target/release/wmhh-desktop.exe" "최종 프로그램 산출물/뭐하려 했더라.exe"
+        run: |
+          VER=$(node -p "require('./package.json').version")
+          rm -f "최종 프로그램 산출물/뭐하려 했더라"*.exe
+          cp "src-tauri/target/release/wmhh-desktop.exe" "최종 프로그램 산출물/뭐하려 했더라v${VER}.exe"
 
       - name: 실행 브랜치에 exe 커밋
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "최종 프로그램 산출물/뭐하려 했더라.exe"
+          git add -A "최종 프로그램 산출물"
           git diff --cached --quiet && { echo "exe 변경 없음 — 커밋 생략"; exit 0; }
           git commit -m "build: 최종 산출물 exe 갱신 (GitHub Actions windows-latest MSVC 빌드)"
           git push
@@ -60,4 +65,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wmhh-exe
-          path: 최종 프로그램 산출물/뭐하려 했더라.exe
+          path: 최종 프로그램 산출물/뭐하려 했더라v*.exe

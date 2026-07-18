@@ -14,7 +14,7 @@ const iso = min => new Date(Date.now() + min*60e3).toISOString();
 const mk = o => Object.assign({id:newId(), memo:'m', done:false, staged:false, f:{}, contacts:[], ids:[], subs:[], al:{}}, o);
 const closeModal = () => { $('alarmBg').classList.remove('on'); };
 
-test('지난 마감 → 모달 + 마감 항목 + focus_main_window', async () => {
+test('지난 마감 → 모달 + 마감 항목 + focus_main_window + 작업표시줄 배지 on (v2.5.3)', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({memo:'지난 마감건', f:{due:iso(-5)}}));
   checkAlarms();
@@ -22,6 +22,7 @@ test('지난 마감 → 모달 + 마감 항목 + focus_main_window', async () =>
   assert.ok($('alarmList').textContent.includes('마감'));
   assert.ok($('alarmList').textContent.includes('지난 마감건'));
   assert.ok(env.invokeCalls.some(c=>c.cmd==='focus_main_window'));
+  assert.ok(env.invokeCalls.some(c=>c.cmd==='alarm_attention'&&c.args&&c.args.on===true));
   closeModal();
 });
 
@@ -76,15 +77,17 @@ test('F5: 모달이 이미 떠 있으면 목록을 다시 쓰지 않음', async 
   closeModal();
 });
 
-test('확인 → al=true + 모달 닫힘 + persist', async () => {
+test('확인 → al=true + 모달 닫힘 + persist + 작업표시줄 배지 off (v2.5.3)', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({f:{due:iso(-5)}}));
   checkAlarms();
+  env.invokeCalls.length = 0;
   $('alarmOk').click();
   await env.flush();
   assert.equal(S.items[0].al.due, true);
   assert.equal($('alarmBg').classList.contains('on'), false);
   assert.ok(env.invokeCalls.some(c=>c.cmd==='save_all'));
+  assert.ok(env.invokeCalls.some(c=>c.cmd==='alarm_attention'&&c.args&&c.args.on===false));
 });
 
 test('미룸 → al = now+10분 (±5초)', async () => {

@@ -72,12 +72,22 @@ export function closeForm(){ $('formPanel').classList.remove('on'); editingId=nu
 function addContactRow(c){
   c=c||{who:'',org:'',phone:''};
   const row=document.createElement('div'); row.className='contact-row';
-  row.innerHTML=`
+  row.innerHTML=`<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
     <input type="text" class="c-org" placeholder="관련소속" value="${escAttr(c.org||'')}">
     <input type="text" class="c-who" placeholder="관련인" value="${escAttr(c.who||'')}">
     <input type="text" class="c-phone" placeholder="연락처" value="${escAttr(c.phone||'')}">
     <button class="rm" title="삭제">×</button>`;
   row.querySelector('.rm').addEventListener('click',()=>row.remove());
+  /* Enter → 다음 행 이동/추가 (세부 할 일과 동일 UX, v2.5.3) — 같은 칸(열)으로 포커스.
+     한글 IME 조합 중 Enter는 무시(조합 확정이 새 행을 만들지 않게). */
+  row.querySelectorAll('input').forEach(inp=>inp.addEventListener('keydown',e=>{
+    if(e.key!=='Enter'||e.isComposing||e.keyCode===229) return;
+    e.preventDefault();
+    const rows=[...$('fm-contacts').querySelectorAll('.contact-row')];
+    const isLast=rows[rows.length-1]===row;
+    if(isLast){ addContactRow(); $('fm-contacts').lastElementChild.querySelector('.'+inp.classList[0]).focus(); }
+    else rows[rows.indexOf(row)+1].querySelector('.'+inp.classList[0]).focus();
+  }));
   $('fm-contacts').appendChild(row);
 }
 
@@ -200,7 +210,8 @@ export function initForm(){
   });
   $('fm-subadd').addEventListener('click',()=>addFormSubRow('','',true));
   enableDragReorder($('fm-subs'), '.fsub-row', '.drag-handle');
-  enableDragReorder($('fm-ids'), '.fid-row', '.drag-handle');   // v2.5.1 식별번호도 드래그 정렬
+  enableDragReorder($('fm-ids'), '.fid-row', '.drag-handle');        // v2.5.1 식별번호도 드래그 정렬
+  enableDragReorder($('fm-contacts'), '.contact-row', '.drag-handle'); // v2.5.3 관련인도 드래그 정렬
   $('fm-fileadd').addEventListener('click', async ()=>{
     let p=null;
     try{ p=await invoke('pick_file_path'); }
