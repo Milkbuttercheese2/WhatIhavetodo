@@ -13,6 +13,8 @@
         "title": "뭐하려 했더라",
         "width": 1400,
         "height": 900,
+        "minWidth": 560,
+        "minHeight": 480,
         "visible": false,
         "dragDropEnabled": false,
         "decorations": false
