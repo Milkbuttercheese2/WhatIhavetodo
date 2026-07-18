@@ -228,7 +228,8 @@ pub fn quick_search(conn: &Connection, query: &str, limit: i64) -> DbResult<Vec<
          WHERE i.memo LIKE ?1 ESCAPE '\\'
             OR EXISTS (SELECT 1 FROM subtasks s WHERE s.item_id = i.id AND s.title LIKE ?1 ESCAPE '\\')
             OR EXISTS (SELECT 1 FROM contacts c WHERE c.item_id = i.id
-                         AND (c.who LIKE ?1 ESCAPE '\\' OR c.org LIKE ?1 ESCAPE '\\' OR c.phone LIKE ?1 ESCAPE '\\'))
+                         AND (c.who LIKE ?1 ESCAPE '\\' OR c.org LIKE ?1 ESCAPE '\\' OR c.phone LIKE ?1 ESCAPE '\\'
+                              OR replace(replace(c.phone, '-', ''), ' ', '') LIKE ?1 ESCAPE '\\'))
             OR EXISTS (SELECT 1 FROM identifiers x WHERE x.item_id = i.id
                          AND (x.kind LIKE ?1 ESCAPE '\\' OR x.val LIKE ?1 ESCAPE '\\'))
             OR EXISTS (SELECT 1 FROM item_files fl WHERE fl.item_id = i.id AND fl.path LIKE ?1 ESCAPE '\\')

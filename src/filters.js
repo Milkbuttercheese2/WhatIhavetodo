@@ -3,7 +3,10 @@
    보드 검색·완료 검색이 공유하고, 향후 '저장 필터' 뷰가 이 위에 얹힌다.
    순수 함수만 둔다(상태·DOM 없음) — 검색어(q/dq)는 호출부가 보관.
    ========================================================================= */
-function contactText(it){ return (it.contacts||[]).map(c=>`${c.who} ${c.org} ${c.phone}`).join(' '); }
+/* 연락처는 저장값(하이픈 포함)과 숫자만 버전을 함께 넣는다 —
+   010-1234-5678로 저장돼도 01012345678 검색이 걸리게(v2.5.1).
+   필드 누락 시 'undefined' 문자열이 haystack에 새지 않게 전부 ||'' 가드. */
+function contactText(it){ return (it.contacts||[]).map(c=>`${c.who||''} ${c.org||''} ${c.phone||''} ${String(c.phone||'').replace(/[^0-9]/g,'')}`).join(' '); }
 function idText(it){ return (it.ids||[]).map(x=>`${x.kind} ${x.val}`).join(' '); }
 /* 링크된 파일은 파일명(경로 마지막 조각)으로 검색 — 폴더 경로까지 걸리면 잡음 */
 function fileText(it){ return (it.files||[]).map(p=>String(p).split(/[\\/]/).filter(Boolean).pop()||'').join(' '); }

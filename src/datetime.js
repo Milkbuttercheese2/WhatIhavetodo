@@ -63,20 +63,12 @@ export function fmtT(iso){ if(!iso)return null; const d=new Date(iso); if(isNaN(
   return `${d.getMonth()+1}/${d.getDate()}(${DOW[d.getDay()]}) ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; }
 export function fmtDue(iso){ if(!iso)return null; const d=new Date(iso); if(isNaN(d))return null;   // F7: 손상 ISO 방어
   const now=new Date(); const m=Math.round((d-now)/60000);
-  // '마감 지남' 텍스트 강조는 표기하지 않음. 임박(2시간 내)만 남은 시간 안내.
-  let note=''; if(m>=0&&m<=60){note=` ${m}분후`;} else if(m>60&&m<=120){note=` ${Math.round(m/60)}시간후`;}
-  // 긴급도 배경색: u-imm=지남~2시간내(임박, 같은 색) / u-today=오늘 / u-tmr=내일까지 /
-  // u-2d=이틀안 / ''=그 이후(중립). 오늘·내일·이틀은 달력일(자정 경계) 기준.
-  let cls='';
-  if(m<=120){ cls='u-imm'; }                    // 지남(음수) ~ 2시간 이내 = 임박색 동일
-  else {
-    const d0=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-    const dd=new Date(d.getFullYear(),d.getMonth(),d.getDate());
-    const diff=Math.round((dd-d0)/86400000);
-    if(diff===0)cls='u-today'; else if(diff===1)cls='u-tmr'; else if(diff===2)cls='u-2d';
-  }
+  // 남은 시간(N분후/N시간후) 표기는 v2.5.1에서 제거 — 날짜·시각만 적는다.
+  // 긴급도 배경색도 v2.5.1에서 임박만 남김: u-imm=지남~2시간내(임박) / ''=그 외 전부 중립.
+  // (5단계 색구분(u-today/u-tmr/u-2d)은 어지럽다는 소유자 피드백으로 제거.)
+  const cls = m<=120 ? 'u-imm' : '';
   const lbl=fmtT(iso); if(lbl===null) return null;
-  return {label:lbl+note,cls}; }
+  return {label:lbl,cls}; }
 
 /* 분리 날짜/시간 입력 위젯 HTML */
 /* 날짜/시간 입력 내부 마크업 (텍스트 직접입력 + 캘린더 선택 + 요일 표시) */

@@ -55,7 +55,8 @@ test('owner 모드: 5열 분배 + 담당 태그 + 보드 표시 전환 (v2.5.0)'
     assert.equal($('c5-othplan').textContent, '1');
     assert.ok($('col5-metoday').textContent.includes('본인오늘건'));
     assert.ok($('col5-othtoday').textContent.includes('타인오늘건'));
-    assert.ok($('col5-othtoday').innerHTML.includes('담당 김'));      // 타인 카드에만 담당 배지
+    assert.ok($('col5-othtoday').innerHTML.includes('#담당:'));       // 타인 카드에만 담당 배지 (v2.5.1: #담당: 형식)
+    assert.ok($('col5-othtoday').textContent.includes('#담당:김'));
     assert.ok(!$('col5-metoday').innerHTML.includes('tag owner'));
     assert.ok($('col5-othplan').textContent.includes('타인예정건'));  // 세부 owner도 타인 판정
     // 보드 탭 활성 상태에서는 5열 보드만 보인다
@@ -65,6 +66,28 @@ test('owner 모드: 5열 분배 + 담당 태그 + 보드 표시 전환 (v2.5.0)'
   render();
   assert.equal($('view-board').style.display, 'grid');
   assert.equal($('view-board5').style.display, 'none');
+});
+
+test('카드 시각 표시 정책: 마감보다 앞서는 세부가 있으면 세부 시각만, 아니면 #마감만 (v2.5.1)', async () => {
+  await env.resetS(); S.loaded = true;
+  // 전부 지난 시각으로 고정 — 자정 경계 플레이크 없이 항상 today 열
+  const a = mk({memo:'세부가앞섬', f:{due:iso(-60)},  subs:[{id:newId(), title:'먼저점검', mid:iso(-120), done:false}]});
+  const b = mk({memo:'마감이앞섬', f:{due:iso(-120)}, subs:[{id:newId(), title:'나중점검', mid:iso(-60), done:false}]});
+  const c = mk({memo:'세부다완료', f:{due:iso(-30)},  subs:[{id:newId(), title:'끝난점검', mid:iso(-60), done:true}]});
+  S.items.push(a, b, c);
+  render();
+  const card = id => $('col-today').querySelector(`[data-open="${id}"]`);
+  // a: 세부 점검 시각(#점검)만 — #마감 태그 없음
+  assert.ok(card(a.id).innerHTML.includes('#점검:'));
+  assert.ok(!card(a.id).innerHTML.includes('#마감:'));
+  // b: 세부 제목 줄은 남되 시각은 #마감만
+  assert.ok(card(b.id).textContent.includes('나중점검'));
+  assert.ok(!card(b.id).innerHTML.includes('#점검:'));
+  assert.ok(card(b.id).innerHTML.includes('#마감:'));
+  // c: pending 세부 없음 → #마감만
+  assert.ok(!card(c.id).querySelector('.card-subline'));
+  assert.ok(!card(c.id).innerHTML.includes('#점검:'));
+  assert.ok(card(c.id).innerHTML.includes('#마감:'));
 });
 
 test('done 아이템은 보드 제외, renderDone에 표시', async () => {

@@ -20,33 +20,35 @@
    background:#1e2128;border:1px solid #2c313b;border-radius:18px;overflow:hidden}
  #cap-bar{display:flex;align-items:center;flex:1;min-height:56px}
  body.search #cap-bar{flex:none}
+ /* v2.5.1: font 축약형에 inherit(전역 키워드)를 섞으면 선언 전체가 무효 처리돼
+    입력창이 브라우저 기본 폼 폰트로 렌더되던 버그 — 롱핸드로 분리(파일 전체 동일). */
  #cap-inp,#cap-search{flex:1;border:0;outline:0;background:transparent;color:#f2f5fa;
-   font:14px/1.5 inherit;padding:15px 18px}
+   font-family:inherit;font-size:14px;line-height:1.5;padding:15px 18px}
  #cap-inp{resize:none}
  #cap-inp::placeholder,#cap-search::placeholder{color:#8b95a7}
  #cap-results{display:none;flex:1;min-height:0;flex-direction:column;
    border-top:1px solid rgba(255,255,255,.08)}
  .cap-col{flex:1;display:flex;flex-direction:column;min-width:0}
- .cap-col-h{flex:none;font:600 11px inherit;color:#8b95a7;
+ .cap-col-h{flex:none;font-weight:600;font-size:11px;color:#8b95a7;
    padding:10px 16px 6px;letter-spacing:.04em}
  .cap-list{flex:1;overflow-y:auto;padding:0 8px 10px}
  .cap-list::-webkit-scrollbar{width:8px}
  .cap-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:4px}
- .cap-hit{font:13px/1.45 inherit;color:#eef1f7;padding:8px 11px;margin:1px 0;
+ .cap-hit{font-size:13px;line-height:1.45;color:#eef1f7;padding:8px 11px;margin:1px 0;
    border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  .cap-hit:hover{background:#173f3a;color:#4fe0c8}
  .cap-hit.done{color:#8b95a7}
- .cap-empty{font:12.5px inherit;color:#8b95a7;padding:12px}
- #cap-hint{flex:none;font:11px inherit;color:#727d91;padding:2px 16px 10px;display:none}
+ .cap-empty{font-size:12.5px;color:#8b95a7;padding:12px}
+ #cap-hint{flex:none;font-size:11px;color:#727d91;padding:2px 16px 10px;display:none}
  body.search #cap-hint{display:none}
  #cap-flash{display:none;align-items:center;justify-content:center;flex:1;gap:7px;
-   color:#3dd7bf;font:600 15px inherit}
+   color:#3dd7bf;font-weight:600;font-size:15px}
  body.flash #cap-bar,body.flash #cap-results,body.flash #cap-hint{display:none}
  body.flash #cap-flash{display:flex}
  .cap-col-h{display:none}
  .cap-hit{display:flex;align-items:center;gap:9px}
  .cap-hit-txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
- .cap-tag{flex:none;font:700 10.5px inherit;padding:2.5px 9px;border-radius:999px;letter-spacing:.02em}
+ .cap-tag{flex:none;font-weight:700;font-size:10.5px;padding:2.5px 9px;border-radius:999px;letter-spacing:.02em}
  .cap-tag.ongoing{background:#153f39;color:#54e2ca}
  .cap-tag.done{background:#2b3039;color:#8b95a7}
  .cap-hit.done .cap-hit-txt{color:#8b95a7}

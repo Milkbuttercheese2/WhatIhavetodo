@@ -40,7 +40,16 @@
   :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   .btn{font-family:inherit;font-weight:600;border:none;border-radius:9px;cursor:pointer;white-space:nowrap}
 
-  header{padding:12px 28px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:30}
+  /* ===== 커스텀 타이틀바 (v2.5.1 — 메인 창 decorations:false) ===== */
+  .titlebar{position:sticky;top:0;z-index:40;height:34px;display:flex;align-items:center;justify-content:space-between;
+    background:var(--card);border-bottom:1px solid var(--line);user-select:none;-webkit-user-select:none}
+  .tb-name{font-size:11.5px;font-weight:600;color:var(--ink-soft);padding-left:16px;letter-spacing:.03em}
+  .tb-btns{display:flex;height:100%}
+  .tb-btn{width:46px;height:100%;border:none;background:none;cursor:pointer;font-size:13px;line-height:1;
+    color:var(--ink-soft);border-radius:0;transition:background .12s,color .12s}
+  .tb-btn:hover{background:var(--line-soft);color:var(--ink)}
+  .tb-btn.tb-close:hover{background:#e81123;color:#fff}   /* Windows 표준 닫기 hover 색 */
+  header{padding:12px 28px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:34px;z-index:30}
   .header-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;width:1460px;margin:0 auto}
   .brand{display:flex;align-items:baseline;gap:12px;flex:none}
   .brand h1{font-size:19px;font-weight:700;letter-spacing:-.02em}
@@ -195,17 +204,16 @@
   .chk.on{background:var(--focus);border-color:var(--focus)}
   .chk.on::after{content:"";position:absolute;left:5px;top:1.5px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
   .card-body{flex:1;min-width:0}
-  .card-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;align-items:center}
+  /* v2.5.1: 카드 줄 규칙 고정(최대 4줄) — 시각·진행/담당 줄은 절대 두 줄로 안 꺾인다(nowrap) */
+  .card-meta{display:flex;flex-wrap:nowrap;gap:5px;margin-top:5px;align-items:center;min-width:0;overflow:hidden}
   .tag{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:1px 7px;border-radius:999px;letter-spacing:.01em}
   .tag.who{background:var(--amber-bg);color:var(--amber)}
   .tag.mid{background:var(--slate-bg);color:var(--slate)}
   .tag.time{background:var(--slate-bg);color:var(--slate)}
-  /* 마감·세부 시각 긴급도 5단계 배경색 (fmtDue → cls) */
+  /* 마감·세부 시각 긴급도 배경색 — v2.5.1: 임박(지남~2시간내)만 강조, 나머지는 중립 */
   .tag.time.u-imm,.tag.mid.u-imm{background:#fbe3dd;color:#c0392b}
-  .tag.time.u-today,.tag.mid.u-today{background:#fbe8d4;color:#b5651c}
-  .tag.time.u-tmr,.tag.mid.u-tmr{background:#faf1d4;color:#8f7118}
-  .tag.time.u-2d,.tag.mid.u-2d{background:#f1f0dc;color:#6f6b3a}
-  .tag.owner{background:var(--slate-bg);color:var(--slate);font-weight:600}
+  /* v2.5.1: 담당 태그는 다른 태그가 안 쓰는 뮤트 블루 — 시각(청록)·식별번호(보라)와 구분 */
+  .tag.owner{background:#e3ebf6;color:#3c6c9e;font-weight:600}
   .tag.custom{background:var(--gray-bg);color:var(--gray-fg)}
   .tag.idnum{background:#e9e4f2;color:#5b4a86}
   .tag .k{opacity:.72;margin-right:2px;font-weight:600}
@@ -366,14 +374,11 @@
   .dt-dow{font-size:11px;color:var(--ink-soft);min-width:22px;flex:none}
   /* v5 카드 요약 */
   .card{cursor:pointer}
-  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  /* v2.5.1: 메모도 최대 1줄 — 카드 전체가 줄당 1행(메모·세부·시각·진행/담당) */
+  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .card.done .card-memo{text-decoration:line-through;color:var(--done)}
-  .card-subline{font-size:11px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card-subline .sub-when{font-family:var(--font-mono);font-size:11px;background:var(--slate-bg);padding:0 6px;border-radius:6px}
-  .card-subline .sub-when.u-imm{background:#fbe3dd;color:#c0392b}
-  .card-subline .sub-when.u-today{background:#fbe8d4;color:#b5651c}
-  .card-subline .sub-when.u-tmr{background:#faf1d4;color:#8f7118}
-  .card-subline .sub-when.u-2d{background:#f1f0dc;color:#6f6b3a}
+  /* v2.5.1: 세부 제목 글자는 메모와 동일 크기(14px), 점검 시각 칩은 메타 줄의 #점검 태그로 이동 */
+  .card-subline{font-size:14px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* 알람 점 — 울림 여부 3단계(v2.4.4): ○ 대기 / ● 울림(빨강·깜빡임) / ● 확인함(초록) */
   .adot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;vertical-align:middle;margin-right:1px}
   .adot.ad-wait{border:1.5px solid var(--slate);background:transparent}
@@ -393,8 +398,10 @@
   .card-memo{min-width:0;max-width:100%;overflow-wrap:anywhere}
   .card-subline{min-width:0;max-width:100%}
   .card-subline .sub-title{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .card-subline .sub-when{flex:none}
   .adot{flex:none}
+  /* v2.5.1: 카드 메타 줄 안의 태그는 줄바꿈 대신 말줄임 — 한 줄 유지가 우선 */
+  .card-meta .tag{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal;word-break:keep-all}
+  .card-meta .mini-prog{flex:none;white-space:nowrap}
   @keyframes adotpulse{0%,100%{opacity:1}50%{opacity:.35}}
   .mini-prog{font-family:var(--font-mono);font-size:11px;color:var(--ink-soft);background:var(--line-soft);padding:1px 7px;border-radius:6px}
   /* 카드 파일 링크 */

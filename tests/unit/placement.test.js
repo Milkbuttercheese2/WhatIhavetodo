@@ -135,10 +135,11 @@ test('owner 모드: 담당자 박 + 3일 뒤 마감 → othplan', () => {
   assert.equal(placeOf(base({owner:'박', f:{due:iso(60*72)}})), 'othplan');
 });
 
-test('owner 모드: 시각 정보 전혀 없음 → 오늘로 취급 (metoday / 타인은 othtoday)', () => {
+test('owner 모드: 시각 정보 전혀 없음 → 오늘 외 (meplan / 타인은 othplan) — v2.5.1', () => {
   setPlaceMode('owner');
-  assert.equal(placeOf(base({})), 'metoday');
-  assert.equal(placeOf(base({owner:'이'})), 'othtoday');
+  assert.equal(placeOf(base({})), 'meplan');
+  assert.equal(placeOf(base({owner:'이'})), 'othplan');
+  assert.equal(placeOf(base({f:{due:'garbage'}})), 'meplan');   // 손상 due도 시각 없음 취급
 });
 
 test('ownerOf: 가장 이른 미완료 세부 owner → 비면 아이템 owner → 빈 문자열', () => {

@@ -1,10 +1,14 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capability for the main window. core:window:default is getters-only, so the custom titlebar controls (v2.5.1, decorations:false) need explicit minimize/toggle-maximize/close/start-dragging grants.",
   "windows": ["main"],
   "permissions": [
     "core:default",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
     "opener:default",
     "dialog:default"
   ]

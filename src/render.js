@@ -45,39 +45,49 @@ function earliestSub(it){
   const future=pend.filter(s=>new Date(s.mid).getTime()>now).sort((a,b)=>new Date(a.mid)-new Date(b.mid));
   return future[0]||null;
 }
-/* 카드 겉면: 메모(2줄) · 가장 임박한 세부 할일 · 마감시각 만.
+/* 카드 겉면: 메모(1줄) · 가장 임박한 세부 할일 · 시각 · 진행/담당 만.
    관련인/식별번호는 카드에서 감추고 팝업에서만 표시. */
-function dueTagHtml(it){
-  const v=(it.f||{}).due; if(!v) return '';
-  const m=fmtDue(v); if(!m) return '';        // F7: 손상 ISO면 렌더 생략
-  // adot는 태그(pill) 밖에 둔다 — '대기'의 투명 배경이 pill 색과 겹치지 않도록.
-  return `${alarmDot(it,'due')}<span class="tag time ${m.cls}"><span class="k">#마감:</span>${esc(m.label)}</span>`;
+/* 시각 pill 공용 빌더 — #마감(due)과 #점검(세부 mid)이 같은 마크업을 쓴다(중복 방지).
+   adot는 태그(pill) 밖에 둔다 — '대기'의 투명 배경이 pill 색과 겹치지 않도록. */
+function timePill(obj,key,iso,label){
+  const m=fmtDue(iso); if(!m) return '';      // F7: 손상 ISO면 렌더 생략
+  return `${alarmDot(obj,key)}<span class="tag time ${m.cls}"><span class="k">${label}</span>${esc(m.label)}</span>`;
 }
+function dueTagHtml(it){ const v=(it.f||{}).due; return v?timePill(it,'due',v,'#마감:'):''; }
 export function cardHtml(it,place){
   const subs=it.subs||[];
   const memo=(it.memo||'').trim();
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
   const es=earliestSub(it);
-  const progress = subs.length?`<span class="mini-prog">세부 ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
+  const progress = subs.length?`<span class="mini-prog">#세부: ${subs.filter(s=>s.done).length}/${subs.length}</span>`:'';
   const parent = it.recurId!=null ? S.items.find(x=>x.id===it.recurId) : null;
   const recurTag = it.recurId!=null?`<span class="tag mid" title="${escAttr(parent&&parent.recur?recurLabel(parent.recur):'주기 업무에서 생성됨')}">주기</span>`:'';
-  /* v2.5.0 담당 배지 — 시간·담당자 모드에서 타인 업무에만 (''=본인은 표시 없음) */
+  /* v2.5.0 담당 배지 — 시간·담당자 모드에서 타인 업무에만 (''=본인은 표시 없음). v2.5.1: #담당: 형식 */
   const ow=ownerOf(it);
-  const ownerTag=(placeMode()==='owner'&&ow)?`<span class="tag owner">담당 ${esc(ow)}</span>`:'';
-  let subLine='';
-  if(es){
-    const m=es.mid?fmtDue(es.mid):null;
-    subLine=`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span>${m?`${alarmDot(es,'mid')}<span class="sub-when ${m.cls}">${esc(m.label)}</span>`:''}</div>`;
-  }
-  // 파일 링크는 카드 앞면에 표시하지 않는다 — 카드는 메모(2줄)·가장 빠른 세부·마감만.
-  // 파일은 카드를 클릭해 열리는 양식 팝업에서 다룬다(form.js addFormFileRow).
+  const ownerTag=(placeMode()==='owner'&&ow)?`<span class="tag owner"><span class="k">#담당:</span>${esc(ow)}</span>`:'';
+  /* v2.5.1 시각 표시 정책 — 마감보다 앞서는 미완료 세부가 있으면 그 세부의 점검시각만
+     보이고 #마감 태그는 감춘다(둘 다 보이던 중복 제거). 앞서는 세부가 없거나 전부
+     완료면 #마감만. 시각 칩은 세부 제목 줄이 아니라 메타 줄에 둔다(제목 잘림 방지).
+     카드 구성: 메모 1줄 · 세부 1줄 · 시각(#점검 또는 #마감) · 진행상황/담당. */
+  const dueT=(it.f||{}).due?new Date(it.f.due).getTime():NaN;
+  const esT=es&&es.mid?new Date(es.mid).getTime():NaN;
+  const subFirst = !isNaN(esT) && (isNaN(dueT) || esT<dueT);
+  const subLine = es?`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span></div>`:'';
+  const timeTag = subFirst ? timePill(es,'mid',es.mid,'#점검:') : dueTagHtml(it);
+  const timeLine = timeTag?`<div class="card-meta">${timeTag}</div>`:'';
+  const metaBits = `${recurTag}${progress}${ownerTag}`;
+  const metaLine = metaBits?`<div class="card-meta">${metaBits}</div>`:'';
+  // 파일 링크는 카드 앞면에 표시하지 않는다. 파일은 양식 팝업에서 다룬다(form.js addFormFileRow).
+  // 카드 구성(v2.5.1, 최대 4줄·각 1줄): 메모 → 세부(있다면) → 시각(#점검 또는 #마감)
+  //  → 진행상황·담당. 빈 줄은 아예 그리지 않는다.
   return `<div class="card p-${place}${it.done?' done':''}" data-open="${it.id}">
     <div class="card-top">
       <div class="chk ${it.done?'on':''}" data-id="${it.id}"></div>
       <div class="card-body">
         <div class="card-memo">${memoHtml}</div>
         ${subLine}
-        <div class="card-meta">${dueTagHtml(it)}${ownerTag}${recurTag}${progress}</div>
+        ${timeLine}
+        ${metaLine}
       </div>
       <button class="del" data-del="${it.id}" title="삭제">×</button>
     </div></div>`;

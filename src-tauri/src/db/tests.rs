@@ -142,6 +142,9 @@ fn items_round_trip() {
     // (예: "재발급"이 메모+파일명 양쪽 매치) 결과는 중복 없이 정확히 1건.
     assert_eq!(items::quick_search(&conn, "행정과", 10).unwrap().len(), 1);     // 관련소속(contacts)
     assert_eq!(items::quick_search(&conn, "홍길동", 10).unwrap().len(), 1);     // 관련인(contacts)
+    // 연락처: 하이픈 그대로도, 숫자만(01011112222)으로도 걸린다 (v2.5.1)
+    assert_eq!(items::quick_search(&conn, "010-1111-2222", 10).unwrap().len(), 1);
+    assert_eq!(items::quick_search(&conn, "01011112222", 10).unwrap().len(), 1);
     assert_eq!(items::quick_search(&conn, "양식.xlsx", 10).unwrap().len(), 1);  // 파일명(item_files)
     let dup = items::quick_search(&conn, "재발급", 10).unwrap();               // 메모+파일 동시 매치
     assert_eq!(dup.len(), 1);
