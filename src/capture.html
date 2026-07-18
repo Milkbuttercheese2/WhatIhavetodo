@@ -24,7 +24,9 @@
     입력창이 브라우저 기본 폼 폰트로 렌더되던 버그 — 롱핸드로 분리(파일 전체 동일). */
  #cap-inp,#cap-search{flex:1;border:0;outline:0;background:transparent;color:#f2f5fa;
    font-family:inherit;font-size:14px;line-height:1.5;padding:15px 18px}
- #cap-inp{resize:none}
+ /* v2.5.11: 한 줄 기본(rows=1) + box-sizing 으로 auto-grow 정확히. 기본 textarea rows=2 라
+    한 줄 메모가 2줄 박스 위쪽에 붙어 "글자가 위로 뜬" 것처럼 보이던 문제 해결. */
+ #cap-inp{resize:none;box-sizing:border-box;overflow:hidden}
  #cap-inp::placeholder,#cap-search::placeholder{color:#8b95a7}
  #cap-results{display:none;flex:1;min-height:0;flex-direction:column;
    border-top:1px solid rgba(255,255,255,.08)}
@@ -63,7 +65,7 @@
 <body>
 <div id="cap-shell">
   <div id="cap-bar">
-    <textarea id="cap-inp" placeholder="빠른 메모 · Alt 검색"></textarea>
+    <textarea id="cap-inp" rows="1" placeholder="빠른 메모 · Alt 검색"></textarea>
     <input id="cap-search" placeholder="검색" style="display:none" autocomplete="off">
   </div>
   <div id="cap-results">

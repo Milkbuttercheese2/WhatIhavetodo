@@ -53,6 +53,12 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   $('tbMin').addEventListener('click', tbSafe(()=>tbWin().minimize()));
   $('tbMax').addEventListener('click', tbSafe(()=>tbWin().toggleMaximize()));
   $('tbClose').addEventListener('click', tbSafe(()=>tbWin().close()));
+  /* v2.5.11: 타이틀바 빈 영역 더블클릭 = 최대화/복원 토글 (전체화면 ↔ 컴팩트로 줄이기).
+     버튼(─ □ ×) 더블클릭은 제외. */
+  document.querySelector('.titlebar').addEventListener('dblclick', e=>{
+    if(e.target.closest('.tb-btn')) return;
+    tbSafe(()=>tbWin().toggleMaximize())();
+  });
 }
 
 /* 보드 모드 선택 (시간 | 시간·담당자) — settings.boardMode 로 영속.
