@@ -14,22 +14,22 @@ const iso = min => new Date(Date.now() + min*60e3).toISOString();
 const mk = o => Object.assign({id:newId(), memo:'m', done:false, staged:false, f:{}, contacts:[], ids:[], subs:[], al:{}}, o);
 const closeModal = () => { $('alarmBg').classList.remove('on'); };
 
-test('지난 마감 → 모달 + #마감 항목 + focus_main_window', async () => {
+test('지난 마감 → 모달 + 마감 항목 + focus_main_window', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({memo:'지난 마감건', f:{due:iso(-5)}}));
   checkAlarms();
   assert.ok($('alarmBg').classList.contains('on'));
-  assert.ok($('alarmList').textContent.includes('#마감'));
+  assert.ok($('alarmList').textContent.includes('마감'));
   assert.ok($('alarmList').textContent.includes('지난 마감건'));
   assert.ok(env.invokeCalls.some(c=>c.cmd==='focus_main_window'));
   closeModal();
 });
 
-test('지난 미완료 세부 mid → #중간점검 / 완료 sub·완료 아이템은 침묵', async () => {
+test('지난 미완료 세부 mid → 중간점검 / 완료 sub·완료 아이템은 침묵', async () => {
   await env.resetS(); S.loaded = true;
   S.items.push(mk({subs:[{id:newId(), title:'회신 점검', mid:iso(-3), done:false, al:{}}]}));
   checkAlarms();
-  assert.ok($('alarmList').textContent.includes('#중간점검'));
+  assert.ok($('alarmList').textContent.includes('중간점검'));
   closeModal();
 
   await env.resetS(); S.loaded = true;

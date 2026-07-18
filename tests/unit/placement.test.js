@@ -130,26 +130,26 @@ test('owner 모드: 본인 + 3일 뒤 마감 → meplan', () => {
   assert.equal(placeOf(base({owner:'', f:{due:iso(60*72)}})), 'meplan');
 });
 
-test('owner 모드: 담당자 박 + 3일 뒤 마감 → othplan', () => {
+test('owner 모드: 세부 담당자 박 + 3일 뒤 점검 → othplan', () => {
   setPlaceMode('owner');
-  assert.equal(placeOf(base({owner:'박', f:{due:iso(60*72)}})), 'othplan');
+  assert.equal(placeOf(base({subs:[{title:'a', mid:iso(60*72), done:false, owner:'박'}]})), 'othplan');
 });
 
-test('owner 모드: 시각 정보 전혀 없음 → 오늘 외 (meplan / 타인은 othplan) — v2.5.1', () => {
+test('owner 모드: 시각 정보 전혀 없음 → meplan (아이템 owner는 판정 제외 — v2.5.2)', () => {
   setPlaceMode('owner');
   assert.equal(placeOf(base({})), 'meplan');
-  assert.equal(placeOf(base({owner:'이'})), 'othplan');
+  assert.equal(placeOf(base({owner:'이'})), 'meplan');           // it.owner는 레거시 보존값 — 배치에 영향 없음
   assert.equal(placeOf(base({f:{due:'garbage'}})), 'meplan');   // 손상 due도 시각 없음 취급
 });
 
-test('ownerOf: 가장 이른 미완료 세부 owner → 비면 아이템 owner → 빈 문자열', () => {
+test('ownerOf: 가장 이른 미완료 세부 owner → 없으면 빈 문자열 (아이템 owner 폴백 제거 — v2.5.2)', () => {
   const it = base({owner:'상위담당', subs:[
     {title:'늦은', mid:iso(120), done:false, owner:'늦은담당'},
     {title:'이른', mid:iso(30),  done:false, owner:'이른담당'},
     {title:'완료', mid:iso(-60), done:true,  owner:'완료담당'},   // done → 제외
   ]});
   assert.equal(ownerOf(it), '이른담당');
-  assert.equal(ownerOf(base({owner:'상위담당', subs:[{title:'무명', mid:iso(30), done:false, owner:''}]})), '상위담당');
+  assert.equal(ownerOf(base({owner:'상위담당', subs:[{title:'무명', mid:iso(30), done:false, owner:''}]})), '');   // it.owner 폴백 없음
   assert.equal(ownerOf(base({subs:[{title:'무시각', done:false, owner:'무시각담당'}]})), '');   // mid 없음 → 세부 제외
   assert.equal(ownerOf(base({})), '');
 });

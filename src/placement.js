@@ -8,10 +8,11 @@ export function placeMode(){ return MODE; }
 export function dayBounds(){ const t0=new Date();t0.setHours(0,0,0,0);const t1=new Date(t0);t1.setDate(t1.getDate()+1);return [t0,t1]; }
 /* 미완료 세부 점검시각들 (지난 것 포함) */
 export function subMids(it){ return (it.subs||[]).filter(s=>!s.done&&s.mid).map(s=>new Date(s.mid)).filter(d=>!isNaN(d)); }
-/* 담당자 판정 — 유효한 점검시각이 있는 가장 이른 미완료 세부의 owner → 없으면 아이템 owner → '' (=본인) */
+/* 담당자 판정 — 유효한 점검시각이 있는 가장 이른 미완료 세부의 owner → 없으면 '' (=본인).
+   담당자는 세부할일 전용(v2.5.2) — it.owner는 레거시 보존값(데이터 호환용, UI·판정 제외) */
 export function ownerOf(it){
   const pend=(it.subs||[]).filter(s=>!s.done&&s.mid&&!isNaN(new Date(s.mid))).sort((a,b)=>new Date(a.mid)-new Date(b.mid));
-  return (pend[0]&&pend[0].owner) || it.owner || '';
+  return (pend[0]&&pend[0].owner) || '';
 }
 /* 시간·담당자 모드 배치 — 기준 시각(미완료 세부 mid ∪ 유효 due 중 가장 이른 것)이
    내일 자정 전이면 오늘(지난 시각 포함). 시각이 전혀 없으면 '오늘 외'(plan) —
