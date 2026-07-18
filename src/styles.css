@@ -469,13 +469,15 @@
     /* 좁은 창(560px 컴팩트) 가로 넘침 방지 (v2.5.6) — 필드를 다음 줄로 내리거나 1열로 접는다 */
     .fm-grid{grid-template-columns:1fr}          /* 접수시각·마감시각 세로로 쌓기 */
     .ps-new-grid{grid-template-columns:1fr}      /* 새 프리셋 버튼이름·메모 1열로 */
-    /* 세부 할 일: 첫 줄 = 할 일 제목(+체크·삭제), 둘째 줄 = 담당·날짜·시각 한 줄 (v2.5.6).
-       order 0 그룹(⠿·체크·제목·×) 뒤에 flex-basis:100% 브레이크를 넣어 order 1 그룹(담당·시각)을
-       강제로 다음 줄로 내린다 — 폭이 남아도 항상 두 줄. */
+    /* 세부 할 일: 560px에선 3줄로 쌓는다 (v2.5.9) — 한 줄에 담당·날짜·시각을 욱여넣으면
+       Windows(WebView2)의 넓은 네이티브 날짜/시각 컨트롤에서 깨진다. 컨트롤 폭과 무관하게
+       안 깨지도록 각 요소를 flex-basis:100%로 강제 개행:
+         1줄 = 할 일 제목(+⠿·체크·삭제)  2줄 = 담당  3줄 = 날짜·시각.
+       세 줄 모두 margin-left:43px(⠿11+7+체크18+7)로 제목칸 시작선에 들여쓰기 통일.
+       flex-shrink 1(=`1 1 100%`)이라 43px 여백만큼 줄어 정확히 폭 안에 들어온다. */
     .fsub-row{flex-wrap:wrap;row-gap:5px}
-    .fsub-row::after{content:"";flex:0 0 100%;height:0;order:0}
-    .fsub-row .fsub-title{flex:1 1 auto;min-width:0}                 /* 첫 줄: 제목이 남는 폭 채움, × 는 그 뒤 */
-    .fsub-row input.sub-owner{order:1;flex:0 0 auto;width:84px;margin-left:43px}  /* 둘째 줄 시작 = 제목칸 시작선(⠿11+7+체크18+7=43) */
-    .fsub-row .fsub-dt{order:1;flex:1 1 auto;min-width:0}            /* 둘째 줄: 담당 옆에 날짜·시각 */
-    .fsub-row .fsub-dt .dt-date{flex:1 1 auto;min-width:0}           /* 남는 폭을 날짜칸이 흡수 */
+    .fsub-row .fsub-title{flex:1 1 auto;min-width:0}                          /* 1줄: 제목(남는 폭 채움) */
+    .fsub-row input.sub-owner{order:1;flex:1 1 100%;min-width:0;margin-left:43px}  /* 2줄: 담당 */
+    .fsub-row .fsub-dt{order:2;flex:1 1 100%;min-width:0;margin-left:43px}    /* 3줄: 날짜·시각 */
+    .fsub-row .fsub-dt .dt-date{flex:1 1 auto;min-width:0}                    /* 날짜칸이 남는 폭 흡수 */
   }
