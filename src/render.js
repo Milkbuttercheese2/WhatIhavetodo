@@ -55,7 +55,9 @@ function timePill(obj,key,iso,label){
 }
 function dueTagHtml(it){ const v=(it.f||{}).due; return v?timePill(it,'due',v,'마감:'):''; }
 export function cardHtml(it,place){
-  const memo=(it.memo||'').trim();
+  /* v2.5.12: 카드에는 메모 본문의 '첫 줄'만 가져온다(줄바꿈 이후는 버림). 그 첫 줄이 길면
+     .card-memo 가 최대 2줄까지 감싸 보여준다(2줄 클램프). */
+  const memo=(it.memo||'').split(/\r?\n/)[0].trim();
   const memoHtml = memo ? esc(memo) : '<span style="color:var(--ink-soft)">(메모 없음)</span>';
   /* v2.5.2 완료 카드: 메모 1줄 + 완료 시각 1줄만 — 세부·마감·주기·긴급도 없음 */
   if(place==='done'||it.done){
@@ -168,7 +170,7 @@ export function initRender(){
       if(idx>=0){
         const removed=S.items[idx];
         S.items.splice(idx,1); persist();
-        showToast('업무를 삭제했습니다',()=>{ S.items.splice(Math.min(idx,S.items.length),0,removed); persist(); });
+        showToast('업무 삭제함',()=>{ S.items.splice(Math.min(idx,S.items.length),0,removed); persist(); });
       } return; }
     const open=e.target.closest('[data-open]');
     if(open){ const it=S.items.find(x=>x.id==open.dataset.open); if(it)openForm(it); return; }
