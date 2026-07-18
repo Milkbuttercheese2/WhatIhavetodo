@@ -375,7 +375,6 @@ pub fn run() {
             commands::choose_data_dir,
             commands::restart_app,
             commands::focus_main_window,
-            commands::open_main_maximized,
             commands::alarm_attention,
             commands::save_text_file,
             commands::save_binary_file,

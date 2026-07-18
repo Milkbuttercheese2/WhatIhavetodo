@@ -192,18 +192,7 @@ pub fn focus_main_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
-/// 캡처 창에서 Ctrl 단독 입력(v2.5.3) — 메인 창을 최대화 상태로 전면에 띄운다.
-/// focus_main_window와 같되 maximize가 추가된 변형(전체화면 요청은 '최대화' 의미).
-#[tauri::command]
-pub fn open_main_maximized(app: AppHandle) -> Result<(), String> {
-    if let Some(win) = app.get_webview_window("main") {
-        win.unminimize().map_err(to_err)?;
-        win.show().map_err(to_err)?;
-        win.maximize().map_err(to_err)?;
-        win.set_focus().map_err(to_err)?;
-    }
-    Ok(())
-}
+/* (v2.5.5 제거) open_main_maximized — 캡처 창 'Ctrl 단독 → 최대화' 기능과 함께 삭제. */
 
 /// 작업표시줄 알람 표시(v2.5.3) — 알람이 울리면 on=true로 호출되어
 /// Windows 작업표시줄 아이콘을 깜빡이고(FlashWindow, 포커스를 받으면 OS가 멈춤)
