@@ -144,6 +144,35 @@ pub fn apply_pending_import(db_path: &Path, backups_dir: &Path) -> DbResult<bool
     Ok(true)
 }
 
+/// Extracts the embedded `YYYYMMDD_HHMMSS` timestamp (8 digits, '_', 6 digits)
+/// from a backup filename, ignoring the `wmhh_` / `wmhh_preimport_` /
+/// `wmhh_prerestore_` prefix. Sorting by THIS (not the raw filename) is what
+/// keeps chronological order across mixed prefixes: a raw lexical sort puts
+/// every `pre*` file after every regular one (the byte after `wmhh_` is `'p'`
+/// (0x70) for pre-files vs a digit `'2'` (0x32) for regular ones, and
+/// `'2' < 'p'`), which made recovery restore a stale `prerestore` snapshot and
+/// pruning delete recent regular backups (v2.5.11 fix). Files with no stamp
+/// fall back to the whole name so ordering stays deterministic.
+fn stamp_key(p: &Path) -> String {
+    let name = p
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default();
+    let bytes = name.as_bytes();
+    let mut start = 0usize;
+    while start + 15 <= bytes.len() {
+        let s = &bytes[start..start + 15];
+        if s[..8].iter().all(|b| b.is_ascii_digit())
+            && s[8] == b'_'
+            && s[9..15].iter().all(|b| b.is_ascii_digit())
+        {
+            return name[start..start + 15].to_string();
+        }
+        start += 1;
+    }
+    name
+}
+
 fn newest_backup(backups_dir: &Path) -> Option<PathBuf> {
     let mut entries: Vec<PathBuf> = fs::read_dir(backups_dir)
         .ok()?
@@ -151,7 +180,9 @@ fn newest_backup(backups_dir: &Path) -> Option<PathBuf> {
         .map(|e| e.path())
         .filter(|p| p.extension().map(|ext| ext == "sqlite").unwrap_or(false))
         .collect();
-    entries.sort(); // filenames are zero-padded timestamps, so lexical order == chronological
+    // Sort by embedded timestamp, NOT filename — prefixes (wmhh_/preimport_/prerestore_)
+    // break a raw lexical sort. See stamp_key.
+    entries.sort_by(|a, b| stamp_key(a).cmp(&stamp_key(b)));
     entries.pop()
 }
 
@@ -177,10 +208,11 @@ fn fs_stamp() -> String {
 }
 
 /// Filesystem-safe timestamp for naming backup files. Must use 'localtime'
-/// like `fs_stamp` does — `newest_backup`/`prune_backups` rely on lexical
-/// order == chronological order across ALL backup filenames, and mixing a
-/// UTC stamp with localtime ones breaks that (an older localtime file can
-/// sort after a newer UTC one, so recovery would restore stale data).
+/// like `fs_stamp` does — `newest_backup`/`prune_backups` sort by the embedded
+/// `YYYYMMDD_HHMMSS` stamp (see `stamp_key`), so all stamps must share one
+/// clock; mixing a UTC stamp with localtime ones would misorder them (an older
+/// localtime file could sort after a newer UTC one, so recovery would restore
+/// stale data).
 pub fn now_stamp(conn: &Connection) -> DbResult<String> {
     Ok(conn.query_row("SELECT strftime('%Y%m%d_%H%M%S','now','localtime')", [], |r| r.get(0))?)
 }
@@ -246,7 +278,8 @@ fn prune_backups(backups_dir: &Path, keep: usize) -> DbResult<()> {
         .map(|e| e.path())
         .filter(|p| p.extension().map(|ext| ext == "sqlite").unwrap_or(false))
         .collect();
-    entries.sort(); // zero-padded timestamps in names: lexical == chronological
+    // Sort by embedded timestamp, NOT filename (mixed prefixes break lexical order — see stamp_key).
+    entries.sort_by(|a, b| stamp_key(a).cmp(&stamp_key(b)));
 
     // First file per parsed YYYYMMDD date, for the newest 14 distinct dates.
     let date_of = |p: &Path| -> Option<String> {

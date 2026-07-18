@@ -11,7 +11,10 @@ import {persist} from './render.js';
 
 /* [JSON파일 백업] / Ctrl+S — 저장창을 띄워 폴더·이름 지정.
    한 번 지정하면 그 파일 핸들을 기억해 이후엔 같은 파일에 조용히 저장. */
-function backupPayload(){ return JSON.stringify({v:5,exported:new Date().toISOString(),fields:S.fields,presets:S.presets,idKinds:S.idKinds,settings:S.settings,recurDefs:S.recurDefs,items:S.items},null,1); }
+/* v2.5.11: 백업에 임시 상태 captureDraft 를 넣지 않는다 — 넣으면 복원 후 다음 실행에
+   초안이 유령 항목으로 등록돼(main.js 초안 회수), 백업 안 원본 항목과 중복될 수 있다. */
+function backupPayload(){ const settings={...S.settings, captureDraft:''};
+  return JSON.stringify({v:5,exported:new Date().toISOString(),fields:S.fields,presets:S.presets,idKinds:S.idKinds,settings,recurDefs:S.recurDefs,items:S.items},null,1); }
 function backupName(){ const n=new Date(); return `뭐하려했더라_백업_${n.getFullYear()}${String(n.getMonth()+1).padStart(2,'0')}${String(n.getDate()).padStart(2,'0')}.json`; }
 async function doBackup(){
   const text=backupPayload();

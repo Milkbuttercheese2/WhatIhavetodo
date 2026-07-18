@@ -21,7 +21,9 @@ pub fn decode(text: Option<&str>, key: &str) -> AlarmMap {
             "false" => AlarmState::Fired(false),
             other => match other.parse::<i64>() {
                 Ok(ms) => AlarmState::SnoozeUntil(ms),
-                Err(_) => AlarmState::Fired(true),
+                // v2.5.11: 손상/미지의 값은 '미확인(Fired(false))'으로 — Fired(true)로 두면
+                // 알람이 이미 확인된 것으로 취급돼 다시 울리지 않는다(안전방향은 '울리게').
+                Err(_) => AlarmState::Fired(false),
             },
         };
         map.insert(key.to_string(), state);

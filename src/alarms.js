@@ -57,7 +57,8 @@ export function initAlarms(){
   /* v2.5.3: 확인·미룸·알람 끔이 작업표시줄 배지도 함께 걷는다 (미룸은 재울림 때 다시 켜짐) */
   const attentionOff=()=>invoke('alarm_attention',{on:false}).catch(()=>{});
   $('alarmOk').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=true;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); attentionOff(); persist(); });
-  $('alarmSnooze').addEventListener('click',()=>{ firedNow.forEach(a=>{a.obj.al=a.obj.al||{};a.obj.al[a.key]=Date.now()+6e5;}); firedNow=[]; $('alarmBg').classList.remove('on'); stopTitleFlash(); attentionOff(); persist(); });
+  /* v2.5.11: '10분 뒤 다시'(스누즈) 기능 제거 — 알람창은 [확인]만. 옛 데이터의 snooze-until
+     값은 Rust가 계속 디코드하고 카드 점은 '울림'으로 접어 표시하므로 호환 문제 없음. */
   $('alarmToggle').addEventListener('click',()=>{
     S.settings.alarmOn=!S.settings.alarmOn; saveSettings(); renderAlarmToggle();
     if(!S.settings.alarmOn){ $('alarmBg').classList.remove('on'); firedNow=[]; stopTitleFlash(); attentionOff(); }

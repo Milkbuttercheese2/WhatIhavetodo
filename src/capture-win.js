@@ -21,6 +21,10 @@ const invoke=(cmd,args)=>window.__TAURI__.core.invoke(cmd,args);
 const $id=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+/* 메모 입력칸 세로 자동 확장 (rows=1 시작 → 내용 따라 늘어남, 상한 110px).
+   기본 textarea가 2줄이라 한 줄 메모가 위로 떠 보이던 문제를 없앤다. */
+function autoGrow(el){ if(!el)return; el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
+
 /* 초안을 메인 창으로 (메인이 settings.captureDraft에 저장) — 등록/삭제 포함 모든 변경 */
 function sendDraft(text){
   window.__TAURI__.event.emitTo('main','wmhh://capture-draft',{text:String(text??'')}).catch(()=>{});
@@ -53,6 +57,7 @@ async function runSearch(q){
 export function initCaptureWin(){
   const inp=$id('cap-inp');
   inp.addEventListener('input',()=>{
+    autoGrow(inp);
     clearTimeout(draftTimer);
     draftTimer=setTimeout(()=>sendDraft(inp.value),400);
   });
@@ -64,7 +69,7 @@ export function initCaptureWin(){
       e.preventDefault();
       const t=inp.value.trim(); if(!t){ hideWin(); return; }
       window.__TAURI__.event.emitTo('main','wmhh://capture-memo',{text:t}).catch(()=>{});
-      inp.value=''; clearTimeout(draftTimer); sendDraft('');   // 등록됐으니 초안 비움
+      inp.value=''; autoGrow(inp); clearTimeout(draftTimer); sendDraft('');   // 등록됐으니 초안 비움
       submitting=true; document.body.classList.add('flash');
       setTimeout(()=>{ document.body.classList.remove('flash'); submitting=false; hideWin(); },400);
     }
@@ -98,6 +103,7 @@ export function initCaptureWin(){
   });
 
   /* 포커스를 잃으면 숨김 — 초안은 유지 + 저장 플러시 */
+  autoGrow(inp);   // 초기 높이(빈 상태 1줄) 세팅 — 첫 열 때 글자 배열 정상화
   window.addEventListener('blur',()=>{ if(!submitting){ sendDraft(inp.value); hideWin(); } });
   window.addEventListener('focus',()=>{
     const t=mode==='search'?searchInp:inp;

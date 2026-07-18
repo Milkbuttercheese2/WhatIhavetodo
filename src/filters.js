@@ -7,14 +7,14 @@
    010-1234-5678로 저장돼도 01012345678 검색이 걸리게(v2.5.1).
    필드 누락 시 'undefined' 문자열이 haystack에 새지 않게 전부 ||'' 가드. */
 function contactText(it){ return (it.contacts||[]).map(c=>`${c.who||''} ${c.org||''} ${c.phone||''} ${String(c.phone||'').replace(/[^0-9]/g,'')}`).join(' '); }
-function idText(it){ return (it.ids||[]).map(x=>`${x.kind} ${x.val}`).join(' '); }
+function idText(it){ return (it.ids||[]).map(x=>`${x.kind||''} ${x.val||''}`).join(' '); }
 /* 링크된 파일은 파일명(경로 마지막 조각)으로 검색 — 폴더 경로까지 걸리면 잡음 */
 function fileText(it){ return (it.files||[]).map(p=>String(p).split(/[\\/]/).filter(Boolean).pop()||'').join(' '); }
 
 /* 카드 전 텍스트를 소문자 한 덩어리로 — includes 검색용.
    v2.5.0: 담당자(아이템·세부 owner) 포함 — 이름 검색으로 맡긴 업무를 찾는다 */
 export function haystack(it){
-  return ((it.memo||'')+' '+(it.owner||'')+' '+contactText(it)+' '+idText(it)+' '+(it.subs||[]).map(s=>`${s.title} ${s.owner||''}`).join(' ')+' '+fileText(it)).toLowerCase();
+  return ((it.memo||'')+' '+(it.owner||'')+' '+contactText(it)+' '+idText(it)+' '+(it.subs||[]).map(s=>`${s.title||''} ${s.owner||''}`).join(' ')+' '+fileText(it)).toLowerCase();
 }
 
 /* 이미 소문자로 정규화된 검색어(needle)와의 부분일치. 빈 검색어는 전체 통과. */

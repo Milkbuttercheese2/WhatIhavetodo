@@ -52,9 +52,11 @@ pub struct SubTask {
 }
 
 /// Time-of-day for a recurrence's spawned occurrences (its due time).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RecurTime {
+    #[serde(default)]
     pub hh: i64,
+    #[serde(default)]
     pub mm: i64,
 }
 
@@ -65,12 +67,17 @@ pub struct RecurTime {
 /// next occurrence to spawn.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RecurDef {
+    #[serde(default)]
     pub id: i64,
     #[serde(default)]
     pub memo: String,
+    // v2.5.11: freq/time 에 #[serde(default)] — 레거시/부분 백업의 recurDef 한 건이
+    // 필드 누락으로 전체 복원을 거부하던 문제 방지(정기함은 제거됐고 이 데이터는 보존용 pass-through).
+    #[serde(default)]
     pub freq: String,
     #[serde(default)]
     pub dow: Vec<i64>,
+    #[serde(default)]
     pub time: RecurTime,
     #[serde(default)]
     pub next: String,

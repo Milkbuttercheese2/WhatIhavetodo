@@ -205,15 +205,21 @@ pub fn alarm_attention(app: AppHandle, on: bool) -> Result<(), String> {
     };
     if on {
         let _ = win.request_user_attention(Some(tauri::UserAttentionType::Critical));
+        // set_overlay_icon 은 Windows 전용 API — 다른 OS에선 존재하지 않아 컴파일이 깨진다.
+        // cfg(windows) 로 게이트해 리눅스/맥에서도 crate가 빌드·테스트되게 한다(v2.5.11).
+        #[cfg(windows)]
         let _ = win.set_overlay_icon(Some(red_dot_icon()));
     } else {
         let _ = win.request_user_attention(None);
+        #[cfg(windows)]
         let _ = win.set_overlay_icon(None);
     }
     Ok(())
 }
 
 /// 32×32 빨간 원 오버레이(가장자리 1px 안티앨리어스) — PNG 자산 없이 런타임 생성.
+/// Windows 전용(set_overlay_icon 에서만 사용) — 다른 OS에선 미사용 경고를 피하려 게이트.
+#[cfg(windows)]
 fn red_dot_icon() -> tauri::image::Image<'static> {
     const S: u32 = 32;
     let (cx, cy, r) = (15.5f32, 15.5f32, 14.0f32);

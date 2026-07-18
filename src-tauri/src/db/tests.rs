@@ -421,6 +421,48 @@ fn open_with_recovery_restores_from_newest_backup_when_primary_is_corrupt() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
+// v2.5.11 회귀: 백업 폴더에 wmhh_ / wmhh_prerestore_ 접두사가 섞여 있을 때, 복구는
+// '파일명 문자순'이 아니라 '타임스탬프순'으로 가장 최신 백업을 골라야 한다. 예전엔 'p' > '2'
+// 라 오래된 prerestore 스냅샷을 최신으로 오인해 복원했다(데이터 유실).
+#[test]
+fn recovery_picks_newest_by_timestamp_across_mixed_prefixes() {
+    let dir = std::env::temp_dir().join(format!("wmhh_test_mixed_prefix_{}", std::process::id()));
+    let db_path = dir.join("data").join("test.sqlite");
+    let backups_dir = dir.join("backups");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&backups_dir).unwrap();
+
+    // 오래된(1월) prerestore 스냅샷 — 1건. 문자순 정렬이면 'p'가 커서 이게 '최신'으로 뽑힌다.
+    {
+        let one = sample_items()[..1].to_vec();
+        let mut old = super::open(&db_path).unwrap();
+        items::save_items(&mut old, &one).unwrap();
+        drop(old);
+        std::fs::copy(&db_path, backups_dir.join("wmhh_prerestore_20260101_120000.sqlite")).unwrap();
+    }
+    // 최신(7월) 정규 백업 — 2건. 타임스탬프상 가장 최근이므로 복구는 반드시 이걸 골라야 한다.
+    {
+        let two = sample_items();
+        let mut newer = super::open(&db_path).unwrap();
+        items::save_items(&mut newer, &two).unwrap();
+        drop(newer);
+        std::fs::copy(&db_path, backups_dir.join("wmhh_20260718_120000.sqlite")).unwrap();
+    }
+    // 원본 손상 → 복구 발동.
+    std::fs::write(&db_path, b"not actually a sqlite file, just garbage bytes").unwrap();
+
+    let (conn, note) = super::open_with_recovery(&db_path, &backups_dir).unwrap();
+    assert!(note.is_some(), "recovery should report what happened");
+    let restored = items::load_items(&conn).unwrap();
+    assert_eq!(
+        restored.len(),
+        2,
+        "타임스탬프상 최신 정규 백업(2건)으로 복원해야 함 — 접두사 문자순으로 오래된 prerestore(1건)를 고르면 안 됨"
+    );
+
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn open_with_recovery_quarantines_and_starts_fresh_when_no_backup_exists() {
     let dir = std::env::temp_dir().join(format!("wmhh_test_recovery_fresh_{}", std::process::id()));

@@ -27,7 +27,7 @@ export const STORE = {
   async saveAll(items){
     if(!S.loaded) return;                     // F1: 초기 로드 완료 전 저장 차단 (기존 데이터 소실 방지)
     this._pending=items;
-    if(this._saving) return;
+    if(this._saving) return this._saving;     // 진행 중 배치의 프로미스를 돌려줘 await가 실제로 완료를 기다리게
     this._saving=(async()=>{
       try{
         while(this._pending){
@@ -37,6 +37,7 @@ export const STORE = {
       }catch(e){ console.warn('저장 실패',e); }
       finally{ this._saving=null; }
     })();
+    return this._saving;                       // await STORE.saveAll(...) 가 실제 저장 완료까지 대기
   },
 
   saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>console.warn('필드 저장 실패',e)); },

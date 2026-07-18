@@ -90,19 +90,6 @@ test('확인 → al=true + 모달 닫힘 + persist + 작업표시줄 배지 off 
   assert.ok(env.invokeCalls.some(c=>c.cmd==='alarm_attention'&&c.args&&c.args.on===false));
 });
 
-test('미룸 → al = now+10분 (±5초)', async () => {
-  await env.resetS(); S.loaded = true;
-  S.items.push(mk({f:{due:iso(-5)}}));
-  checkAlarms();
-  const before = Date.now();
-  $('alarmSnooze').click();
-  await env.flush();
-  const st = S.items[0].al.due;
-  assert.equal(typeof st, 'number');
-  assert.ok(Math.abs(st - (before + 600000)) < 5000);
-  assert.equal($('alarmBg').classList.contains('on'), false);
-});
-
 test('토글: alarmOn 반전 + save_settings + 버튼 표시 + 열린 모달 닫기', async () => {
   await env.resetS(); S.loaded = true;
   S.settings.alarmOn = true;

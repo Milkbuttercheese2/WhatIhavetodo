@@ -32,7 +32,13 @@ export function initCapture(){
   /* 캡처 창에서 온 메모 — captureMemo 가 F1 게이트·pending-merge 를 그대로 태운다 */
   window.__TAURI__.event.listen('wmhh://capture-memo', ev=>{
     const t=(ev.payload||{}).text;
-    if(t) captureMemo(t);
+    if(t){
+      captureMemo(t);
+      /* v2.5.11: 등록과 동시에 초안을 '즉시'(디바운스 없이) 비워 저장한다.
+         기존엔 별도 300ms 디바운스 capture-draft('') 에만 의존해, 등록 직후 ~300ms 안에
+         앱이 꺼지면 다음 실행의 초안 회수가 같은 메모를 한 번 더 등록(중복)하던 문제. */
+      S.settings.captureDraft=''; window.SETTINGS=S.settings; STORE.saveSettings(S.settings);
+    }
   });
 
   /* 캡처 창 초안 흘려받기 (입력 시마다·숨김 직전 플러시) */
