@@ -67,7 +67,9 @@ export function openForm(pre){
 /* 팝업 닫기 — editingId 리셋까지 한 곳에서 (ESC·취소·저장 공용) */
 export function closeForm(){ $('formPanel').classList.remove('on'); editingId=null; }
 
-/* 관련인 행 */
+/* 관련인 행 — 연락처는 입력한 그대로 저장(자동 하이픈 없음: 지역번호·내선 등 파싱이 애매).
+   대신 검색은 filters.js가 숫자만 버전도 haystack에 넣어 010-1234-5678 저장분이
+   01012345678 검색으로도 걸린다(v2.5.1) */
 function addContactRow(c){
   c=c||{who:'',org:'',phone:''};
   const row=document.createElement('div'); row.className='contact-row';
@@ -87,7 +89,8 @@ function addFormIdRow(kind,val){
   const opts=idKindOptions();
   const isEtc = !!kind && !S.idKinds.includes(kind);
   const sel = opts.map(k=>{ const s=(k===kind||(k==='기타'&&isEtc))?' selected':''; return `<option value="${escAttr(k)}"${s}>${esc(k)}</option>`; }).join('');
-  row.innerHTML=`<select class="fid-kind">${sel}</select>`
+  row.innerHTML=`<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>`
+    + `<select class="fid-kind">${sel}</select>`
     + `<input type="text" class="fid-etc" placeholder="명칭 직접입력" value="${isEtc?escAttr(kind):''}" style="${isEtc?'':'display:none'}">`
     + `<input type="text" class="fid-val" placeholder="번호 입력" value="${escAttr(val||'')}">`
     + `<button class="rm" title="삭제">×</button>`;
@@ -197,6 +200,7 @@ export function initForm(){
   });
   $('fm-subadd').addEventListener('click',()=>addFormSubRow('','',true));
   enableDragReorder($('fm-subs'), '.fsub-row', '.drag-handle');
+  enableDragReorder($('fm-ids'), '.fid-row', '.drag-handle');   // v2.5.1 식별번호도 드래그 정렬
   $('fm-fileadd').addEventListener('click', async ()=>{
     let p=null;
     try{ p=await invoke('pick_file_path'); }

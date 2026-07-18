@@ -169,6 +169,32 @@ test('세부 제목에서 Enter → 마지막 행이면 새 행 추가', async (
   closeForm();
 });
 
+test('연락처는 입력 그대로 저장 — 자동 하이픈 변환 없음 (v2.5.1)', async () => {
+  await env.resetS(); S.loaded = true;
+  openForm({});
+  $('fm-memo').value = '전화 입력 건';
+  const ph = $('fm-contacts').querySelector('.c-phone');
+  ph.value = '01099998888';
+  $('fm-save').click();
+  await env.flush();
+  assert.equal(S.items[0].contacts[0].phone, '01099998888');   // 억지 변환하지 않는다
+});
+
+test('식별번호 행에 드래그 핸들 존재 — 순서 변경 가능 (v2.5.1)', async () => {
+  await env.resetS(); S.loaded = true;
+  const it = fullItem(); S.items.push(it);
+  openForm(it);
+  const idRows = $('fm-ids').querySelectorAll('.fid-row');
+  assert.equal(idRows.length, 2);
+  for(const r of idRows) assert.ok(r.querySelector('.drag-handle'));
+  // DOM 순서를 뒤집으면 collectForm(저장)도 그 순서를 따른다
+  $('fm-ids').appendChild(idRows[0]);
+  $('fm-save').click();
+  await env.flush();
+  assert.deepEqual(S.items[0].ids.map(x=>x.kind), ['자체번호','SR번호']);
+  assert.deepEqual(S.items[0].ids.map(x=>x.val), ['X-9','SR-1']);
+});
+
 test('closeForm 후에는 편집 대상이 리셋됨 — 새 저장은 새 아이템', async () => {
   await env.resetS(); S.loaded = true;
   const it = fullItem(); S.items.push(it);

@@ -14,14 +14,15 @@ export function ownerOf(it){
   return (pend[0]&&pend[0].owner) || it.owner || '';
 }
 /* 시간·담당자 모드 배치 — 기준 시각(미완료 세부 mid ∪ 유효 due 중 가장 이른 것)이
-   내일 자정 전이면 오늘(지난 시각 포함), 없으면 오늘로 간주. 본인/타인은 ownerOf. */
+   내일 자정 전이면 오늘(지난 시각 포함). 시각이 전혀 없으면 '오늘 외'(plan) —
+   시각을 지정하지 않은 업무가 '진행·오늘'로 새지 않게(v2.5.1). 본인/타인은 ownerOf. */
 function placeOwner(it){
   const f=it.f||{}, [,t1]=dayBounds();
   const ts=subMids(it).map(d=>d.getTime());
   const due=f.due?new Date(f.due):null;
   if(due&&!isNaN(due)) ts.push(due.getTime());
   const ref=ts.length?Math.min(...ts):null;
-  const isToday = ref==null || ref<t1.getTime();
+  const isToday = ref!=null && ref<t1.getTime();
   return (ownerOf(it)?'oth':'me')+(isToday?'today':'plan');
 }
 export function placeOf(it){
@@ -52,4 +53,4 @@ export function placeOf(it){
   return 'planned';
 }
 export const PLACE_NAME={inbox:'분류 대기',today:'오늘 처리',doing:'진행 중',planned:'예정 · 대기',done:'완료',
-  metoday:'본인 진행 · 오늘',othtoday:'타인 진행 · 오늘',meplan:'본인 예정',othplan:'타인 예정'};
+  metoday:'본인 진행 · 오늘',othtoday:'타인 진행 · 오늘',meplan:'본인 진행 · 오늘 외',othplan:'타인 진행 · 오늘 외'};
