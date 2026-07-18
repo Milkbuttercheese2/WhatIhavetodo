@@ -45,7 +45,7 @@ function earliestSub(it){
   const future=pend.filter(s=>new Date(s.mid).getTime()>now).sort((a,b)=>new Date(a.mid)-new Date(b.mid));
   return future[0]||null;
 }
-/* 카드 겉면: 메모(2줄) · 가장 임박한 세부 할일 · 마감시각 만.
+/* 카드 겉면: 메모(1줄) · 가장 임박한 세부 할일 · 시각 · 진행/담당 만.
    관련인/식별번호는 카드에서 감추고 팝업에서만 표시. */
 function dueTagHtml(it){
   const v=(it.f||{}).due; if(!v) return '';
@@ -81,8 +81,8 @@ export function cardHtml(it,place){
   const metaBits = `${recurTag}${progress}${ownerTag}`;
   const metaLine = metaBits?`<div class="card-meta">${metaBits}</div>`:'';
   // 파일 링크는 카드 앞면에 표시하지 않는다. 파일은 양식 팝업에서 다룬다(form.js addFormFileRow).
-  // 카드 구성(v2.5.1, 최대 4줄): 메모 2줄 → 세부 1줄(있다면) → 시각 1줄(#점검 또는 #마감)
-  //  → 진행상황·담당 1줄. 빈 줄은 아예 그리지 않는다.
+  // 카드 구성(v2.5.1, 최대 4줄·각 1줄): 메모 → 세부(있다면) → 시각(#점검 또는 #마감)
+  //  → 진행상황·담당. 빈 줄은 아예 그리지 않는다.
   return `<div class="card p-${place}${it.done?' done':''}" data-open="${it.id}">
     <div class="card-top">
       <div class="chk ${it.done?'on':''}" data-id="${it.id}"></div>

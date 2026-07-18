@@ -367,7 +367,8 @@
   .dt-dow{font-size:11px;color:var(--ink-soft);min-width:22px;flex:none}
   /* v5 카드 요약 */
   .card{cursor:pointer}
-  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  /* v2.5.1: 메모도 최대 1줄 — 카드 전체가 줄당 1행(메모·세부·시각·진행/담당) */
+  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .card.done .card-memo{text-decoration:line-through;color:var(--done)}
   /* v2.5.1: 세부 제목 글자는 메모와 동일 크기(14px), 점검 시각 칩은 메타 줄의 #점검 태그로 이동 */
   .card-subline{font-size:14px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
