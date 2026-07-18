@@ -35,7 +35,8 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{font-family:'Pretendard','Malgun Gothic','맑은 고딕',system-ui,-apple-system,sans-serif;
-       font-size:14px;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5}
+       font-size:14px;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.5;
+       overflow-x:clip}   /* v2.5.4: 가로 스크롤 제거(세로 sticky 헤더에 영향 없는 clip 사용) */
   /* 유리 스크롤바 (WebView2 = webkit 계열만으로 충분) */
   /* v2.5.3: 스크롤바는 안 쓸 때 숨김 — 기본 투명, 스크롤 영역에 마우스를 올리면 유리 썸 표시 */
   ::-webkit-scrollbar{width:11px;height:11px}
@@ -341,9 +342,13 @@
 
   .alarm-bg{position:fixed;inset:0;z-index:120;background:rgba(20,27,36,.5);display:none;align-items:center;justify-content:center;padding:20px}
   .alarm-bg.on{display:flex}
-  .alarm{background:var(--card);border-top:5px solid var(--red);border-radius:9px;max-width:500px;width:100%;padding:18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  /* v2.5.4: 알림창 왼쪽면을 메인 카드와 동일한 '짧은 색 세그먼트'로 통일(단계색=빨강 유지).
+     기존 상단 빨간 바·항목 풀-높이 좌측선 → 카드처럼 좌측 상단 짧은 세그먼트(::before). */
+  .alarm{background:var(--card);border:1px solid var(--line);border-radius:13px;max-width:500px;width:100%;padding:18px 20px 18px 22px;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .alarm::before{content:"";position:absolute;left:0;top:20px;width:4px;height:22px;border-radius:0 4px 4px 0;background:var(--red)}
   .alarm h3{font-size:16px;font-weight:700;color:var(--red);margin-bottom:12px}
-  .alarm .a-item{font-size:14px;padding:8px 10px;border:1px solid var(--line-soft);border-left:3px solid var(--red);border-radius:6px;margin-bottom:6px;background:#fdfafa}
+  .alarm .a-item{position:relative;overflow:hidden;font-size:14px;padding:8px 10px 8px 15px;border:1px solid var(--line);border-radius:13px;margin-bottom:6px;background:#fff}
+  .alarm .a-item::before{content:"";position:absolute;left:0;top:9px;width:4px;height:18px;border-radius:0 4px 4px 0;background:var(--red)}
   .alarm .a-item b{color:var(--red);font-size:11px;font-family:var(--font-mono);margin-right:6px}
   .alarm .a-item .mono{font-size:11px;color:var(--ink-soft);margin-left:6px}
   .a-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
@@ -360,7 +365,8 @@
     .fm-grid{grid-template-columns:1fr 1fr}
   }
   /* ---- v5 추가 ---- */
-  textarea#inp{flex:1;min-width:0;resize:vertical;height:210px;font-family:inherit;font-size:14px;line-height:1.5;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;background:#fcfcfb;color:var(--ink)}
+  /* v2.5.4: height→min-height (JS auto-grow가 내용에 맞춰 늘림, 최소는 210px 유지) · 배경 순백(#fff)으로 입력밴드 주변 회색 톤 제거 */
+  textarea#inp{flex:1;min-width:0;resize:vertical;min-height:210px;font-family:inherit;font-size:14px;line-height:1.5;padding:11px 14px;border:1.5px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
   textarea#inp::placeholder{color:var(--ink-soft);opacity:.7}
   textarea#inp:focus{outline:none;border-color:var(--focus);background:#fff;box-shadow:0 0 0 3px rgba(26,95,110,.14)}
   .cap-btns{display:flex;flex-direction:column;gap:6px;flex:none;width:132px}
@@ -387,11 +393,14 @@
   .dt-dow{font-size:11px;color:var(--ink-soft);min-width:22px;flex:none}
   /* v5 카드 요약 */
   .card{cursor:pointer}
-  /* v2.5.2: 메모도 최대 1줄 — 카드 전체가 줄당 1행(메모·세부·시각) */
-  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+  /* v2.5.4: 메모 최대 2줄 (세부 1줄·시각 1줄과 함께 카드 최대 4줄) */
+  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .card.done .card-memo{text-decoration:line-through;color:var(--done)}
   /* v2.5.1: 세부 제목 글자는 메모와 동일 크기(14px), 점검 시각 칩은 메타 줄의 점검: 태그로 이동 */
-  .card-subline{font-size:14px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card-subline{font-size:14px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* v2.5.4: 세부(▸)·시각(알람점) 두 줄의 들여쓰기 통일 — 앞 마커를 알람점과 같은 9px 폭 슬롯으로.
+     세부: 9px 마커 + gap5 = 14px, 시각: 알람점 9px + margin1 + meta gap4 = 14px → 뒤 텍스트가 정렬된다. */
+  .card-subline .sub-mark{display:inline-block;width:9px;flex:none;text-align:center;color:var(--slate)}
   /* 알람 점 — 울림 여부 3단계(v2.4.4): ○ 대기 / ● 울림(빨강·깜빡임) / ● 확인함(초록) */
   .adot{display:inline-block;width:9px;height:9px;border-radius:50%;flex:none;vertical-align:middle;margin-right:1px}
   .adot.ad-wait{border:1.5px solid var(--slate);background:transparent}
@@ -422,21 +431,22 @@
   .file-reveal{cursor:pointer;font-size:11.5px;opacity:.55;padding:1px 2px}
   .file-reveal:hover{opacity:1}
 
-  /* ===== 반응형(v2.5.2) — 각 줄 1행 말줄임 원칙은 그대로, 컬럼 수만 줄인다.
-     파일 맨 끝 배치: 동일 특이성 기본 규칙(.cap-btns 등)보다 뒤에 와야 미디어 규칙이 이긴다 */
+  /* ===== 반응형(v2.5.4 통일) — 중간 크기(≤1080)부터 작은 크기까지 전부 '560px식 단일 열'로 통일.
+     콘텐츠를 560px 폭 단일 열로 가운데 정렬해, 어떤 중간 폭에서도 560px 창과 똑같은 모습이 되게 한다.
+     (창 최소 폭은 560px으로 고정 — 이보다 좁아지지 않는다. 2열 중간 단계는 폐지.) ===== */
   @media(max-width:1080px){
-    main{grid-template-columns:repeat(2,1fr)}
-    #view-board5{grid-template-columns:repeat(2,1fr)}
-  }
-  @media(max-width:900px){
-    /* 세로 배치에서 입력칸이 절반 폭으로 쪼그라들지 않게 stretch + 폭 100%.
-       높이도 낮춰 좁은 창에서 입력부가 화면을 다 먹지 않게. */
+    /* 모든 주요 컨테이너를 560px 폭으로 고정·가운데 정렬 (헤더/입력/검색줄/보드/완료/캘린더) */
+    .header-inner,.cap-box,.strip,main,#view-board5,#view-done,#view-cal{max-width:560px}
+    /* 보드는 단일 열 */
+    main,#view-board5{grid-template-columns:1fr}
+    /* 헤더 컴팩트: 시계는 오른쪽 끝, 부제 숨김, 브랜드 줄바꿈 허용 */
+    .head-right{margin-left:auto}
+    .brand{flex-wrap:wrap;min-width:0}
+    .brand .sub{display:none}
+    .mode-pill{margin-left:0;margin-top:2px}
+    /* 입력부 세로 스택(입력칸 위 · 버튼 아래 한 줄) */
     .cap-row{flex-direction:column;align-items:stretch}
-    textarea#inp{width:100%;height:110px}
+    textarea#inp{width:100%;min-height:110px}
     .cap-btns{flex-direction:row;width:100%}
     .cap-btns .btn{flex:1;height:38px}
-  }
-  @media(max-width:620px){
-    main{grid-template-columns:1fr}
-    #view-board5{grid-template-columns:1fr}
   }

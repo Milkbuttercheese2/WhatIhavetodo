@@ -81,9 +81,9 @@ export function cardHtml(it,place){
   const dueT=(it.f||{}).due?new Date(it.f.due).getTime():NaN;
   const esT=es&&es.mid?new Date(es.mid).getTime():NaN;
   const subFirst = !isNaN(esT) && (isNaN(dueT) || esT<dueT);
-  const subLine = es?`<div class="card-subline">▸ <span class="sub-title">${esc(es.title)}</span></div>`:'';
+  const subLine = es?`<div class="card-subline"><span class="sub-mark">▸</span><span class="sub-title">${esc(es.title)}</span></div>`:'';
   const timeTag = subFirst ? timePill(es,'mid',es.mid,'점검:') : dueTagHtml(it);
-  /* v2.5.2 주기 배지는 시각 줄에 인라인(시각 없으면 단독 줄) — 4번째 메타 줄(#세부·#담당) 폐지 */
+  /* v2.5.2 주기 배지는 시각 줄에 인라인(시각 없으면 단독 줄). 시각 줄은 세부 줄과 같은 시작선(들여쓰기 통일). */
   const timeLine = (timeTag||recurTag)?`<div class="card-meta">${timeTag}${recurTag}</div>`:'';
   // 파일 링크는 카드 앞면에 표시하지 않는다. 파일은 양식 팝업에서 다룬다(form.js addFormFileRow).
   // 카드 구성(v2.5.2, 최대 3줄·각 1줄 말줄임): 메모 → 세부(있다면) → 시각(점검 또는 마감)+주기.

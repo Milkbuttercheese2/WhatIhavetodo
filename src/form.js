@@ -18,7 +18,16 @@ export function captureMemo(t){
 export function toInbox(){
   const t=$('inp').value.trim(); if(!t){$('inp').focus();return;}
   captureMemo(t);
-  $('inp').value=''; $('inp').focus();
+  $('inp').value=''; $('inp').style.height=''; $('inp').focus();   // 등록 후 높이 초기화(min-height로 복귀)
+}
+/* v2.5.4: 바로 입력창 자동 세로 확장 — 내용에 맞춰 늘어난다(최소 CSS min-height, 최대 60vh 뒤 스크롤).
+   WebView2에서 드래그 리사이즈가 잘 안 잡히던 문제를 근본 해결(타이핑만으로 늘어남). resize 핸들은 그대로 둠. */
+export function autoGrowInp(){
+  const el=$('inp'); if(!el) return;
+  el.style.height='auto';
+  const min=parseFloat(getComputedStyle(el).minHeight)||0;
+  const max=Math.max(min, Math.round(window.innerHeight*0.6));
+  el.style.height=Math.min(Math.max(el.scrollHeight, min), max)+'px';
 }
 
 /* (2) 양식 패널 */
@@ -204,6 +213,7 @@ export function initForm(){
   document.body.appendChild($('formPanel'));
   $('toInbox').addEventListener('click', toInbox);
   $('inp').addEventListener('keydown',e=>{ if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();toInbox();} });
+  $('inp').addEventListener('input', autoGrowInp);   // v2.5.4: 입력 시 자동 세로 확장
   $('fm-contactadd').addEventListener('click',()=>addContactRow());
   $('fm-idadd').addEventListener('click',()=>{
     addFormIdRow(S.idKinds[0]||'기타','');
@@ -218,7 +228,7 @@ export function initForm(){
     catch(e){ alert('파일 선택 실패: '+e); return; }
     if(p) addFormFileRow(p);
   });
-  $('blankForm').addEventListener('click',()=>{ const t=$('inp').value.trim(); openForm(t?{memo:t}:{}); if(t)$('inp').value=''; });
+  $('blankForm').addEventListener('click',()=>{ const t=$('inp').value.trim(); openForm(t?{memo:t}:{}); if(t){$('inp').value='';$('inp').style.height='';} });
   $('fm-cancel').addEventListener('click',closeForm);
   $('formPanel').addEventListener('input',e=>{ if(e.target.closest('#fm-grid,#fm-subs')) updatePlacePreview(); });
   $('fm-save').addEventListener('click',()=>{
