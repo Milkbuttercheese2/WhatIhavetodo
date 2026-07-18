@@ -431,33 +431,22 @@
   .file-reveal{cursor:pointer;font-size:11.5px;opacity:.55;padding:1px 2px}
   .file-reveal:hover{opacity:1}
 
-  /* ===== 반응형(v2.5.2) — 각 줄 1행 말줄임 원칙은 그대로, 컬럼 수만 줄인다.
-     파일 맨 끝 배치: 동일 특이성 기본 규칙(.cap-btns 등)보다 뒤에 와야 미디어 규칙이 이긴다 */
+  /* ===== 반응형(v2.5.4 통일) — 중간 크기(≤1080)부터 작은 크기까지 전부 '560px식 단일 열'로 통일.
+     콘텐츠를 560px 폭 단일 열로 가운데 정렬해, 어떤 중간 폭에서도 560px 창과 똑같은 모습이 되게 한다.
+     (창 최소 폭은 560px으로 고정 — 이보다 좁아지지 않는다. 2열 중간 단계는 폐지.) ===== */
   @media(max-width:1080px){
-    main{grid-template-columns:repeat(2,1fr)}
-    #view-board5{grid-template-columns:repeat(2,1fr)}
-  }
-  @media(max-width:900px){
-    /* 세로 배치에서 입력칸이 절반 폭으로 쪼그라들지 않게 stretch + 폭 100%.
-       높이도 낮춰 좁은 창에서 입력부가 화면을 다 먹지 않게. */
+    /* 모든 주요 컨테이너를 560px 폭으로 고정·가운데 정렬 (헤더/입력/검색줄/보드/완료/캘린더) */
+    .header-inner,.cap-box,.strip,main,#view-board5,#view-done,#view-cal{max-width:560px}
+    /* 보드는 단일 열 */
+    main,#view-board5{grid-template-columns:1fr}
+    /* 헤더 컴팩트: 시계는 오른쪽 끝, 부제 숨김, 브랜드 줄바꿈 허용 */
+    .head-right{margin-left:auto}
+    .brand{flex-wrap:wrap;min-width:0}
+    .brand .sub{display:none}
+    .mode-pill{margin-left:0;margin-top:2px}
+    /* 입력부 세로 스택(입력칸 위 · 버튼 아래 한 줄) */
     .cap-row{flex-direction:column;align-items:stretch}
     textarea#inp{width:100%;min-height:110px}
     .cap-btns{flex-direction:row;width:100%}
     .cap-btns .btn{flex:1;height:38px}
-  }
-  /* v2.5.4: 헤더가 접히기 시작하는 폭(≤950)부터 시계·도구 묶음을 항상 오른쪽 끝으로.
-     넓은 창(>950)은 손대지 않아 기존 배치 유지 — head-right가 자기 줄로 내려가도 우측 정렬. */
-  @media(max-width:950px){
-    .head-right{margin-left:auto}
-  }
-  /* v2.5.4: 좁은 창 헤더 — 부제(설명글)를 숨기고 브랜드를 줄바꿈 허용해
-     모드토글(시간·담당자)이 화면 밖으로 튀어나가지 않게(가로 스크롤 방지). */
-  @media(max-width:820px){
-    .brand{flex-wrap:wrap;min-width:0}
-    .brand .sub{display:none}
-    .mode-pill{margin-left:0;margin-top:2px}
-  }
-  @media(max-width:620px){
-    main{grid-template-columns:1fr}
-    #view-board5{grid-template-columns:1fr}
   }
