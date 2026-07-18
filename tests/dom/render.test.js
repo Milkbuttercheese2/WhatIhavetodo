@@ -152,7 +152,7 @@ test('삭제 클릭 → splice + 실행취소 토스트 + save_all', async () =>
   $('col-inbox').querySelector('.del[data-del]').click();
   await env.flush();
   assert.equal(S.items.length, 0);
-  assert.equal($('toast-msg').textContent, '업무를 삭제했습니다');
+  assert.equal($('toast-msg').textContent, '업무 삭제함');
   assert.equal($('toast-undo').style.display, 'inline-block');
   assert.ok(env.invokeCalls.some(c=>c.cmd==='save_all'));
 });

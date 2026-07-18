@@ -370,7 +370,7 @@
   footer{text-align:center;font-size:11px;color:var(--ink-soft);padding:12px;border-top:1px solid var(--line);background:var(--card)}
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);z-index:200;display:flex;align-items:center;gap:14px;background:var(--ink);color:#fff;font-size:12.5px;padding:11px 16px;border-radius:9px;box-shadow:0 8px 30px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-  .toast button{font-family:inherit;font-size:12.5px;font-weight:600;background:transparent;border:1px solid #55606d;color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer}
+  .toast button{font-family:inherit;font-size:12.5px;font-weight:600;background:transparent;border:1px solid #55606d;color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;word-break:keep-all}   /* v2.5.12: 좁을 때 '실행 취소'가 음절 중간(실행취/소)이 아니라 어절 경계(실행/취소)로 줄바꿈 */
   .toast button:hover{background:#2a333d}
   footer .mono{color:var(--focus)}
   footer a{color:var(--focus)}
@@ -406,8 +406,9 @@
   .dt-dow{font-size:11px;color:var(--ink-soft);min-width:22px;flex:none}
   /* v5 카드 요약 */
   .card{cursor:pointer}
-  /* v2.5.4: 메모 최대 2줄 (세부 1줄·시각 1줄과 함께 카드 최대 4줄) */
-  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word;white-space:pre-line}   /* v2.5.11: 메모의 사용자 줄바꿈(\n) 보존 — pre-line은 줄바꿈만 살리고 연속 공백은 합침. 2줄 클램프 유지 */
+  /* v2.5.12: 카드 메모는 본문 '첫 줄'만 가져오되(render.js), 그 줄이 길면 최대 2줄까지 감싼다
+     (세부 1줄·시각 1줄과 함께 카드 최대 4줄). 첫 줄만 쓰므로 줄바꿈 보존(pre-line)은 불필요. */
+  .card-memo{font-size:14px;font-weight:500;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
   .card.done .card-memo{text-decoration:line-through;color:var(--done)}
   /* v2.5.1: 세부 제목 글자는 메모와 동일 크기(14px), 점검 시각 칩은 메타 줄의 점검: 태그로 이동 */
   .card-subline{font-size:14px;color:var(--slate);margin-top:5px;display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

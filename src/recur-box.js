@@ -160,7 +160,7 @@ export function initRecurBox(){
       if(idx>=0){ const n=childCount(id);
         if(!confirm(`이 주기 업무를 삭제할까요?\n이미 생성된 업무 ${n}건은 그대로 남습니다.`)) return;
         const removed=S.items[idx]; S.items.splice(idx,1); persist(); render(); renderList();
-        showToast('주기 업무를 삭제했습니다',()=>{ S.items.splice(Math.min(idx,S.items.length),0,removed); persist(); render(); renderList(); });
+        showToast('주기 업무 삭제함',()=>{ S.items.splice(Math.min(idx,S.items.length),0,removed); persist(); render(); renderList(); });
       } return; }
   });
 }
