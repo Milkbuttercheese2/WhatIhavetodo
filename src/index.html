@@ -70,10 +70,11 @@
         <textarea id="fm-memo" class="fm-memo" placeholder="업무 내용을 자유롭게 적으세요"></textarea>
       </div>
 
-      <div class="fm-contacts">
-        <div class="t-head">관련소속 · 관련인 · 연락처 (여러 명 추가 가능)</div>
-        <div id="fm-contacts"></div>
-        <button class="btn fsub-add" id="fm-contactadd">＋ 관련인</button>
+      <!-- v2.5.3 양식 순서: 메모 → 세부 할 일 → 접수·마감 → 식별번호 → 관련소속·관련인·연락처 → 파일 링크 -->
+      <div class="fm-subs">
+        <div class="t-head">세부 할 일 (항목별 중간점검시각 지정 가능 · Enter로 다음 줄 추가)</div>
+        <div id="fm-subs"></div>
+        <button class="btn fsub-add" id="fm-subadd">＋ 세부 항목</button>
       </div>
 
       <div class="fm-grid" id="fm-grid"></div>
@@ -84,10 +85,10 @@
         <button class="btn fsub-add" id="fm-idadd">＋ 식별번호</button>
       </div>
 
-      <div class="fm-subs">
-        <div class="t-head">세부 할 일 (항목별 중간점검시각 지정 가능 · Enter로 다음 줄 추가)</div>
-        <div id="fm-subs"></div>
-        <button class="btn fsub-add" id="fm-subadd">＋ 세부 항목</button>
+      <div class="fm-contacts">
+        <div class="t-head">관련소속 · 관련인 · 연락처 (여러 명 추가 가능)</div>
+        <div id="fm-contacts"></div>
+        <button class="btn fsub-add" id="fm-contactadd">＋ 관련인</button>
       </div>
 
       <div class="fm-files-wrap">
@@ -245,6 +246,14 @@
         <span id="rc-dow"></span>
         <span id="rc-monthly" style="display:none">매월 <input type="number" id="rc-mday" min="1" max="31" value="1"> 일</span>
         <span class="rc-time-wrap">시각 <input type="text" class="dt-time" id="rc-time" maxlength="5" value="09:00" placeholder="09:00 또는 0930" title="콜론 없이 0930, 930 처럼 입력해도 됩니다"></span>
+        <span class="rc-spawn-wrap">보드 생성
+          <select id="rc-spawn" title="자식 업무 카드가 보드에 나타나는 시점">
+            <option value="week">주초(월요일) 한 주치 일괄</option>
+            <option value="eve">하루 전</option>
+            <option value="day">당일</option>
+          </select>
+          <input type="text" class="dt-time" id="rc-spawn-time" maxlength="5" value="06:00" placeholder="06:00" title="카드가 만들어지는 기준 시각 — 콜론 없이 0600처럼 입력해도 됩니다">
+        </span>
       </div>
       <div class="m-actions">
         <button class="btn btn-cancel" id="rc-cancel-edit" style="display:none">수정 취소</button>

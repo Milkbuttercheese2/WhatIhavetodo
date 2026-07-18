@@ -2,11 +2,15 @@
    주기 업무(반복) — 부모-자식 생성기 (정규화 모델).
    - 부모(주기 정의): it.recur 가 있는 아이템. 보드 밖에 살며 공통정보(메모)만
      최소로 담는다. recur 모양(items.recur TEXT에 JSON으로 저장):
-       {type:'dow',     dow:[0..6], time:'HH:MM', next?:ISO, paused?:bool}  — 매주 지정 요일
-       {type:'every',   days:N,     time:'HH:MM', next?:ISO, paused?:bool}  — N일마다
-       {type:'monthly', day:1..31,  time:'HH:MM', next?:ISO, paused?:bool}  — 매월 지정일
+       {type:'dow',     dow:[0..6], time:'HH:MM', next?:ISO, paused?:bool, spawn?:'week'|'eve'|'day'}
+       {type:'every',   days:N,     time:'HH:MM', next?:ISO, paused?:bool, spawn?:…}  — N일마다(구 데이터)
+       {type:'monthly', day:1..31,  time:'HH:MM', next?:ISO, paused?:bool, spawn?:…}  — 매월 지정일
        (매월: 그 달에 해당 일이 없으면 말일로 맞춤 — 예: 31일 → 2월은 28/29일)
      next = 다음에 생성할 회차의 ISO(생성기가 전진시킴), paused = 일시정지.
+     spawn = 자식 카드 생성 시점(v2.5.3, 부모별 선택): 'week'=매주 월요일에 그 주치
+     일괄(기존 동작·기본값 — 값이 없는 옛 데이터 포함), 'eve'=회차 하루 전, 'day'=회차 당일.
+     spawnAt = 생성 기준 시각 'HH:MM'(v2.5.3, 기본 '06:00' — 옛 데이터·무효값 포함):
+     그 날 이 시각을 지나야 해당 생성이 일어난다.
    - 자식(생성된 업무): it.recurId = 부모.id 인 일반 아이템. 마감(f.due)=회차 시각.
      부모 → 자식: items.filter(x=>x.recurId===부모.id). 자식 → 부모: it.recurId.
    순수 계산부(nextOccurrence 등)는 상태·DOM 없음. spawnDueOccurrences만 makeItem을
@@ -85,24 +89,41 @@ export function initialNext(recur, now=new Date()){
    이 경계보다 이른 회차를 모두 생성하므로, 월요일 06:00을 지나야 그 주(월 06:00~
    다음 월 06:00) 회차가 보드에 올라온다. 각 자식의 마감(f.due)은 원래 회차 시각 그대로라
    금요일 회차도 월요일 아침에 미리 예정·대기로 뜬다. */
-function nextMondaySix(now){
+function nextMondayAt(now,hh,mm){
   for(let i=0;i<8;i++){
-    const c=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,6,0,0,0);
+    const c=new Date(now.getFullYear(),now.getMonth(),now.getDate()+i,hh,mm,0,0);
     if(c>now && c.getDay()===1) return c;      // 1 = 월요일
   }
   const f=new Date(now); f.setDate(f.getDate()+7); return f;   // 안전장치(도달 불가)
 }
 
-/* 부모 정의에서 도래한 자식 업무들을 생성한다(매주 월 06:00 배치 — nextMondaySix 참고).
-   경계(다음 월요일 06:00)보다 이른 회차를 만들고 recur.next 를 전진시킨다.
+/* 생성 기준 시각 — recur.spawnAt('HH:MM'), 없거나 무효면 기본 06:00 */
+export function spawnAtOf(recur){ return parseTime(recur&&recur.spawnAt)||[6,0]; }
+
+/* 생성 경계 — 부모의 spawn(시점)·spawnAt(시각) 설정별(v2.5.3).
+   이 경계보다 이른 회차가 전부 생성된다. (아래 설명의 T = spawnAt, 기본 06:00)
+   week(기본): 다음 월요일 T → 월요일 T를 지나면 그 주치가 한꺼번에.
+   day: 오늘 T를 지났으면 오늘 회차까지(내일 자정 경계), 아니면 아직(오늘 자정 경계).
+   eve: 오늘 T를 지났으면 내일 회차까지 미리, 아니면 오늘 회차까지. */
+export function spawnLimit(recur, now){
+  const mode=(recur&&(recur.spawn==='day'||recur.spawn==='eve'))?recur.spawn:'week';
+  const [sh,sm]=spawnAtOf(recur);
+  if(mode==='week') return nextMondayAt(now,sh,sm);
+  const pastT=now.getHours()>sh||(now.getHours()===sh&&now.getMinutes()>=sm);
+  const plus=mode==='day'?(pastT?1:0):(pastT?2:1);
+  return new Date(now.getFullYear(),now.getMonth(),now.getDate()+plus,0,0,0,0);
+}
+
+/* 부모 정의에서 도래한 자식 업무들을 생성한다(경계는 부모별 spawnLimit — 기본 매주 월 06:00).
+   경계보다 이른 회차를 만들고 recur.next 를 전진시킨다.
    14일보다 오래된 밀린 회차는 생성하지 않고 건너뛴다(장기 미실행 시 폭주 방지).
    반환 = 생성된 자식 배열(호출부가 S.items에 push + persist). */
 export function spawnDueOccurrences(items, now=new Date()){
   const spawned=[];
-  const limit=nextMondaySix(now);
   const floor=new Date(now); floor.setDate(floor.getDate()-14);   // 14일 이전 밀린 회차는 스킵
   for(const p of items){
     if(!p || !isValidRecur(p.recur) || p.recur.paused) continue;
+    const limit=spawnLimit(p.recur, now);
     if(!p.recur.next){ p.recur.next = initialNext(p.recur, now) || ''; }
     let guard=0;
     // 너무 오래된 회차는 생성 없이 건너뛰어 next 를 최근으로 당긴다
@@ -132,6 +153,14 @@ function makeChild(parent, occIso){
     recurId: parent.id,
     f:{ received:new Date().toISOString(), due:occIso },
   });
+}
+
+/* 생성 시점 요약 (관리 목록용, v2.5.3) — 예: '주초(월) 일괄 06:00' */
+export const SPAWN_KO={week:'주초(월) 일괄', eve:'하루 전', day:'당일'};
+export function spawnLabel(r){
+  const [hh,mm]=spawnAtOf(r);
+  return SPAWN_KO[(r&&(r.spawn==='day'||r.spawn==='eve'))?r.spawn:'week']
+    +' '+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
 }
 
 /* 사람이 읽는 요약 (관리 목록·카드 배지용) */

@@ -88,6 +88,27 @@ test('Ctrl+Enter 등록 시 초안을 빈 값으로 플러시 (재시작 중복 
   mock.timers.tick(400);
 });
 
+test('Ctrl 단독 → open_main_maximized + 초안 플러시 + 숨김 (v2.5.3)', () => {
+  reset(); env.invokeCalls.length = 0;
+  inp.value = '보던 메모';
+  key({key:'Control'});
+  inp.dispatchEvent(new env.window.KeyboardEvent('keyup', {key:'Control', bubbles:true}));
+  assert.ok(env.invokeCalls.some(c=>c.cmd==='open_main_maximized'));
+  assert.equal(hides().length, 1);
+  assert.equal(inp.value, '보던 메모');                          // 내용 유지
+  assert.equal(drafts().at(-1).payload.text, '보던 메모');       // 초안 플러시
+});
+
+test('Ctrl 조합(Ctrl+Enter 등)에서는 메인 창을 띄우지 않는다 (v2.5.3)', () => {
+  reset(); env.invokeCalls.length = 0;
+  inp.value = '등록할 메모';
+  key({key:'Control'});
+  key({key:'Enter', ctrlKey:true});                              // 조합 사용
+  inp.dispatchEvent(new env.window.KeyboardEvent('keyup', {key:'Control', bubbles:true}));
+  assert.ok(!env.invokeCalls.some(c=>c.cmd==='open_main_maximized'));
+  mock.timers.tick(400);
+});
+
 test('입력 시 초안이 디바운스 후 전송된다', () => {
   reset();
   inp.value = '타이핑 중';

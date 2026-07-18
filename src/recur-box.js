@@ -7,7 +7,7 @@
 import {S, makeItem} from './state.js';
 import {$, esc, escAttr, showToast} from './dom-utils.js';
 import {fmtT, parseTimeStr} from './datetime.js';
-import {isValidRecur, recurLabel, initialNext, spawnDueOccurrences, DOW_KO} from './recur.js';
+import {isValidRecur, recurLabel, spawnLabel, initialNext, spawnDueOccurrences, DOW_KO} from './recur.js';
 import {persist, render} from './render.js';
 
 let editingParentId=null;   // 수정 중인 부모 id (없으면 신규)
@@ -43,9 +43,11 @@ function normTime(raw){
 function collectRecur(){
   const type=$('rc-type').value;
   const time=normTime($('rc-time').value.trim()||'09:00');
-  if(type==='monthly') return {type:'monthly', day:Number($('rc-mday').value)||1, time};
+  const spawn=$('rc-spawn').value;                                     // v2.5.3 생성 시점 (week/eve/day)
+  const spawnAt=normTime($('rc-spawn-time').value.trim()||'06:00');    // v2.5.3 생성 기준 시각
+  if(type==='monthly') return {type:'monthly', day:Number($('rc-mday').value)||1, time, spawn, spawnAt};
   const dow=[...$('rc-dow').querySelectorAll('.recur-dow-btn.on')].map(b=>+b.dataset.dow);
-  return {type:'dow', dow, time};
+  return {type:'dow', dow, time, spawn, spawnAt};
 }
 /* 스케줄(주기)만 비교 — next/paused 등 부가 상태는 제외 */
 function sameSchedule(a,b){
@@ -63,6 +65,8 @@ function resetInput(){
   renderDow([]);
   $('rc-mday').value=1;
   $('rc-time').value='09:00';
+  $('rc-spawn').value='week';
+  $('rc-spawn-time').value='06:00';
   $('rc-save').textContent='등록';
   $('rc-cancel-edit').style.display='none';
   refreshTypeVis();
@@ -77,6 +81,8 @@ function fillForEdit(p){
   renderDow(r.type==='dow'?r.dow:[]);
   $('rc-mday').value=r.type==='monthly'?(r.day||1):1;
   $('rc-time').value=r.time||'09:00';
+  $('rc-spawn').value=(r.spawn==='day'||r.spawn==='eve')?r.spawn:'week';
+  $('rc-spawn-time').value=/^\d{2}:\d{2}$/.test(r.spawnAt||'')?r.spawnAt:'06:00';
   $('rc-save').textContent='수정 저장';
   $('rc-cancel-edit').style.display='';
   refreshTypeVis();
@@ -90,7 +96,7 @@ function renderList(){
     return `<div class="rc-row${p.recur.paused?' paused':''}" data-pid="${p.id}">
       <div class="rc-main">
         <div class="rc-memo">${esc(p.memo||'(제목 없음)')}</div>
-        <div class="rc-meta">${esc(recurLabel(p.recur))} · 다음: ${esc(next)} · 생성 ${n}건</div>
+        <div class="rc-meta">${esc(recurLabel(p.recur))} · 보드 생성: ${esc(spawnLabel(p.recur))} · 다음: ${esc(next)} · 생성 ${n}건</div>
       </div>
       <div class="rc-acts">
         <button class="btn btn-tool" data-rc-edit="${p.id}">수정</button>
@@ -139,6 +145,7 @@ export function initRecurBox(){
   $('rc-type').addEventListener('change', refreshTypeVis);
   $('rc-dow').addEventListener('click',e=>{ const b=e.target.closest('.recur-dow-btn'); if(b) b.classList.toggle('on'); });
   $('rc-time').addEventListener('blur',e=>{ const n=normTime(e.target.value.trim()); if(n) e.target.value=n; });   // 0930 → 09:30 즉시 반영
+  $('rc-spawn-time').addEventListener('blur',e=>{ const n=normTime(e.target.value.trim()); if(n) e.target.value=n; });
   $('rc-save').addEventListener('click', saveParent);
   $('rc-cancel-edit').addEventListener('click', resetInput);
   $('rc-list').addEventListener('click',e=>{
