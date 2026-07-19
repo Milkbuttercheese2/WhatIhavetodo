@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Collaboration workflow (user-defined — two co-equal collaborators)
 
-`Milkbuttercheese2/WhatIhavetodo` (owner's GitHub account, formerly `wooseongkyun`) is the **single shared repo** — both collaborators have Write access directly on it. There is no fork-based workflow anymore: `origin` points straight at `Milkbuttercheese2/WhatIhavetodo`. (A personal fork at `rfastball/WhatIhavetodo` still exists as a backup/history artifact from before the collaborator invite, but is not part of the active workflow — don't push there.)
+`Milkbuttercheese2/WhatIhavetodo` (owner's GitHub account) is the **single shared repo** — both collaborators have Write access directly on it. There is no fork-based workflow anymore: `origin` points straight at `Milkbuttercheese2/WhatIhavetodo`. (An older personal fork still exists as a backup/history artifact from before the collaborator invite, but is not part of the active workflow — don't push there.)
 
 **Never commit directly to `main`.** For any change:
 1. Branch off `main`: `git checkout -b <type>/<short-name>` — prefix matches this repo's commit-message convention (`feat/`, `fix/`, `docs/`, `refactor/`, `test/`), e.g. `feat/recurring-tasks`.
@@ -37,7 +37,7 @@ Current release = **v2.5.7**.
 
 ## Migration in progress
 
-This repo is being converted from the legacy single-file HTML app (still in `legacy/`) into a **Tauri (Rust) + SQLite** desktop app for offline/air-gapped 공무원 내부망 deployment as a small portable `.exe`. The full rationale and architecture (DB schema, data-safety measures, migration/versioning approach, why Tauri, why EAV over a JSON column, etc.) live in the plan doc at `C:\Users\rhama\.claude\plans\rustling-seeking-flurry.md` — read it before making architectural changes to `src-tauri/`.
+This repo is being converted from the legacy single-file HTML app (still in `legacy/`) into a **Tauri (Rust) + SQLite** desktop app for offline/air-gapped 공무원 내부망 deployment as a small portable `.exe`. The full rationale and architecture (DB schema, data-safety measures, migration/versioning approach, why Tauri, why EAV over a JSON column, etc.) live in the plan doc at `C:\Users\<user>\.claude\plans\rustling-seeking-flurry.md` — read it before making architectural changes to `src-tauri/`.
 
 Status: **Phase 1 and Phase 2 both done.** The frontend now lives in `src/` as browser-native ES modules (see "Frontend layout" below) with `STORE` delegating to Rust via `invoke()`; SQLite is the single source of truth (IndexedDB/localStorage are no longer used). The legacy HTML file in `legacy/` remains the behavioral reference if a business-logic question arises, but `src/` is the live implementation.
 
@@ -47,7 +47,7 @@ Single-file, offline-first Korean personal task-tracking web app (a phone-call t
 
 ## Running / testing changes
 
-**Rust backend (`src-tauri/`)**: `cd src-tauri && cargo test --lib` runs the DB round-trip test suite (`src-tauri/src/db/tests.rs`) — in-memory + real-file-path tests covering save/load, replace-not-merge semantics, backup export/import, a simulated-restart reopen, and backup rotation pruning. `cargo check`/`cargo build` from `src-tauri/` compile the app. `npm run tauri dev` (repo root) runs the full desktop app. Rust isn't on PATH by default in a fresh shell on this machine — prefix commands with `export PATH="/c/Users/rfast/.cargo/bin:$PATH"` (bash) if `cargo`/`rustc` aren't found.
+**Rust backend (`src-tauri/`)**: `cd src-tauri && cargo test --lib` runs the DB round-trip test suite (`src-tauri/src/db/tests.rs`) — in-memory + real-file-path tests covering save/load, replace-not-merge semantics, backup export/import, a simulated-restart reopen, and backup rotation pruning. `cargo check`/`cargo build` from `src-tauri/` compile the app. `npm run tauri dev` (repo root) runs the full desktop app. Rust isn't on PATH by default in a fresh shell on this machine — prefix commands with `export PATH="/c/Users/<user>/.cargo/bin:$PATH"` (bash) if `cargo`/`rustc` aren't found.
 
 **Frontend (`src/`)**: no build step, no bundler — `src/` is served raw by the Tauri webview (`frontendDist: "../src"`). **`npm test`** runs the node:test suite in `tests/` (125 tests: pure-logic in `tests/unit/`, jsdom-based DOM tests in `tests/dom/`). `tests/helpers/env.js` builds the window/document/`__TAURI__` fake — in DOM test files, src modules MUST be dynamically imported *after* `setupEnv()` (store.js destructures `window.__TAURI__.core` at import time), and `mock.timers.enable(...)` must run at module scope or real `setInterval`s from `init*()` hang the test process. Never import `main.js` in tests (its load IIFE runs at import). dt-widget-shaped fixtures need seconds zeroed (`d.setSeconds(0,0)`) or no-change round-trips falsely re-arm alarms. Still verify UI-feel changes manually via `npm run tauri dev`; `node --check src/<file>.js` catches syntax errors.
 
