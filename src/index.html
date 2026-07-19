@@ -39,7 +39,7 @@
         <button class="menu-item" id="bkImp" title="JSON 백업 파일 또는 자동 백업(.sqlite) 등 DB 파일에서 복원">JSON·DB파일 불러오기</button>
         <button class="menu-item" id="xlsx">XLSX 다운로드</button>
         <div class="menu-sep"></div>
-        <button class="menu-item" id="presetManageBtn">프리셋·식별번호 관리</button>
+        <button class="menu-item" id="presetManageBtn">프리셋·식별정보 관리</button>
         <button class="menu-item" id="recurManageBtn">주기 업무 입력·관리</button>
         <button class="menu-item" id="boardModeBtn">보드 모드 선택</button>
       </div>
@@ -215,8 +215,8 @@
       </div>
     </div>
     <div class="ps-new" style="margin-top:14px">
-      <div class="ps-new-head">식별번호 명칭 관리</div>
-      <div class="m-sub" style="margin:0 0 8px">업무 입력 시 식별번호 드롭다운에 나타날 명칭입니다. ('기타'는 항상 마지막에 자동 포함)</div>
+      <div class="ps-new-head">식별정보 명칭 관리</div>
+      <div class="m-sub" style="margin:0 0 8px">업무 입력 시 식별정보 드롭다운에 나타날 명칭입니다. ('기타'는 항상 마지막에 자동 포함)</div>
       <div id="idKindList"></div>
       <div class="idk-add">
         <input type="text" id="idk-new" placeholder="새 명칭 (예: 계약번호)" autocomplete="off">
@@ -234,7 +234,7 @@
 <div class="modal-bg" id="recurModal">
   <div class="modal modal-wide">
     <h3>주기 업무</h3>
-    <div class="m-sub">공통 내용과 반복 주기만 등록하면, 예정일마다 그 내용으로 업무가 <b>보드에 자동 생성</b>됩니다. 세부 내용(관련인·식별번호·세부 할일·파일)은 생성된 각 업무에서 채우세요.</div>
+    <div class="m-sub">공통 내용과 반복 주기만 등록하면, 예정일마다 그 내용으로 업무가 <b>보드에 자동 생성</b>됩니다. 세부 내용(관련인·식별정보·세부 할일·파일)은 생성된 각 업무에서 채우세요.</div>
 
     <div class="ps-new">
       <div class="ps-new-head" id="rc-new-head">＋ 새 주기 업무</div>

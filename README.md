@@ -15,7 +15,7 @@
 ![tech](https://img.shields.io/badge/Tauri-Rust%20%2B%20JS-4d938a?style=for-the-badge&logo=tauri&logoColor=white)
 ![offline](https://img.shields.io/badge/%EC%A0%80%EC%9E%A5-100%25%20%EB%A1%9C%EC%BB%AC%20%C2%B7%20%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8-2ea043?style=for-the-badge)
 ![license](https://img.shields.io/badge/license-AGPL%20v3-A31F34?style=for-the-badge)
-![version](https://img.shields.io/badge/version-v2.5.13-4d938a?style=for-the-badge)
+![version](https://img.shields.io/badge/version-v2.5.14-4d938a?style=for-the-badge)
 
 </div>
 

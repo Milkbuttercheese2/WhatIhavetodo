@@ -63,7 +63,7 @@ export function initBackup(){
         '연락처':(it.contacts||[]).map(c=>c.phone).filter(Boolean).join(', '),
         '접수시각':fx((it.f||{}).received),
         '마감시각':fx((it.f||{}).due),
-        '식별번호':(it.ids||[]).map(x=>`${x.kind}: ${x.val}`).join(' · '),
+        '식별정보':(it.ids||[]).map(x=>`${x.kind}: ${x.val}`).join(' · '),
         '세부진행':subs.length?`${subs.filter(s=>s.done).length}/${subs.length}`:'',
         '세부내역':subs.map(s=>(s.done?'[완료] ':'')+s.title+(s.mid?` (점검 ${fx(s.mid)})`:'')).join(' · '),
         '파일링크':(it.files||[]).join(' · ')
