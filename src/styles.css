@@ -15,6 +15,13 @@
     --red:#C0271C;  --red-bg:#FBE9E7;
     --green:#2C7A4B; --green-bg:#E4F1E9;
     --gray-bg:#eef0f3; --gray-fg:#5a6472;
+    /* 캘린더 일정 색 (v2.5.17) — 보드 단계색과 반드시 구분되어야 한다.
+       기존엔 마감=--red(#C0271C)라 '오늘 처리'(#cf6a55 테라코타)와, 점검=--slate(#4d938a)라
+       '예정·대기'(#5aa08f 녹청) 및 UI 액센트와 같은 계열이어서 캘린더의 '일정 종류'와
+       보드의 '업무 단계'가 시각적으로 섞였다. 팔레트에서 비어 있던 파랑 축을 점검에 주고,
+       마감은 빨강 계열을 지키되 명도·온도를 낮춘 버거디로 내려 테라코타와 떼어놨다. */
+    --cal-due:#9B1B30; --cal-due-bg:#FAE9EC;   /* 마감 — 진한 버거디 */
+    --cal-mid:#3E6FA8; --cal-mid-bg:#E9EFF8;   /* 점검 — 인디고 블루 */
     --done:#6b7787; --focus:#4d938a;
     --icon-muted:#aeb4be;   /* 삭제 × 아이콘 기본색 */
 
@@ -285,8 +292,8 @@
   .cal-day.sun-d .dnum{color:var(--red)}
   .cal-day.other .dnum{color:#b6bcc4}
   .pill{font-size:11px;line-height:1.35;padding:1.5px 6px;border-radius:6px;margin-bottom:2.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;max-width:100%;box-sizing:border-box;display:block}
-  .pill.p-due{background:var(--red-bg);color:var(--red)}
-  .pill.p-mid{background:var(--slate-bg);color:var(--slate)}
+  .pill.p-due{background:var(--cal-due-bg);color:var(--cal-due)}
+  .pill.p-mid{background:var(--cal-mid-bg);color:var(--cal-mid)}
   .pill.p-recv{background:var(--green-bg);color:var(--green)}
   .pill.p-custom{background:var(--gray-bg);color:var(--gray-fg)}
   .pill.p-done{opacity:.45;text-decoration:line-through}
