@@ -172,8 +172,10 @@
       <button id="cal-prev">◀</button><button id="cal-today">오늘</button><button id="cal-next">▶</button>
     </div>
     <div class="cal-legend">
-      <span><i class="lg" style="background:var(--slate)"></i>세부 할일(지정 시각)</span>
-      <span><i class="lg" style="background:var(--red)"></i>업무 마감일</span>
+      <!-- 범례 점은 pill 색과 반드시 같은 토큰을 쓸 것 (v2.5.17: --slate/--red 직접 참조라
+           pill 색만 바꿨을 때 범례가 옛 색으로 남아 어긋났다) -->
+      <span><i class="lg" style="background:var(--cal-mid)"></i>세부할일 점검일</span>
+      <span><i class="lg" style="background:var(--cal-due)"></i>업무 마감일</span>
     </div>
   </div>
   <div class="cal-grid" id="cal-grid"></div>

@@ -10,7 +10,7 @@
 import http from 'http';
 import fs from 'fs';
 import path from 'path';
-import {fileURLToPath} from 'url';
+import {fileURLToPath, pathToFileURL} from 'url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..');
@@ -18,7 +18,10 @@ const ROOT = path.join(REPO, 'src');
 const OUT  = path.join(REPO, 'docs', 'screenshots');
 fs.mkdirSync(OUT, {recursive: true});
 
-const pw = await import(path.join(REPO, 'node_modules', 'playwright-core', 'index.js'));
+/* Windows 대응: 동적 import 는 파일 경로가 아니라 file:// URL 이어야 한다
+   ('c:\...' 를 그대로 넘기면 ERR_UNSUPPORTED_ESM_URL_SCHEME). 리눅스 CI 에선
+   '/...' 가 우연히 통해 드러나지 않던 버그다. win-render.mjs 와 동일한 처리. */
+const pw = await import(pathToFileURL(path.join(REPO, 'node_modules', 'playwright-core', 'index.js')).href);
 const chromium = (pw.default && pw.default.chromium) || pw.chromium;
 const EXEC = process.env.PLAYWRIGHT_CHROMIUM || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 
