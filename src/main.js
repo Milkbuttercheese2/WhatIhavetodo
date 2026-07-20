@@ -19,7 +19,6 @@ import {initSettingsMenu} from './settings-menu.js';
 import {initRecurBox, runRecurSpawn} from './recur-box.js';
 import {makeItem} from './state.js';
 import {setPlaceMode, placeMode} from './placement.js';
-import {initUiScale, applyUiScale, closeUiScaleModal} from './ui-scale.js';
 
 reconcileCore();
 /* 콘솔 디버깅용 전역 미러 (읽기 전용 용도 — 코드는 항상 S를 본다) */
@@ -28,7 +27,7 @@ window.ID_KINDS=S.idKinds; window.SETTINGS=S.settings;
 
 initToast(); initDtDelegation(); initForm(); initPresets();
 initRender(); initCalendar(); initAlarms(); initBackup(); initCapture();
-initSettingsMenu(); initRecurBox(); initUiScale();
+initSettingsMenu(); initRecurBox();
 renderPresets();
 
 /* 탭 */
@@ -94,7 +93,6 @@ document.addEventListener('keydown',e=>{
   if($('formPanel').classList.contains('on')){ closeForm(); return; }
   if($('presetModal').classList.contains('on')){ $('presetModal').classList.remove('on'); return; }
   if($('boardModeModal').classList.contains('on')){ closeBoardModeModal(); return; }
-  if($('uiScaleModal').classList.contains('on')){ closeUiScaleModal(); return; }
 });
 
 function tickClock(){ const n=new Date();
@@ -118,8 +116,6 @@ setInterval(()=>{ if(S.loaded) runRecurSpawn(); }, 60000);
     /* 보드 모드 복원 (v2.5.0) — 저장된 boardMode 반영 후 아래 render()가 그린다 */
     const bm = S.settings.boardMode==='owner' ? 'owner' : 'time';
     setPlaceMode(bm); syncBoardModeSel(bm);
-    /* 화면 크기 복원 (v2.6.0) — 확대는 렌더와 무관(zoom)하므로 여기서 한 번만 */
-    applyUiScale(S.settings.uiScale);
     /* 캡처 초안 회수(v3.1.0): 지난 세션이 미등록 초안을 남긴 채 꺼졌다면
        (전원 차단 포함) 분류 대기로 자동 등록하고 초안을 비운다. */
     const draft=(S.settings.captureDraft||'').trim();

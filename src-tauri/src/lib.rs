@@ -385,7 +385,6 @@ pub fn run() {
             commands::reveal_file_path,
             commands::quick_search,
             commands::resize_capture,
-            commands::get_ui_scale,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
