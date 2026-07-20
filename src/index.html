@@ -42,6 +42,7 @@
         <button class="menu-item" id="presetManageBtn">프리셋·식별정보 관리</button>
         <button class="menu-item" id="recurManageBtn">주기 업무 입력·관리</button>
         <button class="menu-item" id="boardModeBtn">보드 모드 선택</button>
+        <button class="menu-item" id="uiScaleBtn" title="화면이 작아 글자가 잘 안 보일 때">화면 크기</button>
       </div>
     </div>
     <div class="clock"><div class="t mono" id="clock">--:--</div><div id="today">—</div><div class="ver mono" id="appVer"></div></div>
@@ -292,6 +293,32 @@
     </div>
     <div class="m-actions">
       <button class="btn btn-ok" id="boardModeClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 화면 크기 (v2.6.0) — 글자만이 아니라 화면 전체를 비례 확대한다.
+     빠른 메모·검색 창도 같은 배율로 함께 커진다(ui-scale.js·capture-win.js). -->
+<div class="modal-bg" id="uiScaleModal">
+  <div class="modal">
+    <h3>화면 크기</h3>
+    <div class="m-sub">글자가 작으면 화면 전체를 키웁니다. 글자·여백·입력칸이 함께 커져 배치는 그대로입니다.</div>
+    <div class="bm-opts">
+      <button class="bm-opt" data-scale="100">
+        <div class="bm-opt-name">보통</div>
+        <div class="bm-opt-desc">기본 크기 (100%)</div>
+      </button>
+      <button class="bm-opt" data-scale="115">
+        <div class="bm-opt-name">크게</div>
+        <div class="bm-opt-desc">한 단계 크게 (115%)</div>
+      </button>
+      <button class="bm-opt" data-scale="130">
+        <div class="bm-opt-name">아주 크게</div>
+        <div class="bm-opt-desc">두 단계 크게 (130%)</div>
+      </button>
+    </div>
+    <div class="m-actions">
+      <button class="btn btn-ok" id="uiScaleClose">닫기</button>
     </div>
   </div>
 </div>

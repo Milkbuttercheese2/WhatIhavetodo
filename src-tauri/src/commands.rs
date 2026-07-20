@@ -431,13 +431,30 @@ pub fn quick_search(state: State<AppDb>, query: String) -> Result<Vec<QuickHit>,
         .collect())
 }
 
+/// 화면 확대 배율(%) 읽기 — 캡처 웹뷰 전용 (v2.6.0).
+/// 캡처 창은 메인 앱 모듈(store.js)을 못 쓰므로 settings 를 직접 읽을 수 없다.
+/// 값이 없거나 손상됐으면 100(등배)으로 떨어진다.
+#[tauri::command]
+pub fn get_ui_scale(state: State<AppDb>) -> Result<u32, String> {
+    let conn = state.conn.lock().map_err(to_err)?;
+    let settings = db::settings::load_settings(&conn).map_err(to_err)?;
+    Ok(settings
+        .get("uiScale")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(100)
+        .clamp(100, 130) as u32)
+}
+
 /// 캡처 창 크기 전환 (메모 모드 64px ↔ 검색 모드 확장). 웹뷰 쪽에 창 크기
 /// 권한을 열어주는 대신 커맨드 하나로 좁게 노출한다.
+/// v2.6.0: `scale`(%)을 받아 창 자체도 같은 배율로 키운다 — 내용만 확대하면
+/// 네이티브 창 크기는 그대로라 글자가 창 밖으로 잘린다.
 #[tauri::command]
-pub fn resize_capture(app: AppHandle, height: u32) -> Result<(), String> {
+pub fn resize_capture(app: AppHandle, height: u32, scale: Option<u32>) -> Result<(), String> {
     if let Some(win) = app.get_webview_window("capture") {
-        let h = height.clamp(64, 640);
-        win.set_size(tauri::LogicalSize::new(560.0, h as f64)).map_err(to_err)?;
+        let s = scale.unwrap_or(100).clamp(100, 130) as f64 / 100.0;
+        let h = height.clamp(64, 640) as f64 * s;
+        win.set_size(tauri::LogicalSize::new(560.0 * s, h)).map_err(to_err)?;
     }
     Ok(())
 }
