@@ -38,11 +38,19 @@ test('stepScale: 한 칸씩 오르내리고 끝에서 멈춘다', () => {
   assert.equal(stepScale(MIN_SCALE, -1), MIN_SCALE, '하한에서 더 안 내려감');
 });
 
-test('applyUiScale: 100%는 zoom을 비우고, 확대는 배수로 넣는다', () => {
+test('applyUiScale: 정규화한 값으로 웹뷰 배율을 건다', async () => {
+  await env.resetS();
   applyUiScale(130);
-  assert.equal(doc.body.style.zoom, '1.3');
-  applyUiScale(100);
-  assert.equal(doc.body.style.zoom, '', '등배에서는 zoom을 남기지 않는다');
+  applyUiScale(999);                                   // 상한으로 잘려야 한다
+  const calls = env.invokeCalls.filter(c=>c.cmd==='set_ui_scale');
+  assert.deepEqual(calls.map(c=>c.args.scale), [130, MAX_SCALE]);
+});
+
+test('배율 적용은 F1 로드 게이트에 막히지 않는다 (저장이 아니라 표시)', async () => {
+  await env.resetS();                                  // loaded=false
+  applyUiScale(120);
+  assert.equal(env.invokeCalls.filter(c=>c.cmd==='set_ui_scale').length, 1,
+    '로드 전에도 저장된 크기를 그대로 보여줘야 한다');
 });
 
 test('Ctrl+휠: 위로 굴리면 커지고 아래로 굴리면 작아진다 + settings 저장', async () => {
@@ -50,7 +58,8 @@ test('Ctrl+휠: 위로 굴리면 커지고 아래로 굴리면 작아진다 + se
 
   wheel({up:true});
   assert.equal(S.settings.uiScale, 110);
-  assert.equal(doc.body.style.zoom, '1.1');
+  assert.equal(env.invokeCalls.filter(c=>c.cmd==='set_ui_scale').pop().args.scale, 110,
+    '웹뷰 배율도 즉시 적용된다');
 
   wheel({up:true});
   assert.equal(S.settings.uiScale, 120);

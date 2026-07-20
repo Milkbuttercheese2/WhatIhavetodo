@@ -1,4 +1,4 @@
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_dialog::DialogExt;
@@ -431,31 +431,54 @@ pub fn quick_search(state: State<AppDb>, query: String) -> Result<Vec<QuickHit>,
         .collect())
 }
 
-/// 화면 확대 배율(%) 읽기 — 캡처 웹뷰 전용 (v2.5.15).
-/// 캡처 창은 메인 앱 모듈(store.js)을 못 쓰므로 settings 를 직접 읽을 수 없다.
-/// 값이 없거나 손상됐으면 100(등배)으로 떨어진다. 범위는 ui-scale.js 와 동일.
-#[tauri::command]
-pub fn get_ui_scale(state: State<AppDb>) -> Result<u32, String> {
-    let conn = state.conn.lock().map_err(to_err)?;
-    let settings = db::settings::load_settings(&conn).map_err(to_err)?;
-    Ok(settings
-        .get("uiScale")
-        .and_then(|v| v.as_u64())
-        .unwrap_or(100)
-        .clamp(80, 150) as u32)
+/* ===== v2.5.15 화면 크기 ===== */
+
+/// 현재 화면 배율(%)과 캡처 창의 마지막 논리 높이. 배율이 바뀌면 캡처 창을
+/// 다시 재야 하는데, 그 높이는 메모/검색 모드에 따라 달라 JS만 안다 —
+/// 마지막 값을 여기 기억해 두고 재적용한다.
+static UI_SCALE: AtomicU32 = AtomicU32::new(100);
+static CAPTURE_H: AtomicU32 = AtomicU32::new(126);
+
+const CAPTURE_W: f64 = 560.0;
+
+fn apply_capture_size(app: &AppHandle) {
+    if let Some(win) = app.get_webview_window("capture") {
+        let s = UI_SCALE.load(Ordering::Relaxed) as f64 / 100.0;
+        let h = CAPTURE_H.load(Ordering::Relaxed) as f64 * s;
+        let _ = win.set_size(tauri::LogicalSize::new(CAPTURE_W * s, h));
+    }
 }
 
-/// 캡처 창 크기 전환 (메모 모드 64px ↔ 검색 모드 확장). 웹뷰 쪽에 창 크기
-/// 권한을 열어주는 대신 커맨드 하나로 좁게 노출한다.
-/// v2.5.15: `scale`(%)을 받아 창 자체도 같은 배율로 키운다 — 내용만 확대하면
-/// 네이티브 창 크기는 그대로라 글자가 창 밖으로 잘린다.
+/// 화면 크기 적용 — 메인·캡처 **두 웹뷰 모두**에 같은 배율을 건다.
+///
+/// CSS `zoom` 이 아니라 웹뷰 자체 배율(`set_zoom`)을 쓰는 이유: CSS zoom 은
+/// 뷰포트 크기를 바꾸지 않아 미디어 쿼리가 속는다. 그러면 컴팩트(560px) 창에서
+/// 확대할 때 560px 기준 레이아웃 그대로 내용만 커져 가로로 넘친다
+/// (v2.5.9~v2.5.10에서 고쳤던 그 문제). 웹뷰 배율은 CSS 픽셀 뷰포트 자체를
+/// 줄이므로 미디어 쿼리·vh·innerHeight 가 전부 저절로 맞는다.
+///
+/// 캡처 창은 네이티브 창 크기가 따로라 내용 배율만으로는 글자가 잘린다 —
+/// 창 크기도 같이 맞춘다.
 #[tauri::command]
-pub fn resize_capture(app: AppHandle, height: u32, scale: Option<u32>) -> Result<(), String> {
-    if let Some(win) = app.get_webview_window("capture") {
-        let s = scale.unwrap_or(100).clamp(80, 150) as f64 / 100.0;
-        let h = height.clamp(64, 640) as f64 * s;
-        win.set_size(tauri::LogicalSize::new(560.0 * s, h)).map_err(to_err)?;
+pub fn set_ui_scale(app: AppHandle, scale: u32) -> Result<(), String> {
+    let s = scale.clamp(80, 150);
+    UI_SCALE.store(s, Ordering::Relaxed);
+    let z = s as f64 / 100.0;
+    for label in ["main", "capture"] {
+        if let Some(win) = app.get_webview_window(label) {
+            win.set_zoom(z).map_err(to_err)?;
+        }
     }
+    apply_capture_size(&app);
+    Ok(())
+}
+
+/// 캡처 창 크기 전환 (메모 모드 ↔ 검색 모드). 웹뷰 쪽에 창 크기 권한을
+/// 열어주는 대신 커맨드 하나로 좁게 노출한다. 배율은 위에서 기억한 값을 쓴다.
+#[tauri::command]
+pub fn resize_capture(app: AppHandle, height: u32) -> Result<(), String> {
+    CAPTURE_H.store(height.clamp(64, 640), Ordering::Relaxed);
+    apply_capture_size(&app);
     Ok(())
 }
 

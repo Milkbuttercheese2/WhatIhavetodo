@@ -40,10 +40,17 @@ export function stepScale(cur, dir){
   return normScale(normScale(cur) + (dir > 0 ? SCALE_STEP : -SCALE_STEP));
 }
 
-/* 실제 적용. 100%면 zoom 을 아예 비워 기본 렌더 경로를 그대로 둔다. */
+/* 실제 적용 — Rust 쪽에서 메인·빠른메모 두 웹뷰에 함께 건다.
+
+   CSS zoom 이 아니라 웹뷰 자체 배율을 쓰는 이유: CSS zoom 은 뷰포트 크기를
+   바꾸지 않아 미디어 쿼리가 속는다. 컴팩트(560px) 창에서 확대하면 560px 기준
+   레이아웃 그대로 내용만 커져 가로로 넘친다(v2.5.9~v2.5.10에서 고친 그 문제).
+   또 vh·innerHeight 도 확대를 모른 채 계산돼, 모달이 화면 밖으로 넘치거나
+   보드에 늘 세로 스크롤이 생긴다. 웹뷰 배율은 CSS 픽셀 뷰포트 자체를 줄이므로
+   이 셋이 전부 저절로 맞는다 — 보정 코드가 필요 없다. */
 export function applyUiScale(v){
   const n = normScale(v);
-  document.body.style.zoom = n === 100 ? '' : String(n / 100);
+  STORE.setUiScale(n);
   return n;
 }
 
