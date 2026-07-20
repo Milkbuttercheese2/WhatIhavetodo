@@ -43,5 +43,9 @@ export const STORE = {
   saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>console.warn('필드 저장 실패',e)); },
   savePresets(p){ if(!S.loaded)return; invoke('save_presets', {presets:p}).catch(e=>console.warn('프리셋 저장 실패',e)); },
   saveIdKinds(k){ if(!S.loaded)return; invoke('save_id_kinds', {idKinds:k}).catch(e=>console.warn('식별번호 명칭 저장 실패',e)); },
-  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); }
+  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); },
+
+  /* 화면 크기(v2.5.15) — 데이터 저장이 아니라 웹뷰 배율 적용이므로 F1 로드
+     게이트를 걸지 않는다(로드 완료 전에도 저장된 크기를 그대로 보여줘야 한다). */
+  setUiScale(n){ invoke('set_ui_scale', {scale:n}).catch(e=>console.warn('화면 크기 적용 실패',e)); }
 };

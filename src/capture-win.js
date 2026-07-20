@@ -30,6 +30,10 @@ function sendDraft(text){
   window.__TAURI__.event.emitTo('main','wmhh://capture-draft',{text:String(text??'')}).catch(()=>{});
 }
 
+/* 화면 크기(v2.5.15)는 이 창이 스스로 처리하지 않는다 — 메인 창에서 Ctrl+휠로
+   바꾸면 Rust(set_ui_scale)가 이 웹뷰의 배율과 네이티브 창 크기를 함께 맞춰준다.
+   여기서 논리 높이(126/406)만 알려주면 Rust 가 현재 배율을 곱해 적용한다. */
+
 function setMode(m){
   mode=m;
   const search=m==='search';

@@ -166,6 +166,30 @@ await capture('preset',     COMPACT, openPreset);
 await capture('boardmode',  COMPACT, openBoardMode);
 await capture('recur',      COMPACT, openRecur);
 
+/* v2.5.15 화면 크기(Ctrl+휠) 검증 -----------------------------------------
+   웹뷰 배율은 CSS 픽셀 뷰포트 자체를 줄이므로, 확대 = "그만큼 좁은 창"과 동치다.
+   따라서 확대가 실제로 만들어내는 폭들을 그냥 좁은 뷰포트로 재현해 검사하면 된다.
+
+   위험 구간: 레이아웃은 1080px에서 다중 열 ↔ 단일 열로 갈리는데, 5열 모드의
+   물리적 최소폭(200×5 + 열 여백)이 4열(240×4)보다 오히려 넓다. 즉 1080 바로 위는
+   "단일 열 규칙은 아직 안 켜졌는데 5열은 안 들어가는" 사각지대일 수 있고,
+   확대로 거기에 착지할 수 있다(예: 1440 화면 @130% = 1108px).
+   그래서 경계 바로 위와 배율로 도달 가능한 폭들을 같이 본다. */
+const ZOOM_WIDTHS = [
+  {w: 1477, why: '1920 @130%'},
+  {w: 1371, why: '1920 @140%'},
+  {w: 1280, why: '1920 @150%'},
+  {w: 1138, why: '1366 @120%'},
+  {w: 1108, why: '1440 @130% — 사각지대 의심'},
+  {w: 1090, why: '1080 경계 바로 위(최악)'},
+];
+for (const {w, why} of ZOOM_WIDTHS) {
+  const vp = {width: w, height: 900};
+  console.log(`[${platformTag}] --- 확대 폭 ${w}px (${why})`);
+  await capture('zoom-board',  vp);              // 시간 4열
+  await capture('zoom-board5', vp, ownerMode);   // 시간·담당자 5열
+}
+
 /* 560px 양식 세부할일 줄 검증 — overflow 검사는 '줄바꿈'을 못 잡으므로 별도 확인.
    기대: 제목(1줄) 아래 담당·날짜·시각이 '같은 줄(2줄째)'. Windows에서 컨트롤이 넓어
    시각이 다음 줄로 밀리면(3줄) 여기서 잡는다. */
