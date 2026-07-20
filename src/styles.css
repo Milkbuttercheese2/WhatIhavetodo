@@ -20,8 +20,10 @@
 
     /* 내부망 배포 대상: 외부 웹폰트 금지 — Pretendard는 아래 @font-face로 로컬 번들(v2.4.6).
        모노는 시스템 폰트 (Windows 기본 탑재분). */
-    /* 폰트 정책(v2.5.2): 본문 UI 텍스트는 Pretendard 상속 12.5px, --font-mono는 날짜·시각·카운트 숫자에만. */
-    --font-mono:'Cascadia Mono','Consolas','D2Coding',ui-monospace,monospace;
+    /* 폰트 정책(v2.5.16 개정): 화면 전체가 본문 폰트(Pretendard) 하나다.
+       숫자·날짜·시각도 예외 없이 본문 폰트를 쓴다 — 다른 서체를 쓸 명확한 이유가
+       없으면 통일한다(소유자 지정). 모노 폰트(--font-mono)는 폐지했다.
+       자릿수를 맞춰야 하는 곳만 .num(tabular-nums)으로 정렬을 잡는다. */
   }
   /* Pretendard 가변 폰트 로컬 번들 (fonts/PretendardVariable.woff2, OFL 라이선스).
      이전엔 이름만 지정돼 있어 미설치 PC에선 맑은 고딕으로 폴백돼 화면이 다르게 보였다. */
@@ -49,7 +51,10 @@
   :hover::-webkit-scrollbar-thumb,:focus-within::-webkit-scrollbar-thumb{background:rgba(31,42,51,.16);border-radius:999px;border:3px solid transparent;background-clip:padding-box}
   ::-webkit-scrollbar-thumb:hover{background:rgba(31,42,51,.30);border-radius:999px;border:3px solid transparent;background-clip:padding-box}
   ::-webkit-scrollbar-corner{background:transparent}
-  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  /* v2.5.16: 숫자 정렬용 — 서체는 본문 그대로 두고 자릿수 폭만 고정한다.
+     tabular-nums 가 없으면 시계가 1초마다 폭이 흔들리고, 접수/마감 칸의
+     세로 정렬이 깨진다. (구 .mono 클래스는 v2.5.16에서 폐지 — 모노 서체 자체를 없앰.) */
+  .num{font-variant-numeric:tabular-nums}
   :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   .btn{font-family:inherit;font-weight:600;border:none;border-radius:9px;cursor:pointer;white-space:nowrap}
 
@@ -138,12 +143,12 @@
   .fm-recur-row select,.fm-recur-row input{font-size:12.5px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);box-sizing:border-box}
   .fm-recur-row select{font-family:inherit;cursor:pointer}
   .fm-recur-row input[type=number]{width:58px;text-align:center;font-family:inherit}
-  .fm-recur-row #rc-time,.fm-recur-row #rc-spawn-time{width:74px;font-family:var(--font-mono);letter-spacing:.03em;text-align:center}
+  .fm-recur-row #rc-time,.fm-recur-row #rc-spawn-time{width:74px;font-family:inherit;letter-spacing:.03em;text-align:center;font-variant-numeric:tabular-nums}
   .rc-time-wrap{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
   /* v2.5.6: 보드 생성 라벨·드롭다운·시각을 한 줄로 묶어 표기 (스케줄 줄과 분리된 자기 줄) */
   .rc-spawn-wrap{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
   #rc-dow,#rc-monthly{display:inline-flex;align-items:center;gap:6px;color:var(--ink-soft)}
-  #fm-recur-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px}
+  #fm-recur-time{width:64px;font-family:inherit;font-size:12.5px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;font-variant-numeric:tabular-nums}
   .recur-dow-btn{cursor:pointer;font-size:12px;height:34px;min-width:34px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink-soft)}
   .recur-dow-btn.on{background:var(--slate-bg);color:var(--slate);border-color:var(--slate);font-weight:600}
   .ffile-row{display:flex;align-items:center;gap:7px;padding:3px 0}
@@ -183,7 +188,7 @@
   /* ---- 요약 스트립 ---- */
   .strip{display:flex;align-items:center;gap:8px;width:auto;max-width:1460px;margin:0 auto;padding:12px 28px 0;font-size:12.5px;flex-wrap:wrap}
   .s-pill{display:flex;align-items:center;gap:6px;padding:4px 13px;border-radius:9px;background:var(--card);border:1px solid var(--line);font-weight:600;color:var(--ink-soft)}
-  .s-pill b{font-family:var(--font-mono);color:var(--ink)}
+  .s-pill b{color:var(--ink);font-variant-numeric:tabular-nums}
   .s-pill.warn{border-color:#e0b9b4;color:var(--red);background:var(--red-bg)}
   .s-pill.warn b{color:var(--red)}
   .s-search{margin-left:auto;font-family:inherit;font-size:12.5px;padding:6px 13px;border:1px solid var(--line);border-radius:9px;background:var(--card);min-width:230px}
@@ -228,7 +233,10 @@
      주기 배지는 더 작게(10px)·flex:none(잘리지 않음), 말줄임은 시각 태그가 담당 */
   .card-meta .tag{font-size:10.5px;padding:1px 6px}
   .card-meta .tag.recur{font-size:10px;padding:1px 5px;flex:none}
-  .tag{font-family:var(--font-mono);font-size:11px;font-weight:500;padding:1px 7px;border-radius:999px;letter-spacing:.01em}
+  /* v2.5.16: 카드 태그(마감·완료·점검 시각)는 본문 폰트를 상속한다 — 바로 위 메모·세부와
+     한 카드 안에 붙어 있어 모노가 이질적으로 보였다(소유자 지정). 숫자 세로 정렬은
+     tabular-nums 로 유지. 카드 밖 시각(알람창·시계·양식 입력칸)은 계속 모노. */
+  .tag{font-size:11px;font-weight:500;padding:1px 7px;border-radius:999px;letter-spacing:.01em;font-variant-numeric:tabular-nums}
   .tag.who{background:var(--amber-bg);color:var(--amber)}
   .tag.mid{background:var(--slate-bg);color:var(--slate)}
   .tag.time{background:var(--slate-bg);color:var(--slate)}
@@ -250,7 +258,7 @@
   #view-done.on{display:block}
   .done-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
   .done-head h2{font-size:19px;font-weight:700}
-  .done-cnt{font-family:var(--font-mono);font-size:14px;color:var(--done);background:var(--line-soft);padding:1px 10px;border-radius:9px;margin-left:4px}
+  .done-cnt{font-size:14px;color:var(--done);background:var(--line-soft);padding:1px 10px;border-radius:9px;margin-left:4px;font-variant-numeric:tabular-nums}
   .done-tools{margin-left:auto;display:flex;gap:8px;align-items:center}
   #view-done .cards{gap:8px}
   #view-done .card{opacity:.92}
@@ -362,8 +370,8 @@
   .alarm h3{font-size:16px;font-weight:700;color:var(--red);margin-bottom:12px}
   .alarm .a-item{position:relative;overflow:hidden;font-size:14px;padding:8px 10px 8px 15px;border:1px solid var(--line);border-radius:13px;margin-bottom:6px;background:#fff}
   .alarm .a-item::before{content:"";position:absolute;left:0;top:9px;width:4px;height:18px;border-radius:0 4px 4px 0;background:var(--red)}
-  .alarm .a-item b{color:var(--red);font-size:11px;font-family:var(--font-mono);margin-right:6px}
-  .alarm .a-item .mono{font-size:11px;color:var(--ink-soft);margin-left:6px}
+  .alarm .a-item b{color:var(--red);font-size:11px;margin-right:6px}
+  .alarm .a-item .num{font-size:11px;color:var(--ink-soft);margin-left:6px}
   .a-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
   .btn-snooze{font-size:12.5px;padding:8px 16px;background:var(--line-soft);color:var(--ink-soft)}
 
@@ -372,7 +380,7 @@
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   .toast button{font-family:inherit;font-size:12.5px;font-weight:600;background:transparent;border:1px solid #55606d;color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;word-break:keep-all}   /* v2.5.12: 좁을 때 '실행 취소'가 음절 중간(실행취/소)이 아니라 어절 경계(실행/취소)로 줄바꿈 */
   .toast button:hover{background:#2a333d}
-  footer .mono{color:var(--focus)}
+  footer .num{color:var(--focus)}
   footer a{color:var(--focus)}
   @media(max-width:720px){
     .fm-grid{grid-template-columns:1fr 1fr}
@@ -395,8 +403,12 @@
   .contact-row .rm{font-size:15px;line-height:1;color:var(--icon-muted);background:none;border:none;cursor:pointer;padding:3px 6px;border-radius:4px;transition:color .12s,background .12s}
   /* 분리 날짜/시간 입력 */
   .dt-inp{display:inline-flex;gap:5px}
-  .dt-inp .dt-date{width:112px;font-family:var(--font-mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em}
-  .dt-inp .dt-time{width:64px;font-family:var(--font-mono);font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em}
+  /* v2.5.16: 양식의 날짜·시각 입력칸도 본문 폰트로 통일(소유자 지정). 폭(112/64px)은
+     그대로 두되 고정폭 숫자 대신 tabular-nums 로 자릿수 정렬을 유지한다 —
+     이 칸은 폭이 정밀하게 맞춰진 자리(§7-I)라 폰트를 바꾸면 560px 양식 3줄 배치가
+     흔들릴 수 있어, win-render 의 오버플로 + 3줄 단언으로 검증한 뒤 반영했다. */
+  .dt-inp .dt-date{width:112px;font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+  .dt-inp .dt-time{width:64px;font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
   .dt-inp input:focus{outline:none;border-color:var(--focus)}
   .dt-pick{border:1px solid var(--line);background:var(--paper);border-radius:6px;cursor:pointer;font-size:13px;padding:4px 6px;line-height:1;flex:none;
     font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif}
