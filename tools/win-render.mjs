@@ -61,7 +61,12 @@ const INIT = `(()=>{
       ids:[{kind:'입찰공고번호',val:'20260718-000123-00'},{kind:'SR번호',val:'SR-2026-0718-9911-XLONG'}],
       subs:[{id:11,title:'각 부서 회의실 사용현황 취합 및 대장 양식 초안 작성(긴 세부 제목 확인)',mid:iso,done:false,al:null,owner:'박주무관'}],
       files:['C:\\\\Users\\\\gong\\\\Documents\\\\2026\\\\회의실\\\\예약대장_최종_v3_진짜최종_수정본.xlsx']}),
-    mk({id:2,memo:'예산 집행 잔액 정리 회신',owner:'최주무관',subs:[{id:21,title:'집행내역 대사',mid:iso,done:false,al:null,owner:'최주무관'}]}),
+    /* 이 항목의 카드가 form 검사에서 열린다 — 세부할일 2개(항목 사이 간격 측정용)와
+       파일 링크 1개(드래그 핸들·정렬 확인용)를 반드시 유지할 것. */
+    mk({id:2,memo:'예산 집행 잔액 정리 회신',owner:'최주무관',
+      subs:[{id:21,title:'집행내역 대사',mid:iso,done:false,al:null,owner:'최주무관'},
+            {id:22,title:'잔액 정리 결과 회신',mid:iso,done:false,al:null,owner:''}],
+      files:['C:\\\\Users\\\\gong\\\\Documents\\\\2026\\\\예산\\\\집행잔액_정리표.xlsx']}),
     mk({id:3,memo:'완료된 감사 자료 제출 건 — 긴 완료 항목 제목 줄바꿈 확인용 문장입니다',done:true}),
   ];
   let store={items,fields:null,
@@ -201,9 +206,29 @@ for (const {w, why} of ZOOM_WIDTHS) {
   await openForm(page);
   const rows = await page.evaluate(() => {
     const top = s => { const el = document.querySelector(s); if (!el) return null; const r = el.getBoundingClientRect(); return Math.round(r.top); };
+    /* v2.5.18: 행 사이 간격도 잰다 — 세 줄로 나뉘는 것만으로는 부족하고,
+       줄 간격이 들쭉날쭉하면(1↔2 가 2↔3 보다 넓다) 눈에 띄게 어색하다.
+       또 세부할일 항목끼리는 줄 간격보다 확실히 더 벌어져 있어야 묶음이 구분된다. */
+    const rowsAll = [...document.querySelectorAll('#fm-subs .fsub-row')];
+    const bottomOfFirst = rowsAll[0] ? Math.round(rowsAll[0].getBoundingClientRect().bottom) : null;
+    const topOfSecond   = rowsAll[1] ? Math.round(rowsAll[1].getBoundingClientRect().top) : null;
     return {title: top('.fsub-row .fsub-title'), owner: top('.fsub-row .sub-owner'), dt: top('.fsub-row .fsub-dt'),
-            cOrg: top('.contact-row .c-org'), cPhone: top('.contact-row .c-phone')};
+            cOrg: top('.contact-row .c-org'), cPhone: top('.contact-row .c-phone'),
+            rowCount: rowsAll.length, bottomOfFirst, topOfSecond};
   });
+  const gap12 = (rows.owner != null && rows.title != null) ? rows.owner - rows.title : null;
+  const gap23 = (rows.dt != null && rows.owner != null) ? rows.dt - rows.owner : null;
+  const gapRows = (rows.topOfSecond != null && rows.bottomOfFirst != null) ? rows.topOfSecond - rows.bottomOfFirst : null;
+  console.log(`[${platformTag}] form-gap-check  줄간격 1↔2=${gap12} 2↔3=${gap23} · 항목 사이=${gapRows} (행 ${rows.rowCount}개)`);
+  if (gap12 != null && gap23 != null && Math.abs(gap12 - gap23) > 2)
+    findings.push({shot: 'form-gap-check', viewport: 560, sel: `세부할일 줄간격 불균등 (1↔2=${gap12}, 2↔3=${gap23})`, over: Math.abs(gap12 - gap23)});
+  /* 항목 사이는 줄 사이보다 확실히 넓어야 세 줄이 한 덩어리로 읽힌다 */
+  if (gapRows != null && gapRows <= 5)
+    findings.push({shot: 'form-gap-check', viewport: 560, sel: `세부할일 항목 사이 간격이 좁음 (${gapRows}px)`, over: 0});
+  /* 파일 링크 행에 드래그 핸들이 있어야 한다(v2.5.18) */
+  const fileHandle = await page.evaluate(() => !!document.querySelector('#fm-files .ffile-row .drag-handle'));
+  if (!fileHandle)
+    findings.push({shot: 'form-gap-check', viewport: 560, sel: '파일 링크 행에 드래그 핸들 없음', over: 0});
   /* 세부할일은 1줄 제목 / 2줄 담당 / 3줄 날짜·시각 (v2.5.10) — 세 줄이 각각 다른 y여야 한다. */
   const subThreeLine = rows.title != null && rows.owner != null && rows.dt != null
     && rows.owner > rows.title + 8 && rows.dt > rows.owner + 8;

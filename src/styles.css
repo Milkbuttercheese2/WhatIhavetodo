@@ -493,11 +493,16 @@
        한 줄에 몰면 DPI·폰트에 따라 밀려 깨지므로, 각 요소를 자기 줄에 강제 고정한다:
          ::after(order:0)로 제목 뒤 개행 → 담당(order:1) → 날짜·시각(order:2, flex-basis:100%로 자기 줄).
        담당·날짜칸 모두 112px, 세 줄 다 margin-left:43px(x=85)로 다른 섹션과 정렬 통일. */
-    .fsub-row{flex-wrap:wrap;row-gap:5px}
+    /* v2.5.18 줄 간격: row-gap 을 쓰지 않고 각 줄에 margin-top 을 명시한다.
+       ::after 스페이서가 자기 줄을 하나 차지하는 탓에 row-gap 방식에서는 1↔2 에만
+       간격이 두 번(5+0+5=10) 들어가 2↔3(5)보다 넓어 보였다. */
+    .fsub-row{flex-wrap:wrap;row-gap:0}
     .fsub-row::after{content:"";flex:0 0 100%;height:0;order:0}               /* 1줄(제목) 끝 강제 개행 */
     .fsub-row .fsub-title{flex:1 1 auto;min-width:0}                          /* 1줄: 제목(남는 폭 채움) */
-    .fsub-row input.sub-owner{order:1;flex:0 0 auto;width:112px;margin-left:43px}  /* 2줄: 담당 (112px) */
-    .fsub-row .fsub-dt{order:2;flex:1 1 100%;min-width:0;margin-left:43px}    /* 3줄: 날짜·시각 (basis 100%로 자기 줄) */
+    .fsub-row input.sub-owner{order:1;flex:0 0 auto;width:112px;margin-left:43px;margin-top:5px}  /* 2줄: 담당 (112px) */
+    .fsub-row .fsub-dt{order:2;flex:1 1 100%;min-width:0;margin-left:43px;margin-top:5px}    /* 3줄: 날짜·시각 (basis 100%로 자기 줄) */
+    /* 항목 사이는 줄 간격(5px)보다 확실히 넓혀 세 줄이 한 덩어리로 읽히게 한다 */
+    .fsub-row + .fsub-row{margin-top:10px}
     .fsub-row .fsub-dt .dt-date{flex:0 0 auto;width:112px}                    /* 날짜칸 112px — 담당칸과 동일 폭 */
     .fsub-row .fsub-dt .dt-time{flex:0 0 auto;width:64px}                     /* 시각칸 64px — 접수/마감 시각칸과 동일 폭(늘어나지 않게) */
     /* 관련인: 1줄 관련소속·관련인 / 2줄 연락처 (v2.5.9). ⠿·× 는 1줄에 유지. */
