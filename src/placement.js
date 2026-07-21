@@ -30,7 +30,12 @@ export function noTimeSet(it){
    '오늘'(지난 시각 포함), 아니면 '오늘 외'. 본인/타인은 ownerOf 로 가른다.
    (v2.5.18 전에는 시각이 없어도 '오늘 외'로 보냈다 — 이제 ①이 먼저 걸러낸다.) */
 function placeOwner(it){
-  if(noTimeSet(it)) return 'inbox';   // v2.5.18: 시각 미지정은 분류 대기 (시간 모드와 동일)
+  /* ① 시각 미지정 + 아직 손 안 댐 → 분류 대기.
+     '손댐'(세부를 하나라도 완료)을 함께 보는 이유: 4단계는 ③(진행 중)이 ①보다 앞이라
+     손댄 업무를 먼저 건진다. 5단계에 진행 중 칸이 없다고 ①만 적용하면, 같은 업무가
+     모드를 바꿀 때마다 '진행 중' ↔ '분류 대기' 를 오간다. 손댄 업무는 여기서도
+     분류 대기로 역행시키지 않고 아래 2×2(→ 본인 진행 · 오늘 외)로 보낸다. */
+  if(noTimeSet(it) && !(it.subs||[]).some(s=>s.done)) return 'inbox';
   const f=it.f||{}, [,t1]=dayBounds();
   const ts=subMids(it).map(d=>d.getTime());
   const due=f.due?new Date(f.due):null;

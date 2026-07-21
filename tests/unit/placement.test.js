@@ -96,9 +96,25 @@ test('완료된 세부의 점검시각만 있어도 시각 지정으로 보고 d
   assert.equal(placeOf(base({subs:[{title:'a', mid:iso(-60), done:true}]})), 'doing');
 });
 
-test('owner 모드에서도 시각 미지정은 inbox', () => {
+test('owner 모드에서도 시각 미지정(손 안 댐)은 inbox', () => {
   setPlaceMode('owner');
   try { assert.equal(placeOf(base({})), 'inbox'); }
+  finally { setPlaceMode('time'); }
+});
+
+/* 두 모드가 어긋나지 않게: 손댄 업무는 5단계에서도 분류 대기로 역행하지 않는다.
+   (4단계는 ③ 진행 중, 5단계는 진행 중 칸이 없으므로 '본인 진행 · 오늘 외'.) */
+test('owner 모드: 시각 미지정이어도 세부를 하나라도 완료했으면 meplan', () => {
+  setPlaceMode('owner');
+  try { assert.equal(placeOf(base({subs:[{title:'a', mid:'', done:true}]})), 'meplan'); }
+  finally { setPlaceMode('time'); }
+});
+
+test('모드 전환 일관성: 같은 업무가 분류 대기 ↔ 진행 중을 오가지 않는다', () => {
+  const touched = base({subs:[{title:'a', mid:'', done:true}]});
+  assert.equal(placeOf(touched), 'doing');            // 4단계
+  setPlaceMode('owner');
+  try { assert.notEqual(placeOf(touched), 'inbox'); } // 5단계에서도 미분류로 안 감
   finally { setPlaceMode('time'); }
 });
 
