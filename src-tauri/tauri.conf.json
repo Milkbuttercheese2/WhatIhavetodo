@@ -1,4 +1,4 @@
-﻿{
+{
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "wmhh-desktop",
   "version": "2.5.18",
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "萸먰븯???덈뜑??,
+        "title": "뭐하려 했더라",
         "width": 560,
         "height": 900,
         "resizable": false,
@@ -23,7 +23,7 @@
       {
         "label": "capture",
         "url": "capture.html",
-        "title": "鍮좊Ⅸ 硫붾え",
+        "title": "빠른 메모",
         "width": 620,
         "height": 150,
         "visible": false,

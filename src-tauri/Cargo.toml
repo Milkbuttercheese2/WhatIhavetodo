@@ -1,7 +1,7 @@
-﻿[package]
+[package]
 name = "wmhh-desktop"
 version = "2.5.18"
-description = "萸먰븯???덈뜑?????꾪솕諛쏄퀬 ?딆뼱踰꾨━湲??꾩뿉 ?섏졇?먮뒗 ?낅Т 硫붾え 蹂대뱶"
+description = "뭐하려 했더라 — 전화받고 잊어버리기 전에 던져두는 업무 메모 보드"
 authors = ["Milkbuttercheese2"]
 edition = "2021"
 

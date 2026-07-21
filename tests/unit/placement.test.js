@@ -56,7 +56,9 @@ test('점검 모두 끝나고 마감만 내일 이후 → doing (wrapUp)', () =>
   assert.equal(placeOf(it), 'doing');
 });
 
-test('세부 전부 완료(마감·시각 없음) → doing — 예정·대기로 떨어지지 않음', () => {
+/* 시각이 없어도 손댄 업무는 doing — 판정 ①(분류 대기)보다 ③(진행 중)이 앞이다.
+   '예정·대기로 떨어지던 버그' 수정(v2.5.x)의 의도를 그대로 지킨다. */
+test('세부 전부 완료(마감·시각 없음) → doing — 분류 대기·예정 대기로 떨어지지 않음', () => {
   const it = base({subs:[
     {title:'a', done:true},
     {title:'b', done:true},
@@ -68,12 +70,36 @@ test('미래 세부 점검만(내일 이후, 손 안 댐) → planned', () => {
   assert.equal(placeOf(base({subs:[{title:'a', mid:iso(60*48), done:false}]})), 'planned');
 });
 
-test('시각 정보 전혀 없음 → planned', () => {
-  assert.equal(placeOf(base({})), 'planned');
+/* v2.5.18: 시각을 하나도 안 정한 업무는 '분류 대기'. 언제 할지 정하는 것이 곧 분류이고,
+   '예정 · 대기'는 시각이 잡혀 있는(내일 이후) 업무 전용이다. */
+test('시각 정보 전혀 없음 → inbox', () => {
+  assert.equal(placeOf(base({})), 'inbox');
 });
 
-test('손상된 due ISO → planned (vd 가드 통과 못함, F7 계열)', () => {
-  assert.equal(placeOf(base({f:{due:'garbage'}})), 'planned');
+test('세부는 있는데 점검시각이 없음 → inbox', () => {
+  assert.equal(placeOf(base({subs:[{title:'a', mid:'', done:false}]})), 'inbox');
+});
+
+test('손상된 due ISO → inbox (시각 없음으로 취급, F7 계열)', () => {
+  assert.equal(placeOf(base({f:{due:'garbage'}})), 'inbox');
+});
+
+/* 판정 순서 ②→③→①→④ — ①(분류 대기)이 ③(진행 중) 뒤라서, 이미 손댄 업무는
+   시각이 없어도 '진행 중'을 유지한다(미분류 칸으로 역행하지 않게). */
+test('시각이 없어도 세부를 하나라도 완료했으면 doing 유지', () => {
+  assert.equal(placeOf(base({subs:[{title:'a', mid:'', done:true}]})), 'doing');
+});
+
+/* 반대로 시각이 잡혀 있으면(완료된 세부의 점검시각도 '정해진' 것으로 친다)
+   기존 판정을 그대로 탄다 — 전부 완료해도 상위 완료 전까지는 '진행 중'. */
+test('완료된 세부의 점검시각만 있어도 시각 지정으로 보고 doing', () => {
+  assert.equal(placeOf(base({subs:[{title:'a', mid:iso(-60), done:true}]})), 'doing');
+});
+
+test('owner 모드에서도 시각 미지정은 inbox', () => {
+  setPlaceMode('owner');
+  try { assert.equal(placeOf(base({})), 'inbox'); }
+  finally { setPlaceMode('time'); }
 });
 
 test('dayBounds: t0 ≤ now < t1, t0은 자정', () => {
@@ -135,11 +161,12 @@ test('owner 모드: 세부 담당자 박 + 3일 뒤 점검 → othplan', () => {
   assert.equal(placeOf(base({subs:[{title:'a', mid:iso(60*72), done:false, owner:'박'}]})), 'othplan');
 });
 
-test('owner 모드: 시각 정보 전혀 없음 → meplan (아이템 owner는 판정 제외 — v2.5.2)', () => {
+/* v2.5.18: 시각 미지정은 두 모드 모두 '분류 대기'. (그전에는 owner 모드에서 meplan 이었다.) */
+test('owner 모드: 시각 정보 전혀 없음 → inbox (아이템 owner는 판정 제외 — v2.5.2)', () => {
   setPlaceMode('owner');
-  assert.equal(placeOf(base({})), 'meplan');
-  assert.equal(placeOf(base({owner:'이'})), 'meplan');           // it.owner는 레거시 보존값 — 배치에 영향 없음
-  assert.equal(placeOf(base({f:{due:'garbage'}})), 'meplan');   // 손상 due도 시각 없음 취급
+  assert.equal(placeOf(base({})), 'inbox');
+  assert.equal(placeOf(base({owner:'이'})), 'inbox');           // it.owner는 레거시 보존값 — 배치에 영향 없음
+  assert.equal(placeOf(base({f:{due:'garbage'}})), 'inbox');   // 손상 due도 시각 없음 취급
 });
 
 test('ownerOf: 가장 이른 미완료 세부 owner → 없으면 빈 문자열 (아이템 owner 폴백 제거 — v2.5.2)', () => {
