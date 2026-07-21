@@ -157,7 +157,8 @@ function fileName(p){ p=String(p||'').trim(); return (p.split(/[\\/]/).filter(Bo
 function addFormFileRow(path, active){
   active = active!==false;                       // 기본 활성화(링크 모드)
   const row=document.createElement('div'); row.className='ffile-row';
-  row.innerHTML=`<button type="button" class="ffile-toggle chk ${active?'on':''}" title="활성화: 이름 클릭 시 파일 열기 · 비활성화: 경로 수정/찾기"></button>
+  row.innerHTML=`<span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
+    <button type="button" class="ffile-toggle chk ${active?'on':''}" title="활성화: 이름 클릭 시 파일 열기 · 비활성화: 경로 수정/찾기"></button>
     <span class="ffile-link" title="열기" style="${active?'':'display:none'}">${esc(fileName(path)||'(경로 없음)')}</span>
     <input type="text" class="ffile-path" placeholder="파일 경로 (직접 붙여넣기 가능)" value="${escAttr(path||'')}" style="${active?'display:none':''}">
     <button type="button" class="ffile-browse" title="파일 찾기" style="${active?'display:none':''}">찾기</button>
@@ -222,6 +223,9 @@ export function initForm(){
   enableDragReorder($('fm-subs'), '.fsub-row', '.drag-handle');
   enableDragReorder($('fm-ids'), '.fid-row', '.drag-handle');        // v2.5.1 식별번호도 드래그 정렬
   enableDragReorder($('fm-contacts'), '.contact-row', '.drag-handle'); // v2.5.3 관련인도 드래그 정렬
+  /* v2.5.18 파일 링크도 드래그 정렬 — collectForm 이 .ffile-path 를 DOM 순서대로 읽으므로
+     onDrop 콜백 없이 순서가 그대로 저장된다(fm-subs 와 동일 패턴). */
+  enableDragReorder($('fm-files'), '.ffile-row', '.drag-handle');
   $('fm-fileadd').addEventListener('click', async ()=>{
     let p=null;
     try{ p=await invoke('pick_file_path'); }
