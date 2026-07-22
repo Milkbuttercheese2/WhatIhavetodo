@@ -387,6 +387,11 @@
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
   .toast button{font-family:inherit;font-size:12.5px;font-weight:600;background:transparent;border:1px solid #55606d;color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;word-break:keep-all}   /* v2.5.12: 좁을 때 '실행 취소'가 음절 중간(실행취/소)이 아니라 어절 경계(실행/취소)로 줄바꿈 */
   .toast button:hover{background:#2a333d}
+  /* 저장 실패 경고 배너 — 조용한 성공/시끄러운 실패. 성공 토스트와 달리 자동으로
+     사라지지 않고 다음 저장이 성공할 때까지 계속 떠 있어(store.js가 on/off) 사용자가
+     저장 안 된 채 앱을 닫는 사고를 막는다. toast(z-index 200)보다 위에. */
+  .save-alert{position:fixed;left:50%;top:12px;transform:translateX(-50%) translateY(-14px);z-index:300;max-width:min(720px,calc(100vw - 24px));display:none;align-items:center;gap:8px;background:var(--red);color:#fff;font-size:12.5px;font-weight:600;line-height:1.45;padding:11px 18px;border-radius:9px;box-shadow:0 10px 34px rgba(0,0,0,.32);word-break:keep-all;opacity:0;transition:opacity .2s,transform .2s}
+  .save-alert.on{display:flex;opacity:1;transform:translateX(-50%) translateY(0)}
   footer .num{color:var(--focus)}
   footer a{color:var(--focus)}
   @media(max-width:720px){
