@@ -4,6 +4,7 @@
    IndexedDB)는 더 이상 쓰지 않는다.
    ========================================================================= */
 import {S} from './state.js';
+import {showSaveError, clearSaveError} from './dom-utils.js';
 
 export const { invoke } = window.__TAURI__.core;
 
@@ -34,16 +35,20 @@ export const STORE = {
           const data=this._pending; this._pending=null;
           await invoke('save_all', {items:data});
         }
-      }catch(e){ console.warn('저장 실패',e); }
+        clearSaveError();                       // 아이템 저장 성공 = 쓰기가 다시 됨 → 경고 해제(성공은 조용히)
+      }catch(e){ console.warn('저장 실패',e); showSaveError(); }  // 실패는 눈에 보이게
       finally{ this._saving=null; }
     })();
     return this._saving;                       // await STORE.saveAll(...) 가 실제 저장 완료까지 대기
   },
 
-  saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>console.warn('필드 저장 실패',e)); },
-  savePresets(p){ if(!S.loaded)return; invoke('save_presets', {presets:p}).catch(e=>console.warn('프리셋 저장 실패',e)); },
-  saveIdKinds(k){ if(!S.loaded)return; invoke('save_id_kinds', {idKinds:k}).catch(e=>console.warn('식별번호 명칭 저장 실패',e)); },
-  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>console.warn('설정 저장 실패',e)); },
+  /* 사이드카 저장(필드·프리셋·식별정보 명칭·설정)도 실패하면 경고를 켠다. 단
+     성공해도 경고를 끄지는 않는다 — 설정 저장 성공이 아이템 저장 실패를 가리면
+     안 되므로, 해제는 아이템 저장(save_all) 성공만 담당한다. */
+  saveFields(f){ if(!S.loaded)return; invoke('save_fields', {fields:f}).catch(e=>{console.warn('필드 저장 실패',e);showSaveError();}); },
+  savePresets(p){ if(!S.loaded)return; invoke('save_presets', {presets:p}).catch(e=>{console.warn('프리셋 저장 실패',e);showSaveError();}); },
+  saveIdKinds(k){ if(!S.loaded)return; invoke('save_id_kinds', {idKinds:k}).catch(e=>{console.warn('식별번호 명칭 저장 실패',e);showSaveError();}); },
+  saveSettings(s){ if(!S.loaded)return; invoke('save_settings', {settings:s}).catch(e=>{console.warn('설정 저장 실패',e);showSaveError();}); },
 
   /* 화면 크기(v2.5.15) — 데이터 저장이 아니라 웹뷰 배율 적용이므로 F1 로드
      게이트를 걸지 않는다(로드 완료 전에도 저장된 크기를 그대로 보여줘야 한다). */

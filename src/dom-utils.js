@@ -49,6 +49,12 @@ export function initToast(){
   $('toast-undo').addEventListener('click',()=>{ if(_undoFn){const fn=_undoFn;_undoFn=null;$('toast').classList.remove('on');clearTimeout(_toastTimer);fn();} });
 }
 
+/* 저장 실패 표시 — 조용한 성공/시끄러운 실패. 저장 성공 시엔 아무 것도 띄우지 않고,
+   실패하면 다음 저장이 성공할 때까지 계속 떠 있는 경고 배너를 켠다(store.js가 호출).
+   요소가 없어도(테스트 하네스 등) 죽지 않게 널 가드. */
+export function showSaveError(){ const el=$('saveAlert'); if(el) el.classList.add('on'); }
+export function clearSaveError(){ const el=$('saveAlert'); if(el) el.classList.remove('on'); }
+
 /* 알림 권한 요청 (최초 1회) — persist()가 부르므로 알람 모듈이 아닌 여기에 둔다 */
 let notifyAsked=false;
 export function askNotify(){ if(notifyAsked||!('Notification'in window))return; notifyAsked=true; if(Notification.permission==='default'){try{Notification.requestPermission();}catch{}} }

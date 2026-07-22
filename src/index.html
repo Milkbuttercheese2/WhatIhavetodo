@@ -311,6 +311,9 @@
 
 <div class="toast" id="toast"><span id="toast-msg"></span><button id="toast-undo">실행 취소</button></div>
 
+<!-- 저장 실패 경고 — 저장이 실패하면 성공할 때까지 계속 떠 있는다(저장 성공은 조용). -->
+<div class="save-alert" id="saveAlert" role="alert" aria-live="assertive">⚠ 저장 실패 — 변경 내용이 디스크에 기록되지 않았습니다. 앱을 닫기 전에 [설정 → JSON파일 백업]으로 따로 저장하거나 저장 공간·위치를 확인하세요.</div>
+
 <script src="vendor/xlsx.full.min.js"></script>
 <script type="module" src="main.js"></script>
 </body>
